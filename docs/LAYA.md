@@ -2,7 +2,7 @@
 
 This document specifies the technical details, serving specifications, and implementation plan for deploying the `laya-mlx` decision model as a real-time autopilot on Apple Silicon M1.
 
-For the general decision model landscape, see [DECISION_MODELS.md](DECISION_MODELS.md). For CLM specific specifications, see [CLM.md](CLM.md).
+For detailed runtime implementation and data flow, see [LAYA_IMPLEMENTATION.md](LAYA_IMPLEMENTATION.md). For the general decision model landscape, see [DECISION_MODELS.md](DECISION_MODELS.md). For CLM specific specifications, see [CLM.md](CLM.md).
 
 ---
 

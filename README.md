@@ -19,6 +19,7 @@ The page shows the game on a 4:3 monitor on the left. On the right, the top pane
 - [Version 3: smarter autopilot and controller selector](docs/VERSION_3.md): how `smartPilot` predicts and dodges, proof that it moves the ship only through the keys, and measurements against the v2 pilot.
 - [Decision models and autopilot design](docs/DECISION_MODELS.md): overview of decision models (System One models like Laya, Kev, Jev, CLM), local feasibility analysis for Apple Silicon M1, selection of `laya-mlx` and `Kev` as local candidates, the `/v1/systemone` protocol, and autopilot architecture.
 - [Laya-MLX local autopilot plan](docs/LAYA.md): serving specifications, sub-frame latency benchmarks on Apple Silicon M1, ModernBERT architecture, and phased implementation plan for `laya-mlx`.
+- [Laya autopilot implementation guide](docs/LAYA_IMPLEMENTATION.md): end-to-end data flow, situation prompting, asynchronous browser loop, Python MLX server, low-level actuation, and offline fallback.
 - [CLM reference](docs/CLM.md): architecture facts, Qwen3-8B encoder with dual projection heads, serving stack, and remote GPU deployment notes for the Contrastive Language Model.
 - [Version 2: restored behavior, state, decisions, autopilot](docs/VERSION_2.md): what changed from v1 with measurements, how the state is represented, how the pilot decides, and how well it plays.
 - [Version 1 baseline](docs/VERSION_1.md): what was done, feature list, known deviations from the original, validation results, article metrics.
