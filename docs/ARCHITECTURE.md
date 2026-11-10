@@ -1,6 +1,6 @@
 # Architecture
 
-[`asteroids.html`](../asteroids.html) is one self-contained file: HTML shell, one inline `<script>`, no dependencies, no build step. This document describes how that script is organized and how it maps back to the original 6502 source in [`asteroids-main/`](https://github.com/historicalsource/asteroids). The sections up to "Game states" describe version 1 and still apply. [Version 2](#version-2-additions) adds the screen layout, the state snapshot and the autopilot. [Version 3](#version-3-additions) adds a second autopilot and the controller selector.
+[`asteroids.html`](../asteroids.html) is one self-contained file: HTML shell, one inline `<script>`, no dependencies, no build step. This document describes how that script is organized and how it maps back to the original 6502 source in [`asteroids-main/`](https://github.com/historicalsource/asteroids). The sections up to "Game states" describe version 1 and still apply. [Version 2](#version-2-additions) adds the screen layout, the state snapshot and the autopilot. [Version 3](#version-3-additions) adds two autopilots (`smartPilot`, built on rules in the code, and `layaPilot`, built on a decision model) and the controller selector.
 
 Editable diagram sources are in [`docs/diagrams/`](diagrams/) (`.drawio`, exported to `.png`).
 
@@ -102,12 +102,13 @@ Source file: [`diagrams/v2-state-decision-loop.drawio`](diagrams/v2-state-decisi
 
 ## Version 3 additions
 
-The line numbers in the layout table above describe version 2. Version 3 inserts about 240 lines (`smartPilot` and its helpers, after `simplePilot`) and replaces the Autopilot switch in the HTML shell and the demo panels section.
+The line numbers in the layout table above describe version 2. Version 3 inserts about 240 lines for `smartPilot` and its helpers (after `simplePilot`), plus the `layaPilot` client and its helpers, and replaces the Autopilot switch in the HTML shell and the demo panels section.
 
-- **Controller table.** `CONTROLLERS = { manual: null, simple: simplePilot, smart: smartPilot }` maps the three selector buttons to the value of `AUTOPILOT`. `setController(name)` is the single write path from the UI. A new controller is one entry in the table and one button.
+- **Controller table.** `CONTROLLERS = { manual: null, simple: simplePilot, smart: smartPilot, laya: layaPilot }` maps the four selector buttons to the value of `AUTOPILOT`. `setController(name)` is the single write path from the UI. A new controller is one entry in the table and one button.
+- **Decision model client.** `layaPilot` is the one controller that does not decide in the page. `layaFormatState` turns the snapshot into a one-sentence situation, `fetch()` posts it with the four-option question `LAYA_QUESTIONS` to the local server at `LAYA_ENDPOINT` (`/v1/systemone`), and the pilot turns the latest answer into keys every tick. The request is asynchronous, so the 60 Hz loop never waits; when the server is offline the pilot returns `smartPilot`'s keys. See [LAYA_IMPLEMENTATION.md](LAYA_IMPLEMENTATION.md).
 - **Forward model inside the pilot.** `smartPilot` keeps no state between ticks. It rebuilds its prediction from the snapshot: `spThreats` (straight-line movers), `spShipStep` (a copy of the movement part of `updateShip`), `spHits` (the `COLIDE` rule) and `spSimulate`. If `updateShip` or `collides` change, these copies must change with them; `check_thrust_physics.js` fails when the copy of the ship movement drifts from the game.
 - **Snapshot additions.** `ship.vxf` and `ship.vyf` (fractional velocity), and `exploding` on rocks and the saucer.
 - **Panel additions.** `lastHeld` records the last tick each key was held, so `updatePanels()` can keep a tapped key lit for 0.4 s and describe whether the ship is thrusting or coasting.
 - **Shared test loader.** `scripts/dev/lib/load_game.js` loads the inline script headlessly for the version 3 scripts, with optional source patches to add instrumentation without touching the game file.
 
-See [VERSION_3.md](VERSION_3.md) for what the pilot decides and how it was measured.
+See [VERSION_3.md](VERSION_3.md) for what the pilots decide and how they were measured.

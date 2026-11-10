@@ -14,7 +14,7 @@ Port of the original Atari Asteroids 6502 source (`asteroids-main/`) to a single
 
 On the initials screen (after a top-10 score), Left / Right selects the letter and Shift accepts it.
 
-The **Manual | Simple | Smart** selector in the Decision panel (right side of the screen) chooses who flies. Manual is the keyboard, Simple is `simplePilot` ([Version 2](VERSION_2.md#4-decision-making)) and Smart is `smartPilot` ([Version 3](VERSION_3.md#2-how-smartpilot-works)). From the browser console, `AUTOPILOT = simplePilot`, `AUTOPILOT = smartPilot` and `AUTOPILOT = null` do the same (the selector highlight does not follow), and `LOG_STATE = true` prints one JSON line per tick with the state and the decision.
+The **Manual | Simple | Smart | Laya** selector in the Decision panel (right side of the screen) chooses who flies. Manual is the keyboard, Simple is `simplePilot` ([Version 2](VERSION_2.md#4-decision-making)), Smart is `smartPilot`, the autopilot built on rules in the code ([Version 3](VERSION_3.md#2-how-smartpilot-works)), and Laya is `layaPilot`, the autopilot built on a local decision model ([Version 3](VERSION_3.md#2b-how-layapilot-works-a-decision-model)). From the browser console, `AUTOPILOT = simplePilot`, `AUTOPILOT = smartPilot`, `AUTOPILOT = layaPilot` and `AUTOPILOT = null` do the same (the selector highlight does not follow), and `LOG_STATE = true` prints one JSON line per tick with the state and the decision.
 
 The high score and the top-10 table are kept for the current page session only (no persistence across reloads).
 

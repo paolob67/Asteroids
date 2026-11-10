@@ -1,21 +1,26 @@
-# Version 3: a smarter autopilot and a Manual | Simple | Smart selector
+# Version 3: two new autopilots, one built on rules in the code and one on a decision model
 
-Version 3 is frozen in [`versions/v3/`](../versions/v3/) (SHA-256 `9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6`). It starts from the frozen [version 2](VERSION_2.md) and adds one thing: a second autopilot, `smartPilot`, that looks ahead, moves the ship with thrust to dodge, and uses hyperspace only when nothing else works. The game rules are unchanged from version 2.
+Version 3 is frozen in [`versions/v3/`](../versions/v3/) (SHA-256 `9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6`). It starts from the frozen [version 2](VERSION_2.md), whose only autopilot (`simplePilot`) rotates and fires from the centre of the screen. The game rules are unchanged. What changes is who can fly the ship. Version 3 adds two new pilots that solve the same problem in opposite ways:
 
-The root [`asteroids.html`](../asteroids.html) was identical to the frozen file at the moment of freezing and is now the working copy for later work. See [`versions/v3/README.md`](../versions/v3/README.md) for the checksum and verification commands. Autopilots based on other decision models (such as Kev, Jev, or CLM) are planned for later steps and are not part of this document. The decision model landscape, Apple Silicon M1 feasibility, and autopilot design decisions are in [DECISION_MODELS.md](DECISION_MODELS.md), with dedicated plans in [LAYA.md](LAYA.md) and [CLM.md](CLM.md).
+- **`smartPilot`: rules implemented in the code.** A hand-written autopilot that predicts where every rock, saucer and torpedo will be over the next 90 ticks, replays the ship's own physics, and picks the cheapest manoeuvre that avoids every hit. Hyperspace is the last resort. Every decision can be explained by reading the code.
+- **`layaPilot`: a decision model.** A small neural model (`laya-mlx`, running locally on Apple Silicon) receives a short text description of the situation and chooses one of four actions. The behaviour comes from the model, not from rules about manoeuvres.
+
+Both have the same interface as `simplePilot`: a snapshot in, five booleans (`left`, `right`, `thrust`, `fire`, `hyper`) out. A selector in the Decision panel switches between Manual, Simple, Smart and Laya at any time, and the same measurement scripts score all of them. This makes version 3 a direct comparison between the two approaches, with `simplePilot` as the baseline.
+
+The root [`asteroids.html`](../asteroids.html) was identical to the frozen file at the moment of freezing and is now the working copy for later work. See [`versions/v3/README.md`](../versions/v3/README.md) for the checksum and verification commands. Autopilots based on other decision models (Kev, Jev, CLM) are planned for later steps and are not part of this document. The decision model landscape, Apple Silicon M1 feasibility, and autopilot design decisions are in [DECISION_MODELS.md](DECISION_MODELS.md), with dedicated plans in [LAYA.md](LAYA.md) and [CLM.md](CLM.md).
 
 ## 1. What changed
 
 | Area | Version 2 | Version 3 |
 |------|-----------|-----------|
-| Controllers | Autopilot on/off switch (`simplePilot` only) | Selector with four buttons: **Manual**, **Simple** (`simplePilot`), **Smart** (`smartPilot`), **Laya** (`layaPilot`) |
+| Controllers | Autopilot on/off switch (`simplePilot` only) | Selector with four buttons: **Manual**, **Simple** (`simplePilot`), **Smart** (`smartPilot`, rule-based), **Laya** (`layaPilot`, decision model) |
 | `snapshot()` | No fractional velocity, exploding rocks looked alive | Adds `ship.vxf`, `ship.vyf` (needed to predict the ship's path) and `exploding` on rocks and the saucer |
-| Decision panel | Keys light only on the tick they are held | A key held in the last 0.4 s stays dimly lit, and a line says whether the ship is thrusting, coasting or at rest |
+| Decision panel | Keys light only on the tick they are held | A key held in the last 0.4 s stays dimly lit, and a line says whether the ship is thrusting, coasting or at rest. With Laya it also shows the model's choice, probability, confidence and latency |
 | Measurement | `measure_autopilot.js` | Adds `measure_pilots.js` (several seeds, losses per hour, causes), `death_causes.js`, `check_thrust_physics.js` and `test_controller_selector.js` |
 
 ## 2. How `smartPilot` works
 
-It has the same interface as `simplePilot`: a snapshot in, five booleans (`left`, `right`, `thrust`, `fire`, `hyper`) out. It never writes to the ship. The only way it changes the ship's speed is the THRUST key, which the game turns into a push along the nose (see section 4).
+It never writes to the ship. The only way it changes the ship's speed is the THRUST key, which the game turns into a push along the nose (see section 4).
 
 Every tick it asks: if I do nothing special, does anything hit me in the next 90 ticks?
 
@@ -25,15 +30,26 @@ Every tick it asks: if I do nothing special, does anything hit me in the next 90
 4. **No manoeuvre is safe and the hit is 8 ticks away or less.** Estimate the risk of hyperspace and press it if the risk is below 70%. The risk combines the original's self-destruct rule (`HYPER`: a random y of 0x18 or more, then a rock count at or above a random limit of 4 to 18) with the chance of re-entering, 48 ticks later, in the path of something.
 5. **Shooting.** Target choice uses the same interception maths as `simplePilot`, with the thing on a collision course counted double, a saucer counted a bit more than a rock, and exploding rocks skipped. The pilot fires whenever the nose is on the target, including while it dodges.
 
+## 2b. How `layaPilot` works (a decision model)
+
+`layaPilot` delegates the question "what should the ship do now?" to a local decision model. The model is [`laya-mlx`](LAYA.md), a 421M-parameter encoder that scores a fixed set of candidate actions in a single forward pass, with calibrated probabilities. It is served by a small Python daemon on `127.0.0.1:8700` ([`laya_server.py`](../scripts/dev/laya_server.py)) and called from the page with `fetch()`.
+
+1. **Describe the situation.** The pilot turns the snapshot into one sentence in the ship's own frame: either "Safe" (with the speed and the nearest target), or "Danger" (which rock or saucer, which side, ticks to collision, which way to turn), or "Fatal collision emergency" when impact is 8 ticks away or less. The sentence is built by a few lines of JavaScript, so the geometry is still computed by code; the model does not see coordinates.
+2. **Ask the model.** The request carries the sentence and one question with four options: `stay_and_fire`, `turn_left_and_thrust`, `turn_right_and_thrust` and `hyperspace`, each with a short criteria text. The model answers with the chosen option, its probability and its confidence.
+3. **Act on the answer.** The last answer is turned into keys every tick. The request is asynchronous, so the 60 Hz loop never waits for the model; the ship follows the most recent decision, which is on average about 11 ms old. `stay_and_fire` aims and shoots with the same targeting maths as the other pilots; the dodge options hold turn and thrust; `hyperspace` presses the hyperspace key.
+4. **No server, no problem.** If the server is not running, the pilot falls back to `smartPilot` and says so in the Decision panel, retrying every 3 seconds.
+
+There is no safety check between the model and the keys: whatever the model chooses is executed. The measurements in section 3 therefore show the model's own behaviour. Setup is in [LAYA.md](LAYA.md#32-setup-and-serving-commands).
+
 ## 3. How well it plays
 
-[`scripts/dev/measure_pilots.js`](../scripts/dev/measure_pilots.js) runs each pilot for 8 starting points of 1,200,000 ticks (44.4 hours of play at 60 Hz in total). A starting point means: the game's `RAND` is advanced by a different number of calls after `initGame()`. The runs are repeatable.
+[`scripts/dev/measure_pilots.js`](../scripts/dev/measure_pilots.js) runs each pilot from several starting points. A starting point means: the game's `RAND` is advanced by a different number of calls after `initGame()`. The runs are repeatable. `simplePilot` and `smartPilot` were run for 8 starting points of 1,200,000 ticks (44.4 hours of play at 60 Hz in total). The `layaPilot` row comes from the shorter run described in [LAYA.md](LAYA.md#7-empirical-performance--benchmark-results) (6 starting points of 20,000 ticks), so it has a wider margin of error.
 
 | Pilot | Control Paradigm | Ship Losses / Hour | Points / Minute | Thrust Engaged | Hyperspace / Hour | Games Ended | Median Latency |
 |---|---|---|---|---|---|---|---|
 | `simplePilot` | Fixed heuristic (no dodging) | 43.9 | 9,017 | 0.0% | 0.0 | 0 | < 0.01 ms |
-| `smartPilot` | Trajectory physics lookahead | 7.7 | 11,842 | 1.4% | 27.0 | 0 | ~0.15 ms |
-| `layaPilot` | Neural decision model (`laya-mlx`) | 36.6 | 11,289 | 5.1% | 0.0 | 0 | 11.2 ms |
+| `smartPilot` | Rules in code: trajectory lookahead | 7.7 | 11,842 | 1.4% | 27.0 | 0 | ~0.15 ms |
+| `layaPilot` | Decision model (`laya-mlx`) | 36.6 | 11,289 | 5.1% | 0.0 | 0 | 11.2 ms |
 
 Causes of the ship losses (measured across 120,000 ticks per pilot):
 
@@ -43,13 +59,13 @@ Causes of the ship losses (measured across 120,000 ticks per pilot):
 | `smartPilot` | 2 | 0 | 0 | 2 | 4 |
 | `layaPilot` | 16 | 2 | 1 | 0 | 19 |
 
-How to read this and what the gameplay reveals:
+What the comparison shows:
 
-- **Scoring capacity**: `layaPilot` scores 11,289 points per minute, approaching `smartPilot` (11,842 points/min) and significantly exceeding `simplePilot` (9,017 points/min). Because it maintains high target aiming accuracy when in safe flight mode, it clears waves quickly.
-- **Visual appearance vs underlying mechanics**: Watching `layaPilot` in the browser UI can make it look erratic or unpolished compared to `smartPilot`. `smartPilot` plans multi-second trajectories with exact inertia calculations, making smooth, calculated maneuvers. In contrast, `layaPilot` receives discrete tactical classifications from the neural model every ~11 ms. When threats appear, it reacts with bursts of turning and thrust (5.1% thrust engagement vs 1.4% in `smartPilot`), leading to noticeable ship drift and reactive course corrections.
-- **Survival trade-offs**: While `layaPilot` successfully dodges saucer torpedoes (only 2 losses compared to 7 in `simplePilot`), its rock loss rate (36.6 losses/hour) remains significantly higher than `smartPilot` (7.7 losses/hour). This happens because a language/decision model evaluates an egocentric threat description rather than simulating the full multi-body physics envelope of splitting rocks across a 90-tick horizon.
-- **Latency profile**: Running locally on Apple Silicon Metal via Apple's MLX framework, `layaPilot` achieves an average inference latency of 11.2 ms, comfortably fitting within the 16.6 ms budget of a 60 Hz frame without blocking browser rendering.
-- **Hyperspace discipline**: With calibrated prompt formulations, `layaPilot` avoids panic hyperspace triggers during safe flight, keeping hyperspace strictly for unavoidable collision emergencies.
+- **Rules in code win on survival.** `smartPilot` loses a ship about 6 times less often than `simplePilot` (7.7 against 43.9 per hour) and scores 31% more points per minute. It sees every body over a 90-tick horizon, including the pieces rocks will split into, and picks a manoeuvre that clears all of them.
+- **The decision model is a clear step up from the baseline, but not from the rules.** `layaPilot` scores almost as many points as `smartPilot` (11,289 against 11,842 per minute) because aiming and shooting use the same code. It dodges saucer torpedoes well (2 losses against 7 for `simplePilot`), but its loss rate stays close to the baseline (36.6 per hour), mostly from rocks. The model sees a one-sentence summary of the nearest threat, not the multi-body paths of splitting rocks.
+- **The two look different on screen.** `smartPilot` plans a path and moves in short, smooth taps (thrust engaged 1.4% of the time). `layaPilot` reacts to each new classification with bursts of turning and thrust (5.1%), so the ship drifts more and corrects often.
+- **Hyperspace.** `smartPilot` uses it only when no manoeuvre is safe, and two of its four losses were hyperspace self-destructs. `layaPilot` never pressed it in these runs.
+- **Cost of a decision.** `smartPilot` answers in about 0.15 ms inside the page. `layaPilot` needs a server round trip, 11.2 ms on Apple Silicon, which fits inside one 16.6 ms frame at 60 Hz without blocking rendering.
 
 ## 4. The ship only moves like the game allows
 
@@ -67,7 +83,7 @@ The Decision panel header now has one selector instead of the switch:
 |--------|-----------|
 | Manual | The keyboard (default) |
 | Simple | `simplePilot`, as in version 2 |
-| Smart | `smartPilot` (rule-based lookahead and physics simulation) |
+| Smart | `smartPilot` (rules in code: lookahead and physics simulation) |
 | Laya | `layaPilot` (local decision model on Apple Silicon via `/v1/systemone`) |
 
 Changing the selection releases every key, so a held key does not stay stuck. From the browser console, `AUTOPILOT = smartPilot`, `AUTOPILOT = simplePilot`, `AUTOPILOT = layaPilot` and `AUTOPILOT = null` do the same, but the selector will not update its highlight.
@@ -76,7 +92,7 @@ When using **Laya**, the local MLX decision server must be running:
 ```bash
 .venv/bin/python scripts/dev/laya_server.py --port 8700
 ```
-Setup (virtual environment, `requirements-laya.txt`, first-run model download) is in [LAYA.md](LAYA.md#32-setup-and-serving-commands). Verify the server with `curl -s http://127.0.0.1:8700/health`. If the server is offline when Laya is selected, the Decision panel alerts you with a connection notice.
+Setup (virtual environment, `requirements-laya.txt`, first-run model download) is in [LAYA.md](LAYA.md#32-setup-and-serving-commands). Verify the server with `curl -s http://127.0.0.1:8700/health`. If the server is offline when Laya is selected, the Decision panel shows a connection notice and the ship is flown by `smartPilot` until the server answers.
 
 ## 6. Validation
 
@@ -103,4 +119,5 @@ node scripts/dev/death_causes.js asteroids.html 1500000 smartPilot
 
 ## 7. Not done yet
 
-- Pilots based on the other decision models: `Kev` (Qwen base with pointer readout), hosted Jev and remote CLM-8B. `laya-mlx` is done and included in this version. Details, model comparisons, and hardware feasibility in [DECISION_MODELS.md](DECISION_MODELS.md), [LAYA.md](LAYA.md), and [CLM.md](CLM.md). Planned for a later step.
+- A safety check between the decision model and the keys. `layaPilot` currently executes the model's choice as is. A lightweight lookahead that vetoes actions leading to a collision within 8 ticks is planned in [LAYA.md](LAYA.md#phase-4-performance-measurement-and-shielding).
+- Pilots based on the other decision models: `Kev` (Qwen base with pointer readout), hosted Jev and remote CLM-8B. Details, model comparisons, and hardware feasibility in [DECISION_MODELS.md](DECISION_MODELS.md), [LAYA.md](LAYA.md), and [CLM.md](CLM.md). Planned for a later step.
