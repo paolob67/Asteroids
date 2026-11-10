@@ -1,0 +1,72 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="v1-arch" name="v1 architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="src" value="Original Atari source (asteroids-main/)&#xa;6502 assembly, 1979" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="260" height="360" as="geometry"/>
+        </mxCell>
+        <mxCell id="src1" value="A35131.1A&#xa;game logic: MOTION, MOVE, COLIDE,&#xa;NEWAST, ENEMY, HYPER, POINTS, GETINT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="110" width="220" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="src2" value="A35127.XX&#xa;vector tables: rocks, ship, saucer,&#xa;SINCOS, EXPDIR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="195" width="220" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="src3" value="VECAN.XX&#xa;vector font" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="270" width="220" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="src4" value="Not ported: coin handling, self test,&#xa;vector generator hardware, DIP switches" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;dashed=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="325" width="220" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="arrow" value="manual port,&#xa;routine by routine" style="endArrow=classic;html=1;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="src" target="v1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="v1" value="asteroids.html (version 1)&#xa;single file, about 1880 lines, no build step" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="500" y="60" width="560" height="360" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1a" value="Data tables&#xa;ROCKS, SHIPS, SAUCER_SEGS,&#xa;FONT, SINCOS, EXPDIR" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="520" y="110" width="160" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1b" value="Core logic (60 Hz fixed step)&#xa;rand, updateShip, updateSaucer,&#xa;collisions, waves, scoring" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="700" y="110" width="170" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1c" value="Game states&#xa;attract, playing, waveclear,&#xa;gameover, hiscore" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="890" y="110" width="150" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1d" value="Audio&#xa;Web Audio synthesis&#xa;(no samples)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="520" y="205" width="160" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1e" value="Rendering&#xa;canvas strokes, 1024x768" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="700" y="205" width="170" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1f" value="Input&#xa;keyboard events" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="890" y="205" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1g" value="Main loop: requestAnimationFrame, accumulator, update() at 60 Hz, then draw()" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="520" y="290" width="520" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="v1h" value="Original internal units kept: X 0..8191, Y 0..6143, 1 canvas pixel = 8 units" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="520" y="345" width="520" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="val" value="scripts/ (validation, run with node)&#xa;check_syntax, rock_speed, simulate,&#xa;wave_test, test_sounds, test_hiscore" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="500" y="520" width="560" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="valarrow" value="loads the embedded script&#xa;in a vm sandbox" style="endArrow=classic;html=1;strokeWidth=2;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="val" target="v1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="frozen" value="versions/v1/asteroids.html&#xa;frozen read-only copy + SHA256SUMS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="520" width="300" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="frozenarrow" value="snapshot of v1" style="endArrow=classic;html=1;strokeWidth=2;dashed=1;edgeStyle=orthogonalEdgeStyle;exitX=0.05;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="v1" target="frozen">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,1880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asteroids</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; display: flex; flex-direction: column;
+         align-items: center; justify-content: center; height: 100vh; }
+  canvas { display: block; }
+  #info { margin-top: 6px; font-size: 11px; color: #333; font-family: monospace; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1024" height="768"></canvas>
+<div id="info">
+  ROTATE: &larr; &rarr; &nbsp;&nbsp; THRUST: &uarr; &nbsp;&nbsp; FIRE: Space &nbsp;&nbsp; HYPERSPACE: Shift &nbsp;&nbsp; START: 1 or 2
+</div>
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+//  Coordinate system (faithful to original A35131.1A MOTION routine)
+//
+//  Internally positions are stored in sub-pixel units exactly as the original:
+//    pos_x  in range  0 .. 8191  (OBJXH 0..31  *256 + OBJXL 0..255)
+//    pos_y  in range  0 .. 6143  (OBJYH 0..23  *256 + OBJYL 0..255)
+//
+//  Velocity (XINC/YINC): signed 8-bit, added to pos each frame.
+//  One XINC unit = 1 sub-pixel / frame.
+//
+//  To render on a 1024x768 canvas:  canvas_x = pos_x / 8,  canvas_y = pos_y / 8
+//
+//  Shape coordinates (from vector tables) are in the same sub-pixel units,
+//  so they also get divided by 8 when drawn.
+// ---------------------------------------------------------------------------
+
+const W = 1024, H = 768;       // canvas pixels
+const SX = 8192, SY = 6144;   // internal coordinate space
+const SCALE = 8;               // internal / canvas = 8
+
+// Ship centre at start: OBJXH=16 OBJYH=12 => internal (4096, 3072) => canvas (512, 384)
+const CX0 = 4096, CY0 = 3072; // internal centre
+
+// Rotation step: 3 out of 256 per frame (MOVE: LDA I,03 / ADC ANGLE)
+// Stored as 0..255 integer, like the hardware ANGLE register.
+
+// Velocity limits from MOVE2: |XINC| <= 0x3F = 63, |XINCL| <= 0xFF
+const XINC_MAX = 63;
+
+// Torpedo velocity limit: ±0x6F (FIRE: CMP I,70 / LDA I,6F)
+const TORP_MAX = 0x6F;
+
+// Torpedo life: stored as 0x12 (18), decremented every 4th frame (PICTUR: AND I,03 / DEC)
+const TORP_LIFE_INIT = 18;     // decremented every 4 frames; 18*4 = 72 frames total
+
+// Saucer XINC: ±0x10 (ENEMY: LDX I,10 / LDX I,-10)
+const SAUCER_XINC = 0x10;
+
+// Saucer delay start: 0x92 (CHKST: LDA I,92 / STA SEDLAY)
+const SEDLAY_INIT = 0x92;
+
+// Rock/saucer explosion length in frames (MOTION adds 1 + t/16 per frame to 0xA0)
+const EXP_FRAMES = 32;
+
+// Picture scale factors set by MOTION through VGSIZE: 0=full, 0F0=1/2, 0E0=1/4
+const PIC_FULL = 1, PIC_HALF = 0.5, PIC_QUARTER = 0.25;
+// Rock size 0/1/2 = small/medium/large
+const ROCK_PIC = [PIC_QUARTER, PIC_HALF, PIC_FULL];
+
+// Collision thresholds (COLIDE .BYTE 42.,72.,132.)
+// Used as half-distance of sub-pixel coordinates (the routine shifts right 1).
+// Ship bonus: +0x28=40, saucer small: +0x18=24, saucer large: +0x18+0x18=48
+const COL_R     = [42, 72, 132];
+const COL_SHIP  = 40;    // ADC I,28 (decimal 40)
+const COL_SAUC_SML = 24; // ADC I,18
+const COL_SAUC_LRG = 48; // ADC I,18 twice
+
+// NEARBY: |OBJXH_rock - OBJXH_ship| < 4 (NEARBY: CMP I,04 / CMP I,-4)
+// In sub-pixel space: |dx_internal| < 4*256 = 1024
+
+// ---------------------------------------------------------------------------
+//  SINCOS table from A35127.XX (65 entries, 0..64 = quarter-wave)
+//  SIN/COS use 0..255 as a full circle (0=0, 64=PI/2, 128=PI, 192=3PI/2)
+// ---------------------------------------------------------------------------
+const SINCOS = [
+  0,3,6,9,12,16,19,22,
+  25,28,31,34,37,40,43,46,
+  49,51,54,57,60,63,65,68,
+  71,73,76,78,81,83,85,88,
+  90,92,94,96,98,100,102,104,
+  106,107,109,111,112,113,115,116,
+  117,118,120,121,122,122,123,124,
+  125,125,126,126,126,127,127,127, 127
+];
+
+function sinA(a) {
+  a = ((a | 0) & 0xFF);
+  if (a <= 127) {
+    return a <= 64 ? SINCOS[a] : SINCOS[128 - a];
+  } else {
+    const b = a - 128;
+    return -(b <= 64 ? SINCOS[b] : SINCOS[128 - b]);
+  }
+}
+function cosA(a) { return sinA((a + 64) & 0xFF); }
+
+// ---------------------------------------------------------------------------
+//  LFSR random (RAND from A35131.1A, 2-byte LFSR)
+// ---------------------------------------------------------------------------
+let polyL = 1, polyH = 1;
+function rand() {
+  polyL <<= 1;                                  // ASL POLYL
+  const c = (polyL >> 8) & 1;
+  polyL &= 0xFF;
+  polyH = ((polyH << 1) | c) & 0xFF;            // ROL POLYH
+  if (polyH & 0x80) polyL = (polyL + 1) & 0xFF; // BPL 1$ / INC POLYL
+  if (polyL & 0x02) polyL ^= 0x01;              // BIT 9$ / BEQ 2$ / EOR I,01
+  if ((polyL | polyH) === 0) polyL = 1;         // ORA POLYH / BNE 3$ / INC POLYL
+  return polyL;
+}
+
+// ---------------------------------------------------------------------------
+//  Vector shape data (from A35127.XX)
+//  Coordinates are in the original sub-pixel units.
+//  When drawn: scale = 1/8 to convert to canvas pixels.
+// ---------------------------------------------------------------------------
+const ROCKS = [
+  [[0,16*8,0],[16*8,16*8,1],[16*8,-16*8,1],[-8*8,-16*8,1],[8*8,-16*8,1],
+   [-24*8,-16*8,1],[-24*8,0,1],[-16*8,16*8,1],[0,32*8,1],[16*8,16*8,1],[16*8,-16*8,1]],
+  [[16*8,8*8,0],[16*8,8*8,1],[-16*8,16*8,1],[-16*8,-8*8,1],[-16*8,8*8,1],
+   [-16*8,-16*8,1],[8*8,-16*8,1],[-8*8,-16*8,1],[16*8,-16*8,1],[8*8,8*8,1],
+   [24*8,-8*8,1],[16*8,24*8,1],[-16*8,16*8,1]],
+  [[-16*8,0,0],[-16*8,-8*8,1],[16*8,-24*8,1],[16*8,24*8,1],[0,-24*8,1],
+   [16*8,0,1],[16*8,24*8,1],[0,16*8,1],[-16*8,24*8,1],[-24*8,0,1],[-24*8,-24*8,1],[16*8,-8*8,1]],
+  [[8*8,0,0],[24*8,8*8,1],[0,8*8,1],[-24*8,16*8,1],[-24*8,0,1],
+   [8*8,-16*8,1],[-24*8,0,1],[0,-24*8,1],[16*8,-24*8,1],[24*8,8*8,1],
+   [8*8,-8*8,1],[16*8,16*8,1],[-24*8,16*8,1]],
+];
+
+// 17 pre-rotated ship frames from A35127.XX (body + flame each)
+// Coordinates in sub-pixel units (* 8 from the source VCTR values)
+const SHIPS = (function() {
+  const raw = [
+    [[-24*8,-16*8,0],[0,32*8,1],[-16*8,16*8,1],[96*8,-32*8,1],[-96*8,-32*8,1],[16*8,16*8,1]],
+    [[-32*8,16*8,1],[32*8,16*8,1]],
+    [[-22*8,-18*8,0],[-3*8,32*8,1],[-17*8,14*8,1],[99*8,-22*8,1],[-92*8,-41*8,1],[14*8,17*8,1]],
+    [[-33*8,13*8,1],[30*8,19*8,1]],
+    [[-20*8,-20*8,0],[-6*8,31*8,1],[-19*8,13*8,1],[100*8,-13*8,1],[-88*8,-50*8,1],[13*8,19*8,1]],
+    [[-35*8,9*8,1],[28*8,22*8,1]],
+    [[-18*8,-22*8,0],[-9*8,31*8,1],[-20*8,11*8,1],[101*8,-3*8,1],[-83*8,-58*8,1],[11*8,20*8,1]],
+    [[-35*8,6*8,1],[26*8,25*8,1]],
+    [[-16*8,-24*8,0],[-12*8,30*8,1],[-21*8,9*8,1],[101*8,7*8,1],[-76*8,-66*8,1],[9*8,21*8,1]],
+    [[-36*8,3*8,1],[23*8,27*8,1]],
+    [[-14*8,-25*8,0],[-15*8,28*8,1],[-22*8,7*8,1],[100*8,17*8,1],[-70*8,-73*8,1],[7*8,22*8,1]],
+    [[-36*8,-1*8,1],[21*8,29*8,1]],
+    [[-11*8,-27*8,0],[-18*8,27*8,1],[-22*8,4*8,1],[98*8,27*8,1],[-62*8,-80*8,1],[4*8,22*8,1]],
+    [[-35*8,-4*8,1],[18*8,31*8,1]],
+    [[-8*8,-28*8,0],[-20*8,25*8,1],[-23*8,2*8,1],[95*8,36*8,1],[-54*8,-86*8,1],[2*8,23*8,1]],
+    [[-35*8,-8*8,1],[15*8,33*8,1]],
+    [[-6*8,-28*8,0],[-23*8,23*8,1],[-23*8,0,1],[91*8,45*8,1],[-45*8,-91*8,1],[0,23*8,1]],
+    [[-34*8,-11*8,1],[11*8,34*8,1]],
+    [[-3*8,-29*8,0],[-25*8,20*8,1],[-23*8,-2*8,1],[86*8,54*8,1],[-36*8,-95*8,1],[-2*8,23*8,1]],
+    [[-33*8,-15*8,1],[8*8,35*8,1]],
+    [[0,-29*8,0],[-27*8,18*8,1],[-22*8,-4*8,1],[80*8,62*8,1],[-27*8,-98*8,1],[-4*8,22*8,1]],
+    [[-31*8,-18*8,1],[4*8,35*8,1]],
+    [[3*8,-29*8,0],[-28*8,15*8,1],[-22*8,-7*8,1],[73*8,70*8,1],[-17*8,-100*8,1],[-7*8,22*8,1]],
+    [[-29*8,-21*8,1],[1*8,36*8,1]],
+    [[6*8,-28*8,0],[-30*8,12*8,1],[-21*8,-9*8,1],[66*8,76*8,1],[-7*8,-101*8,1],[-9*8,21*8,1]],
+    [[-27*8,-23*8,1],[-3*8,36*8,1]],
+    [[8*8,-28*8,0],[-31*8,9*8,1],[-20*8,-11*8,1],[58*8,83*8,1],[3*8,-101*8,1],[-11*8,20*8,1]],
+    [[-25*8,-26*8,1],[-6*8,35*8,1]],
+    [[11*8,-27*8,0],[-31*8,6*8,1],[-19*8,-13*8,1],[50*8,88*8,1],[13*8,-100*8,1],[-13*8,19*8,1]],
+    [[-22*8,-28*8,1],[-9*8,35*8,1]],
+    [[14*8,-25*8,0],[-32*8,3*8,1],[-17*8,-14*8,1],[41*8,92*8,1],[22*8,-99*8,1],[-14*8,17*8,1]],
+    [[-19*8,-30*8,1],[-13*8,33*8,1]],
+    [[16*8,-24*8,0],[-32*8,0,1],[-16*8,-16*8,1],[32*8,96*8,1],[32*8,-96*8,1],[-16*8,16*8,1]],
+    [[-16*8,-32*8,1],[-16*8,32*8,1]],
+  ];
+  const s = [];
+  for (let i = 0; i < 17; i++) s.push({ body: raw[i*2], flame: raw[i*2+1] });
+  return s;
+})();
+
+// SHIP17: lives indicator (sub-pixel units)
+const SHIP17 = [
+  [-16*8,-24*8,0],[32*8,0,1],[16*8,-16*8,1],[-32*8,96*8,1],[-32*8,-96*8,1],[16*8,16*8,1]
+];
+
+// SAUCER segments (sub-pixel units)
+const SAUCER_SEGS = [
+  [-16*8,8*8,0],[32*8,0,1],[24*8,-16*8,0],[-80*8,0,1],[24*8,-16*8,1],[32*8,0,1],[24*8,16*8,1],
+  [-24*8,16*8,1],[-8*8,16*8,1],[-16*8,0,1],[-8*8,-16*8,1],[-24*8,-16*8,1]
+];
+
+// EXPDIR: fragment velocity and initial displacement (sub-pixel/frame per original SHPEXP)
+// The original values (-40,30 etc) are already in sub-pixel units for velocity
+const EXPDIR = [[-40,30],[50,-20],[0,-60],[60,20],[10,70],[-40,-40]];
+
+// ---------------------------------------------------------------------------
+//  Vector font (VECAN.XX SVCTR macro; each char is 12 units = 96 sub-pixels wide)
+//  Segments: [dx, dy, draw] in sub-pixel units
+// ---------------------------------------------------------------------------
+const FONT = (function() {
+  const u = 8; // 1 font unit = 8 sub-pixels (matches VCTR coordinate scale)
+  const f = {};
+  const D = (segs) => segs.map(([x,y,d]) => [x*u, y*u, d]);
+  f[' '] = D([[12,0,0]]);
+  f['0'] = D([[0,12,1],[8,0,1],[0,-12,1],[-8,0,1],[12,0,0]]);
+  f['1'] = D([[4,0,0],[0,12,1],[8,-12,0]]);
+  f['2'] = D([[0,12,0],[8,0,1],[0,-6,1],[-8,0,1],[0,-6,1],[8,0,1],[4,0,0]]);
+  f['3'] = D([[8,0,1],[0,12,1],[-8,0,1],[0,-6,0],[8,0,1],[4,-6,0]]);
+  f['4'] = D([[0,12,0],[0,-6,1],[8,0,1],[0,6,0],[0,-12,1],[4,0,0]]);
+  f['5'] = D([[8,0,1],[0,6,1],[-8,0,1],[0,6,1],[8,0,1],[4,-12,0]]);
+  f['6'] = D([[0,6,0],[8,0,1],[0,-6,1],[-8,0,1],[0,12,1],[12,-12,0]]);
+  f['7'] = D([[0,12,0],[8,0,1],[0,-12,1],[4,0,0]]);
+  f['8'] = D([[8,0,1],[0,12,1],[-8,0,1],[0,-12,1],[0,6,0],[8,0,1],[4,-6,0]]);
+  f['9'] = D([[8,0,0],[0,12,1],[-8,0,1],[0,-6,1],[8,0,1],[4,-6,0]]);
+  f['A'] = D([[0,8,1],[4,4,1],[4,-4,1],[0,-8,1],[-8,4,0],[8,0,1],[4,-4,0]]);
+  f['B'] = D([[0,12,1],[6,0,1],[2,-2,1],[0,-2,1],[-2,-2,1],[-6,0,1],[6,0,0],[2,-2,1],[0,-2,1],[-2,-2,1],[-6,0,1],[12,0,0]]);
+  f['C'] = D([[0,12,1],[8,0,1],[-8,-12,0],[8,0,1],[4,0,0]]);
+  f['D'] = D([[0,12,1],[4,0,1],[4,-4,1],[0,-4,1],[-4,-4,1],[-4,0,1],[12,0,0]]);
+  f['E'] = D([[0,12,1],[8,0,1],[-2,-6,0],[-6,0,1],[0,-6,0],[8,0,1],[4,0,0]]);
+  f['F'] = D([[0,12,1],[8,0,1],[-2,-6,0],[-6,0,1],[0,-6,0],[12,0,0]]);
+  f['G'] = D([[0,12,1],[8,0,1],[0,-4,1],[-4,-4,0],[4,0,1],[0,-4,1],[-8,0,1],[12,0,0]]);
+  f['H'] = D([[0,12,1],[0,-6,0],[8,0,1],[0,6,0],[0,-12,1],[4,0,0]]);
+  f['I'] = D([[8,0,1],[-4,0,0],[0,12,1],[4,0,0],[-8,0,1],[12,-12,0]]);
+  f['J'] = D([[0,4,0],[4,-4,1],[4,0,1],[0,12,1],[4,-12,0]]);
+  f['K'] = D([[0,12,1],[6,0,0],[-6,-6,1],[6,-6,1],[6,0,0]]);
+  f['L'] = D([[0,12,0],[0,-12,1],[8,0,1],[4,0,0]]);
+  f['M'] = D([[0,12,1],[4,-4,1],[4,4,1],[0,-12,1],[4,0,0]]);
+  f['N'] = D([[0,12,1],[8,-12,1],[0,12,1],[4,-12,0]]);
+  f['O'] = D([[0,12,1],[8,0,1],[0,-12,1],[-8,0,1],[12,0,0]]);
+  f['P'] = D([[0,12,1],[8,0,1],[0,-6,1],[-8,0,1],[6,-6,0],[6,0,0]]);
+  f['Q'] = D([[0,12,1],[8,0,1],[0,-8,1],[-4,-4,1],[-4,0,1],[4,4,0],[4,-4,1],[4,0,0]]);
+  f['R'] = D([[0,12,1],[8,0,1],[0,-6,1],[-8,0,1],[2,0,0],[6,-6,1],[4,0,0]]);
+  f['S'] = D([[8,0,1],[0,6,1],[-8,0,1],[0,6,1],[8,0,1],[4,-12,0]]);
+  f['T'] = D([[4,0,0],[0,12,1],[-4,0,0],[8,0,1],[4,-12,0]]);
+  f['U'] = D([[0,12,0],[0,-12,1],[8,0,1],[0,12,1],[4,-12,0]]);
+  f['V'] = D([[0,12,0],[4,-12,1],[4,12,1],[4,-12,0]]);
+  f['W'] = D([[0,12,0],[0,-12,1],[4,4,1],[4,-4,1],[0,12,1],[4,-12,0]]);
+  f['X'] = D([[8,12,1],[-8,0,0],[8,-12,1],[4,0,0]]);
+  f['Y'] = D([[4,0,0],[0,8,1],[-4,4,1],[8,0,0],[-4,-4,1],[8,-8,0]]);
+  f['Z'] = D([[0,12,0],[8,0,1],[-8,-12,1],[8,0,1],[4,0,0]]);
+  return f;
+})();
+
+// ---------------------------------------------------------------------------
+//  Canvas setup
+// ---------------------------------------------------------------------------
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+  const sc = Math.min(window.innerWidth / W, (window.innerHeight - 28) / H);
+  canvas.style.width  = (W * sc) + 'px';
+  canvas.style.height = (H * sc) + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ---------------------------------------------------------------------------
+//  Drawing helpers
+//  All coordinates passed in are internal sub-pixel units.
+//  Canvas coords = internal / SCALE.
+// ---------------------------------------------------------------------------
+
+// Draw shape segments at internal position (ix, iy).
+// segs are in sub-pixel units; divide by SCALE for canvas.
+function drawSegs(ix, iy, segs, color, sc) {
+  sc = sc || 1;
+  const cx = ix / SCALE, cy = iy / SCALE;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  let px = cx, py = cy;
+  ctx.beginPath();
+  for (const [dx, dy, draw] of segs) {
+    const nx = px + dx * sc / SCALE;
+    const ny = py - dy * sc / SCALE;   // y-flip: game y-up, screen y-down
+    if (draw) { ctx.moveTo(px, py); ctx.lineTo(nx, ny); }
+    px = nx; py = ny;
+  }
+  ctx.stroke();
+}
+
+// Draw the 17 pre-rotated ship frames: SHPPIC selects frame from angle
+// Original SHPPIC: angle -> quarter -> mirror -> table index
+function drawShipFrame(ix, iy, angle, flame, color) {
+  // SHPPIC: angle is 0..255; sectors 0-3 cover 0..127 in 4 quadrants
+  let ang = angle & 0xFF;
+  let flipX = 0, flipY = 0;
+  if (ang >= 128) { flipY = 1; ang = 256 - ang; }   // Y=-Y mirror
+  if (ang >= 0x40) { flipX = 1; ang = 0x80 - ang; }  // X=-X mirror (SHPPIC: sectors 2,3 and 0x80)
+  ang = ang & 0x7F;
+  const frameIdx = Math.floor(ang / 4);  // LSR (divide by 2 twice -> /4)
+  const frame = SHIPS[Math.min(frameIdx, 16)];
+  const cx = ix / SCALE, cy = iy / SCALE;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  for (const segs of (flame ? [frame.body, frame.flame] : [frame.body])) {
+    let px = cx, py = cy;
+    ctx.beginPath();
+    for (const [dx, dy, draw] of segs) {
+      const rdx = flipX ? -dx : dx;
+      const rdy = flipY ? -dy : dy;
+      const nx = px + rdx * PIC_QUARTER / SCALE;
+      const ny = py - rdy * PIC_QUARTER / SCALE;
+      if (draw) { ctx.moveTo(px, py); ctx.lineTo(nx, ny); }
+      px = nx; py = ny;
+    }
+    ctx.stroke();
+  }
+}
+
+// Draw text using vector font; ix,iy are internal sub-pixel units
+// charScale controls overall size (1.0 = one font unit = one sub-pixel unit = 1/8 canvas px)
+function drawText(str, ix, iy, scale, color) {
+  let cx = ix;
+  for (const ch of str.toUpperCase()) {
+    const segs = FONT[ch] || FONT[' '];
+    const cx_ = cx / SCALE, cy_ = iy / SCALE;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    let px = cx_, py = cy_;
+    ctx.beginPath();
+    for (const [dx, dy, draw] of segs) {
+      const nx = px + (dx / SCALE) * scale;
+      const ny = py - (dy / SCALE) * scale;
+      if (draw) { ctx.moveTo(px, py); ctx.lineTo(nx, ny); }
+      px = nx; py = ny;
+    }
+    ctx.stroke();
+    cx += 12 * 8 * scale;   // 12 font units * 8 sub-pixels/unit * scale
+  }
+}
+
+// Text width in internal sub-pixel units
+function tw(str, scale) { return str.length * 12 * 8 * scale; }
+
+// ---------------------------------------------------------------------------
+//  Game state
+// ---------------------------------------------------------------------------
+const SHIP_FADE_FRAMES = 30;   // port addition: 0.5 s fade-in when a ship is deployed
+const keys = {};
+let lastFire = false, lastHyper = false;
+let frame = 0;
+
+let gameState     = 'attract'; // 'attract' | 'playing' | 'waveclear' | 'gameover' | 'hiscore'
+let nPlayers      = 1;
+let curPlayer     = 0;
+let scores        = [0, 0];
+let highScore     = 0;   // session only, no persistence
+let playerStates  = [null, null]; // saved states for 2-player mode
+let turnEnded     = false; // flag indicating active player's turn ended (ship exploded)
+
+// High score table (HSCORE / INITL in A35131.1A), session only, no persistence.
+// Each entry: { score, ini: [c0, c1, c2], player }. Initial codes index LETTERS:
+// 0 = blank, 1..26 = A..Z (the original stores blank=0, A=11 ... Z=36).
+const HI_MAX        = 10;      // 10 entries (HSCORE .BLKB 2*10)
+const LETTERS       = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const ENTRY_TIMEOUT = 3840;    // GETINT: about 64 seconds at 60 Hz
+const ATTRACT_PHASE = 600;     // attract screen alternates title / score table
+let hiTable     = [];
+let entryQueue  = [];          // entries still waiting for initials (UPDFLG)
+let entryPos    = 0;           // which initial is being edited, 0..2 (UPDINT)
+let entryTimer  = 0;
+let entryRepeat = 0;
+let entryLastHyper = false;
+let attractTimer = 0;
+let lives         = [0, 0];
+let flashTimer    = 0;
+let waveClearTimer = 0;
+let gameOverTimer  = 0;
+let srocks = 2;
+let difcty = 5;
+
+// Objects
+let ship      = null;
+let asteroids = [];
+let torpedoes = [];   // ship torpedoes (indices 4..7 in original, 4 slots)
+let saucer    = null;
+let saucTorps = [];   // saucer torpedoes (indices 0..3, 4 slots)
+let particles = [];
+
+// Timing counters
+let edelay = SEDLAY_INIT;
+let sedlay = SEDLAY_INIT;
+let rtimer = 0;
+
+// ---------------------------------------------------------------------------
+//  Audio Synthesis (faithful Web Audio reconstruction of arcade sound circuits)
+// ---------------------------------------------------------------------------
+let audioCtx = null;
+let noiseBuf = null;
+
+function getAudioContext() {
+  if (!audioCtx && typeof window !== 'undefined') {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+function getNoiseBuffer(ctx) {
+  if (noiseBuf && noiseBuf.sampleRate === ctx.sampleRate) return noiseBuf;
+  const len = ctx.sampleRate;
+  noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = noiseBuf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuf;
+}
+
+// Ship Torpedo Fire (SHPFIR)
+function playShipFire() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(1000, now);
+  osc.frequency.exponentialRampToValueAtTime(220, now + 0.15);
+  gain.gain.setValueAtTime(0.3, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.16);
+}
+
+// Saucer Torpedo Fire (SCRFIR)
+function playSaucerFire() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, now);
+  osc.frequency.exponentialRampToValueAtTime(440, now + 0.12);
+  gain.gain.setValueAtTime(0.25, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.13);
+}
+
+// Thrust Sound (SHPSND)
+let thrustSource = null;
+let thrustOsc = null;
+let thrustGain = null;
+
+function setThrustSound(active) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (active) {
+    if (!thrustGain) {
+      const now = ctx.currentTime;
+      thrustSource = ctx.createBufferSource();
+      thrustSource.buffer = getNoiseBuffer(ctx);
+      thrustSource.loop = true;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(130, now);
+
+      thrustOsc = ctx.createOscillator();
+      thrustOsc.type = 'triangle';
+      thrustOsc.frequency.setValueAtTime(50, now);
+
+      thrustGain = ctx.createGain();
+      thrustGain.gain.setValueAtTime(0.001, now);
+      thrustGain.gain.linearRampToValueAtTime(0.3, now + 0.05);
+
+      thrustSource.connect(filter);
+      filter.connect(thrustGain);
+      thrustOsc.connect(thrustGain);
+      thrustGain.connect(ctx.destination);
+
+      thrustSource.start(now);
+      thrustOsc.start(now);
+    }
+  } else {
+    if (thrustGain) {
+      const now = ctx.currentTime;
+      thrustGain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+      const s = thrustSource;
+      const o = thrustOsc;
+      const g = thrustGain;
+      thrustSource = null;
+      thrustOsc = null;
+      thrustGain = null;
+      setTimeout(() => {
+        try {
+          s.stop();
+          o.stop();
+          s.disconnect();
+          o.disconnect();
+          g.disconnect();
+        } catch (_) {}
+      }, 60);
+    }
+  }
+}
+
+// Thump / Heartbeat Sound (THUMP)
+let thumpInterval = 48;
+let thumpTimer = 48;
+let thumpHigh = true;
+
+function playThump(isHigh) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'triangle';
+  const freq = isHigh ? 115 : 98;
+  osc.frequency.setValueAtTime(freq, now);
+  osc.frequency.exponentialRampToValueAtTime(freq * 0.75, now + 0.09);
+  gain.gain.setValueAtTime(0.5, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.1);
+}
+
+function updateThump() {
+  if (gameState !== 'playing') return;
+  if (!ship || !ship.alive || !ship.visible || ship.exploding) return;
+  const hasRocks = asteroids.some(a => a.alive && !a.exploding);
+  if (!hasRocks) return;
+
+  if (frame % 60 === 0 && thumpInterval > 8) {
+    thumpInterval--;
+  }
+
+  thumpTimer--;
+  if (thumpTimer <= 0) {
+    playThump(thumpHigh);
+    thumpHigh = !thumpHigh;
+    thumpTimer = thumpInterval;
+  }
+}
+
+// Explosions (EXPSND: small, medium, large)
+function playExplosion(size) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const noise = ctx.createBufferSource();
+  noise.buffer = getNoiseBuffer(ctx);
+  const filter = ctx.createBiquadFilter();
+  const gain = ctx.createGain();
+
+  let dur, freq, vol;
+  if (size === 2) {
+    dur = 0.9;
+    freq = 300;
+    vol = 0.6;
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(freq, now);
+    filter.frequency.exponentialRampToValueAtTime(60, now + dur);
+  } else if (size === 1) {
+    dur = 0.5;
+    freq = 600;
+    vol = 0.45;
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(freq, now);
+    filter.frequency.exponentialRampToValueAtTime(100, now + dur);
+  } else {
+    dur = 0.25;
+    freq = 1200;
+    vol = 0.35;
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(freq, now);
+    filter.frequency.exponentialRampToValueAtTime(300, now + dur);
+  }
+
+  gain.gain.setValueAtTime(vol, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  noise.start(now);
+  noise.stop(now + dur + 0.05);
+}
+
+// Saucer Continuous Hum (SCRSND, SCRSEL)
+let saucerOsc = null;
+let saucerLfo = null;
+let saucerLfoGain = null;
+let saucerGain = null;
+let saucerIsSmall = null;
+
+function updateSaucerSound() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const active = saucer && saucer.alive && !saucer.exploding && (gameState === 'playing' || gameState === 'waveclear');
+  if (active) {
+    const small = saucer.small;
+    if (!saucerOsc || saucerIsSmall !== small) {
+      stopSaucerSound();
+      const now = ctx.currentTime;
+      saucerOsc = ctx.createOscillator();
+      saucerLfo = ctx.createOscillator();
+      saucerLfoGain = ctx.createGain();
+      saucerGain = ctx.createGain();
+      saucerIsSmall = small;
+
+      saucerOsc.type = 'sawtooth';
+      const baseFreq = small ? 1100 : 550;
+      const modDepth = small ? 250 : 150;
+      const modRate = small ? 7.5 : 3.5;
+
+      saucerOsc.frequency.setValueAtTime(baseFreq, now);
+      saucerLfo.frequency.setValueAtTime(modRate, now);
+      saucerLfoGain.gain.setValueAtTime(modDepth, now);
+
+      saucerLfo.connect(saucerOsc.frequency);
+      saucerOsc.connect(saucerGain);
+
+      saucerGain.gain.setValueAtTime(0.001, now);
+      saucerGain.gain.linearRampToValueAtTime(0.2, now + 0.05);
+      saucerGain.connect(ctx.destination);
+
+      saucerOsc.start(now);
+      saucerLfo.start(now);
+    }
+  } else {
+    stopSaucerSound();
+  }
+}
+
+function stopSaucerSound() {
+  if (saucerOsc) {
+    try {
+      const ctx = getAudioContext();
+      const now = ctx ? ctx.currentTime : 0;
+      if (saucerGain && ctx) {
+        saucerGain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+      }
+      const osc = saucerOsc;
+      const lfo = saucerLfo;
+      const lfoG = saucerLfoGain;
+      const sg = saucerGain;
+      setTimeout(() => {
+        try {
+          osc.stop();
+          lfo.stop();
+          osc.disconnect();
+          lfo.disconnect();
+          lfoG.disconnect();
+          sg.disconnect();
+        } catch (_) {}
+      }, 60);
+    } catch (_) {}
+    saucerOsc = null;
+    saucerLfo = null;
+    saucerLfoGain = null;
+    saucerGain = null;
+    saucerIsSmall = null;
+  }
+}
+
+// Extra Life Tone (TONE)
+function playExtraLife() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const freqs = [880, 1175, 1760];
+  freqs.forEach((freq, idx) => {
+    const t = now + idx * 0.08;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(freq, t);
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.075);
+  });
+}
+
+// Hyperspace Sound
+function playHyperspace() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  const noise = ctx.createBufferSource();
+  noise.buffer = getNoiseBuffer(ctx);
+  const filter = ctx.createBiquadFilter();
+  const gain = ctx.createGain();
+
+  filter.type = 'bandpass';
+  filter.Q.setValueAtTime(5, now);
+  filter.frequency.setValueAtTime(1200, now);
+  filter.frequency.exponentialRampToValueAtTime(150, now + 0.3);
+
+  gain.gain.setValueAtTime(0.4, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  noise.start(now);
+  noise.stop(now + 0.32);
+}
+
+function stopAllSounds() {
+  setThrustSound(false);
+  stopSaucerSound();
+}
+
+// ---------------------------------------------------------------------------
+//  Object factories
+// ---------------------------------------------------------------------------
+function makeShip() {
+  return {
+    x: CX0, y: CY0,   // internal sub-pixel pos
+    vx: 0, vy: 0,     // XINC/YINC (-63..+63)
+    vxf: 0, vyf: 0,   // XINCL/YINCL (0..255) sub-pixel accumulator
+    angle: 0,         // 0..255
+    alive: false, visible: false,
+    exploding: false, expTimer: 0,
+    fade: 0,          // fade-in frames remaining after (re)appearing (port addition)
+    sdelay: 1,        // respawn delay countdown
+    rentry: 0,        // hyperspace rentry flag (0=normal, 0x80=destruct)
+    // 6 explosion fragments, each with sub-pixel position
+    expPx: new Array(6).fill(CX0), expPy: new Array(6).fill(CY0),
+    // SHPEXP adds EXPDIR to a 16-bit display offset each frame: EXPDIR/256 display px
+    // = EXPDIR/32 internal units. Screen y is flipped, so negate the y component.
+    expVx: EXPDIR.map(d => d[0] / 32),
+    expVy: EXPDIR.map(d => -d[1] / 32),
+  };
+}
+
+function makeRock(x, y, vx, vy, size, shape) {
+  return { x, y, vx, vy, size, shape, alive: true, exploding: false, expTimer: 0 };
+}
+
+function makeTorp(x, y, vx, vy) {
+  return { x, y, vx, vy, life: TORP_LIFE_INIT, alive: true };
+}
+
+function makeSaucer(x, y, vx, small) {
+  return { x, y, vx, vy: 0, small, alive: true, exploding: false, expTimer: 0 };
+}
+
+function makeParticle(x, y, vx, vy, life) {
+  return { x, y, vx, vy, life, maxLife: life };
+}
+
+// ---------------------------------------------------------------------------
+//  NEWVEL: random velocity for a new/split rock (from A35131.1A)
+//  Entry: old = parent's XINC value
+//  Returns new XINC clamped so |v| is in [6..31] (NEWVE1)
+// ---------------------------------------------------------------------------
+function newVelComp(old) {
+  const r = rand() & 0x8F;           // AND I,8F
+  const d = (r & 0x80) ? ((r | 0xF0) << 24 >> 24) : (r & 0x0F);  // sign-extend bits 0..3
+  let v = old + d;
+  if (v >= 0) {
+    if (v < 6)  v = 6;
+    if (v > 31) v = 31;
+  } else {
+    if (v > -6)  v = -6;
+    if (v < -31) v = -31;
+  }
+  return v;
+}
+
+// ---------------------------------------------------------------------------
+//  Game init
+// ---------------------------------------------------------------------------
+function initGame(np) {
+  stopAllSounds();
+  nPlayers  = np;
+  curPlayer = 0;
+  scores    = [0, 0];
+  lives     = [3, 3];
+  srocks    = 2;   // INIT: LDA I,02 (NEWAST adds 2 more)
+  difcty    = 5;
+  gameState = 'playing';
+  gameOverTimer = 0;
+  waveClearTimer = 0;
+  flashTimer = 0;
+  playerStates = [null, null];
+  turnEnded = false;
+  thumpInterval = 48;
+  thumpTimer = 48;
+  thumpHigh = true;
+  initPlayer();
+}
+
+function savePlayerState(p) {
+  stopAllSounds();
+  playerStates[p] = {
+    asteroids: asteroids.map(a => ({ ...a })),
+    srocks,
+    difcty,
+    edelay,
+    sedlay,
+    rtimer,
+    saucer: saucer ? { ...saucer } : null,
+    saucTorps: saucTorps.map(t => ({ ...t })),
+    particles: particles.map(pt => ({ ...pt })),
+    waveClearTimer,
+    playerGameState: (gameState === 'playing' || gameState === 'waveclear') ? gameState : 'playing',
+  };
+}
+
+function loadPlayerState(p) {
+  stopAllSounds();
+  const state = playerStates[p];
+  if (state) {
+    asteroids       = state.asteroids.map(a => ({ ...a }));
+    srocks          = state.srocks;
+    difcty          = state.difcty;
+    edelay          = state.edelay;
+    sedlay          = state.sedlay;
+    rtimer          = state.rtimer;
+    saucer          = state.saucer ? { ...state.saucer } : null;
+    saucTorps       = state.saucTorps.map(t => ({ ...t }));
+    particles       = state.particles.map(pt => ({ ...pt }));
+    waveClearTimer  = state.waveClearTimer;
+    gameState       = state.playerGameState;
+  } else {
+    srocks    = 2;
+    difcty    = 5;
+    edelay    = SEDLAY_INIT;
+    sedlay    = SEDLAY_INIT;
+    rtimer    = 0;
+    saucer    = null;
+    saucTorps = new Array(4).fill(null).map(() => ({ alive: false }));
+    particles = [];
+    waveClearTimer = 0;
+    gameState = 'playing';
+    startWave();
+  }
+}
+
+function initPlayer() {
+  ship      = makeShip();
+  asteroids = [];
+  torpedoes = new Array(4).fill(null).map(() => ({ alive: false }));
+  saucer    = null;
+  saucTorps = new Array(4).fill(null).map(() => ({ alive: false }));
+  particles = [];
+  sedlay    = SEDLAY_INIT;
+  edelay    = SEDLAY_INIT;
+  rtimer    = 0;
+  startWave();
+}
+
+function startWave() {
+  asteroids = [];
+  // NEWAST: srocks += 2, cap 11; NROCKS = srocks
+  srocks = Math.min(srocks + 2, 11);
+  for (let i = 0; i < srocks; i++) spawnRock(null, null, 0, 0, null);
+  edelay = 0x7F;   // NEWAST: STA EDELAY = 7F
+  waveClearTimer = 0;
+  thumpInterval = 48;
+  thumpTimer = 48;
+  thumpHigh = true;
+}
+
+// ---------------------------------------------------------------------------
+//  NEWAST / SPLIT rock spawner
+//  ovx/ovy = parent velocity (null for fresh wave rocks)
+// ---------------------------------------------------------------------------
+function spawnRock(px, py, ovx, ovy, size) {
+  let x, y;
+  if (px !== null) {
+    x = px; y = py;
+  } else {
+    // NEWAST: random edge spawn
+    const r = rand();
+    if (r & 1) {
+      // X-axis (top or bottom)
+      x = (rand() & 0x1F) * 256;                   // OBJXH 0..31
+      y = (rand() & 1) ? 0 : SY - 1;
+    } else {
+      // Y-axis (left or right)
+      const yh = rand() & 0x17;                     // OBJYH 0..23
+      y = yh * 256;
+      x = (rand() & 1) ? 0 : SX - 1;
+    }
+  }
+  const sz  = (size !== null) ? size : 2;  // 2=large, 1=medium, 0=small
+  let vx, vy;
+  if (ovx !== null && ovx !== 0) {
+    // SPLIT: new velocity from NEWVEL using parent velocity
+    vx = newVelComp(ovx);
+    for (let i = 0; i < 3; i++) rand();   // burn 3 extra RAND calls (SPLIT calls 4 total)
+    vy = newVelComp(ovy);
+    // Anti-overlap offset: SPLIT: LDA X,XINC; AND I,1F; ASL; EOR X,OBJXL
+    x = (x + ((vx & 0x1F) << 1)) & (SX - 1);
+  } else {
+    vx = newVelComp(0);
+    for (let i = 0; i < 3; i++) rand();
+    vy = newVelComp(0);
+  }
+  const shape = rand() & 0x03;
+  asteroids.push(makeRock(x, y, vx, vy, sz, shape));
+}
+
+// ---------------------------------------------------------------------------
+//  MOVE (ship controls + thrust + friction)
+// ---------------------------------------------------------------------------
+function updateShip() {
+  if (!ship) return;
+
+  // --- Exploding animation ---
+  if (ship.exploding) {
+    setThrustSound(false);
+    for (let i = 0; i < 6; i++) {
+      ship.expPx[i] += ship.expVx[i];
+      ship.expPy[i] += ship.expVy[i];
+    }
+    if (ship.expTimer > 0) ship.expTimer--;
+    if (ship.expTimer <= 0) {
+      ship.exploding = false;
+      ship.alive     = false;
+      ship.visible   = false;
+      if (lives[curPlayer] > 0) ship.sdelay = 0x81; // SDELAY = 081
+    }
+    return;
+  }
+
+  // --- Respawn delay (SDELAY) ---
+  if (ship.sdelay > 0) {
+    setThrustSound(false);
+    ship.sdelay--;
+    if (ship.sdelay === 0) {
+      // RENTRY check (hyperspace destruct flag)
+      if (ship.rentry & 0x80) {
+        ship.visible = true;   // explodeShip() ignores an invisible ship
+        ship.rentry  = 0;
+        explodeShip();         // doomed by hyperspace
+        return;
+      }
+      if (ship.rentry) {
+        // Normal hyperspace re-entry: become visible immediately
+        ship.alive   = true;
+        ship.visible = true;
+        ship.rentry  = 0;
+        return;
+      }
+      // NEARBY: check if any rock OBJXH within 4 units of ship OBJXH
+      const shipXH = (ship.x >> 8) & 0xFF;
+      const shipYH = (ship.y >> 8) & 0xFF;
+      const near = asteroids.some(a => {
+        if (!a.alive || a.exploding) return false;
+        const dxh = ((a.x >> 8) - shipXH + 256) & 0xFF;
+        const dyh = ((a.y >> 8) - shipYH + 256) & 0xFF;
+        const adx = dxh > 127 ? 256 - dxh : dxh;
+        const ady = dyh > 127 ? 256 - dyh : dyh;
+        return adx < 4 && ady < 4;
+      });
+      if (near) { ship.sdelay = 2; return; }
+      // Also wait if saucer present (MOVE: BEQ 92$ if saucer not visible)
+      if (saucer && saucer.alive && !saucer.exploding) { ship.sdelay = 2; return; }
+      // Ship appears!
+      ship.x = CX0; ship.y = CY0;
+      ship.vx = 0; ship.vxf = 0;
+      ship.vy = 0; ship.vyf = 0;
+      ship.alive   = true;
+      ship.visible = true;
+      ship.rentry  = 0;
+      ship.fade    = SHIP_FADE_FRAMES;
+    }
+    return;
+  }
+
+  if (!ship.alive) {
+    setThrustSound(false);
+    return;
+  }
+  if (ship.fade > 0) ship.fade--;
+
+  // --- Rotation (MOVE: LDA I,03 / ADC ANGLE) ---
+  if (keys['ArrowLeft'])  ship.angle = (ship.angle + 3) & 0xFF;   // ROTL
+  if (keys['ArrowRight']) ship.angle = (ship.angle - 3 + 256) & 0xFF;
+
+  // --- Thrust sound state ---
+  const thrusting = !!keys['ArrowUp'] && ship.alive && ship.visible && !ship.exploding;
+  setThrustSound(thrusting);
+
+  // --- Thrust / friction every other frame (MOVE: LSR FRAME; BCS 90$) ---
+  if (frame % 2 === 0) {
+    if (keys['ArrowUp']) {
+      // MOVE: COS(ANGLE) -> ASL (x2) -> ADC XINCL -> carry -> ADC XINC -> MOVE2
+      const cx = cosA(ship.angle);  // -127..+127
+      const cy = sinA(ship.angle);
+
+      let nxf = ship.vxf + (cx << 1);  // ASL then ADC XINCL
+      let nvx = ship.vx + (nxf >> 8);  // carry into XINC
+      nxf &= 0xFF;
+      // MOVE2: clamp to [-0x3F..+0x3F]
+      if (nvx > XINC_MAX)  { nvx = XINC_MAX;  nxf = 0xFF; }
+      if (nvx < -XINC_MAX) { nvx = -XINC_MAX; nxf = 0x01; }
+      ship.vx  = nvx; ship.vxf = nxf;
+
+      let nyf = ship.vyf + (cy << 1);
+      let nvy = ship.vy + (nyf >> 8);
+      nyf &= 0xFF;
+      if (nvy > XINC_MAX)  { nvy = XINC_MAX;  nyf = 0xFF; }
+      if (nvy < -XINC_MAX) { nvy = -XINC_MAX; nyf = 0x01; }
+      ship.vy  = nvy; ship.vyf = nyf;
+    } else {
+      // MOVE friction: v -= v/128  (MOVE: ASL; EOR I,FF; ADC XINCL; TXA; ADC XINC)
+      if (ship.vx !== 0 || ship.vxf !== 0) {
+        // "1 + |XINC| / 128" subtracted per other-frame  (one XINC unit)
+        let total = ship.vx * 256 + ship.vxf;
+        const fric = total > 0 ? Math.max(1, total >> 7) : Math.min(-1, total >> 7);
+        total -= fric;
+        ship.vx = total >> 8;
+        ship.vxf = total & 0xFF;
+      }
+      if (ship.vy !== 0 || ship.vyf !== 0) {
+        let total = ship.vy * 256 + ship.vyf;
+        const fric = total > 0 ? Math.max(1, total >> 7) : Math.min(-1, total >> 7);
+        total -= fric;
+        ship.vy = total >> 8;
+        ship.vyf = total & 0xFF;
+      }
+    }
+  }
+
+  // --- Position update (MOTION: ADC OBJXL; ADC OBJXH; wrap at 0x20) ---
+  // X: OBJXL += XINC; carry -> OBJXH; wrap at 0x20 (=32 = SX/256)
+  let nx = ship.x + ship.vx;
+  if (nx < 0)   nx += SX;
+  if (nx >= SX) nx -= SX;
+  ship.x = nx;
+  // Y: OBJYH wraps 0..23 (=0..0x17); MOTION: CMP I,18 wraps
+  let ny = ship.y - ship.vy;   // game y-up = screen y-down, so subtract
+  if (ny < 0)   ny += SY;
+  if (ny >= SY) ny -= SY;
+  ship.y = ny;
+
+  // --- Fire (edge-triggered) ---
+  const fireNow = keys[' '];
+  if (fireNow && !lastFire) fireTorpedo(false);
+  lastFire = fireNow;
+
+  // --- Hyperspace (edge-triggered) ---
+  const hyperNow = keys['Shift'];
+  if (hyperNow && !lastHyper) doHyperspace();
+  lastHyper = hyperNow;
+}
+
+// ---------------------------------------------------------------------------
+//  FIRE (A35131.1A FIRE / FIRE1 / FIRE3)
+// ---------------------------------------------------------------------------
+function fireTorpedo(fromSaucer) {
+  const pool = fromSaucer ? saucTorps : torpedoes;
+  // FIRE1: scan from high index downward for empty slot
+  let slot = -1;
+  for (let i = pool.length - 1; i >= 0; i--) {
+    if (!pool[i].alive) { slot = i; break; }
+  }
+  if (slot < 0) return;
+
+  if (!fromSaucer) {
+    // FIRE3: torpedo XINC = COS(angle)/2 + ship XINC, capped ±0x6F
+    // Spawn at ship nose: offset = TEMP1+1 * 3/2 (= COS(angle)/2 * 3/2 = COS(angle)*3/4)
+    const cx  = cosA(ship.angle);          // -127..+127
+    const cy  = sinA(ship.angle);
+    const hcx = cx >> 1;                   // COS/2 (integer divide)
+    const hcy = cy >> 1;
+    let tvx = Math.max(-TORP_MAX, Math.min(TORP_MAX, hcx + ship.vx));
+    // ship vy is y-up; canvas y grows downward, so negate for the stored screen-space velocity
+    let tvy = -Math.max(-TORP_MAX, Math.min(TORP_MAX, hcy + ship.vy));
+    // Nose offset: TEMP1+1 * 3/2 in XINC units -> convert to sub-pixels (* 1 since XINC=subpix)
+    const offX =  hcx + (hcx >> 1);        // *3/2
+    const offY =  hcy + (hcy >> 1);
+    torpedoes[slot] = makeTorp(
+      (ship.x + offX + SX) % SX,
+      (ship.y - offY + SY) % SY,  // y-flip
+      tvx, tvy
+    );
+  } else {
+    // EFIRE: large saucer fires random; small saucer aims at ship
+    let tvx, tvy;
+    if (saucer.small) {
+      // EFIRE small: compute ATAN(dy/dx) and add slight random error
+      const dx = ship.x - saucer.x;
+      const dy = ship.y - saucer.y;  // both in sub-pixel coords (same y-direction)
+      // Use JS atan2 in sub-pixel space; note: internal y is flipped vs screen
+      const angle = Math.atan2(-dy, dx);           // -PI..+PI
+      // Convert to approximate XINC: unit vector * SAUCER_XINC (same speed as saucer)
+      const spd  = SAUCER_XINC;
+      const err  = ((rand() & 0x8F) / 0x8F - 0.5) * 0.35;  // small random spread
+      const aim  = angle + err;
+      tvx = Math.round(Math.cos(aim) * spd) + saucer.vx;
+      tvy = Math.round(-Math.sin(aim) * spd);
+    } else {
+      // Large saucer: random angle
+      const ang = (rand() / 256) * Math.PI * 2;
+      const spd = SAUCER_XINC;
+      tvx = Math.round(Math.cos(ang) * spd) + saucer.vx;
+      tvy = Math.round(-Math.sin(ang) * spd);
+    }
+    tvx = Math.max(-TORP_MAX, Math.min(TORP_MAX, tvx));
+    tvy = Math.max(-TORP_MAX, Math.min(TORP_MAX, tvy));
+    saucTorps[slot] = makeTorp(saucer.x, saucer.y, tvx, tvy);
+  }
+  pool[slot].life = TORP_LIFE_INIT;
+  if (!fromSaucer) playShipFire();
+  else playSaucerFire();
+}
+
+// ---------------------------------------------------------------------------
+//  HYPER (A35131.1A HYPER)
+// ---------------------------------------------------------------------------
+function doHyperspace() {
+  if (!ship.alive || ship.exploding || !ship.visible) return;
+  setThrustSound(false);
+  playHyperspace();
+  ship.vx = 0; ship.vxf = 0;
+  ship.vy = 0; ship.vyf = 0;
+  ship.alive   = false;
+  ship.visible = false;
+  ship.sdelay  = 0x30;  // HYPER: LDA I,30 / STA SDELAY
+
+  // Pick new X: RAND & 0x1F, clamp 3..0x1C
+  let xh = rand() & 0x1F;
+  if (xh > 0x1C) xh = 0x1C;
+  if (xh < 0x03) xh = 0x03;
+  ship.x = xh * 256;
+
+  // 5 random calls (HYPER: LDX I,5 / JSR RAND loop)
+  for (let i = 0; i < 5; i++) rand();
+  let yrand = rand() & 0x1F;
+
+  // Destruction check: yrand >= 0x18
+  let rentry = 0;
+  if (yrand >= 0x18) {
+    const nrocks = asteroids.filter(a => a.alive && !a.exploding).length;
+    const limit  = ((rand() & 7) << 1) + 4;   // 4..18
+    if (nrocks >= limit) rentry = 0x80;        // flagged for destruction on re-entry
+  }
+
+  // Clamp Y: 3..0x14
+  if (yrand > 0x14) yrand = 0x14;
+  if (yrand < 0x03) yrand = 0x03;
+  ship.y = yrand * 256;
+  ship.rentry = rentry || 0x01;  // 0x01 = normal hyperspace re-entry (non-zero)
+}
+
+// ---------------------------------------------------------------------------
+//  Ship explosion
+// ---------------------------------------------------------------------------
+function explodeShip() {
+  if (ship.exploding || !ship.visible) return;
+  setThrustSound(false);
+  playExplosion(2);
+  ship.exploding = true;
+  ship.expTimer  = 0xA0;   // DSTRCT: LDA I,0A0 / STA OBJ+NOBJ
+  ship.alive     = false;
+  lives[curPlayer]--;
+  // initialise fragment positions at ship location
+  for (let i = 0; i < 6; i++) {
+    ship.expPx[i] = ship.x;
+    ship.expPy[i] = ship.y;
+  }
+  spawnParticles(ship.x, ship.y, 8, 30, 60);
+  turnEnded = true;
+}
+
+// ---------------------------------------------------------------------------
+//  Asteroid update (MOTION for rocks)
+// ---------------------------------------------------------------------------
+function updateAsteroids() {
+  for (const a of asteroids) {
+    if (!a.alive) continue;
+    if (a.exploding) {
+      a.expTimer--;
+      if (a.expTimer <= 0) a.alive = false;
+      continue;
+    }
+    a.x = (a.x + a.vx + SX) % SX;
+    a.y = (a.y + a.vy + SY) % SY;
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  Torpedo update (PICTUR / MOTION: life decremented every 4th frame)
+// ---------------------------------------------------------------------------
+function updateTorpedoes() {
+  for (const pool of [torpedoes, saucTorps]) {
+    for (const t of pool) {
+      if (!t.alive) continue;
+      t.x = (t.x + t.vx + SX) % SX;
+      t.y = (t.y + t.vy + SY) % SY;
+      if (frame % 4 === 0) { t.life--; if (t.life <= 0) t.alive = false; }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  Saucer (ENEMY + EFIRE)
+// ---------------------------------------------------------------------------
+function updateSaucer() {
+  if (saucer && saucer.exploding) {
+    saucer.expTimer--;
+    if (saucer.expTimer <= 0) { saucer = null; edelay = sedlay; }
+    return;
+  }
+  // Run on every 4th frame (ENEMY: AND I,03 / BEQ 1$)
+  if (frame % 4 !== 0) {
+    // Position update runs every frame (MOTION handles saucer like any object)
+    if (saucer && saucer.alive && !saucer.exploding) {
+      saucer.x += saucer.vx;
+      saucer.y = (saucer.y + saucer.vy + SY) % SY;
+      // MOTION/RSAUCR: exit if OBJXH goes out of 0..31 range
+      if (saucer.x < -256 * 4 || saucer.x >= SX + 256 * 4) {
+        saucer = null;
+        edelay = sedlay;
+      }
+    }
+    return;
+  }
+
+  if (saucer && saucer.alive) {
+    // EFIRE every 4th frame
+    saucer.x += saucer.vx;
+    saucer.y = (saucer.y + saucer.vy + SY) % SY;
+    if (saucer.x < -256 * 4 || saucer.x >= SX + 256 * 4) {
+      saucer = null; edelay = sedlay; return;
+    }
+    // EFIRE: direction change when FRAME ASL overflows (every 128 frames)
+    if ((frame & 0xFF) === 0) {
+      const dy = [-10, 0, 0, 10][rand() & 3];
+      saucer.vy = dy;
+    }
+    // EFIRE: decrement EDELAY; fire when zero
+    edelay--;
+    if (edelay <= 0) {
+      edelay = 18;   // EFIRE: LDA I,18 / STA EDELAY (each time)
+      if (!ship.sdelay && ship.visible) fireTorpedo(true);
+    }
+    return;
+  }
+
+  // No saucer: attempt entry
+  if (rtimer > 0) rtimer--;
+  edelay--;
+  if (edelay > 0) return;
+  edelay = 18;   // ENEMY: LDA I,18 / STA EDELAY after reset
+
+  // ENEMY: only enter if ship is visible and conditions met
+  if (!ship.visible) return;
+  if (rtimer > 0) {
+    const nrocks = asteroids.filter(a => a.alive && !a.exploding).length;
+    if (nrocks === 0 || nrocks >= difcty) return;
+  }
+
+  // Decrease saucer delay over time (ENEMY: SBC I,06 / CMP I,20 / BCC 8$)
+  if (sedlay > 0x20) sedlay = Math.max(0x20, sedlay - 6);
+
+  // Spawn position: left or right edge
+  const fromLeft = !(polyH & 0x40);
+  const x   = fromLeft ? 0 : SX - 1;
+  const vx  = fromLeft ? SAUCER_XINC : -SAUCER_XINC;
+  // ENEMY: random Y from RAND (ROR 3 times -> 0..0x17)
+  let yr = rand(); yr = (yr >> 1) & 0x7F; yr >>= 1; yr &= 0x3F; yr >>= 1;
+  const yh  = yr & 0x17;
+  const y   = yh * 256;
+  // Size: ENEMY checks score (BCD 0x30 = 3000); also probabilistic for earlier appearances
+  let small = false;
+  const sc2 = scores[curPlayer];
+  if (sc2 >= 3000) {
+    // ENEMY: CMP I,30 (BCD score hi byte) -> small saucer
+    // Actually CMP I,35 means score >= 35*100 = 3500 for "real good" aim
+    small = true;
+  } else if (sedlay < 0x80) {
+    // Probabilistic: RAND vs sedlay/2
+    small = rand() > (sedlay >> 1);
+  }
+  saucer = makeSaucer(x, y, vx, small);
+  edelay = 18;
+}
+
+// ---------------------------------------------------------------------------
+//  COLIDE (A35131.1A)
+//  Shifts 16-bit delta right by 1, checks each half-axis vs threshold,
+//  then checks sum vs (3/2)*threshold to clip corners.
+// ---------------------------------------------------------------------------
+function collides(ax, ay, bx, by, threshold) {
+  // Compute signed 16-bit delta in sub-pixel space, with wrap
+  let dx = ax - bx;
+  if (dx >  SX / 2) dx -= SX;
+  if (dx < -SX / 2) dx += SX;
+  let dy = ay - by;
+  if (dy >  SY / 2) dy -= SY;
+  if (dy < -SY / 2) dy += SY;
+
+  // COLIDE: LSR OBJXH; ROR TEMP1 (shift 16-bit value right 1)
+  // Since we store pos as a single integer (not split into H/L), the full
+  // 13-bit coordinate >>1 gives the same half-distance:
+  const hx = Math.abs(dx) >> 1;
+  const hy = Math.abs(dy) >> 1;
+
+  if (hx >= threshold) return false;
+  if (hy >= threshold) return false;
+  // Corner clip: hx + hy < (3/2)*threshold
+  return (hx + hy) < Math.floor(threshold * 3 / 2);
+}
+
+function checkCollisions() {
+  // Torpedoes vs asteroids
+  for (let pi = 0; pi < 2; pi++) {
+    const pool = pi === 0 ? torpedoes : saucTorps;
+    for (const t of pool) {
+      if (!t.alive) continue;
+      for (const a of asteroids) {
+        if (!a.alive || a.exploding) continue;
+        if (collides(t.x, t.y, a.x, a.y, COL_R[a.size])) {
+          t.alive = false;
+          if (pi === 0) addScore([100, 50, 20][a.size]);
+          splitAsteroid(a);
+          break;
+        }
+      }
+    }
+  }
+
+  if (!ship.alive || !ship.visible || ship.exploding) return;
+
+  // Ship vs asteroids (COLIDE: CPX I,01 / BCS 36$; then ADC I,28)
+  for (const a of asteroids) {
+    if (!a.alive || a.exploding) continue;
+    if (collides(ship.x, ship.y, a.x, a.y, COL_R[a.size] + COL_SHIP)) {
+      explodeShip(); splitAsteroid(a); return;
+    }
+  }
+
+  // Ship vs saucer (COLIDE: ADC I,18 / DEX / BEQ 34$ / ADC I,18)
+  if (saucer && saucer.alive && !saucer.exploding) {
+    const sr = (saucer.small ? COL_SAUC_SML : COL_SAUC_LRG);
+    if (collides(ship.x, ship.y, saucer.x, saucer.y, sr + COL_SHIP)) {
+      explodeShip(); explodeSaucer(); return;
+    }
+  }
+
+  // Saucer torpedoes vs ship
+  for (const t of saucTorps) {
+    if (!t.alive) continue;
+    if (collides(t.x, t.y, ship.x, ship.y, COL_SHIP)) {
+      t.alive = false; explodeShip(); return;
+    }
+  }
+
+  // Ship torpedoes vs saucer
+  if (saucer && saucer.alive && !saucer.exploding) {
+    for (const t of torpedoes) {
+      if (!t.alive) continue;
+      const sr = (saucer.small ? COL_SAUC_SML : COL_SAUC_LRG);
+      if (collides(t.x, t.y, saucer.x, saucer.y, sr)) {
+        t.alive = false;
+        addScore(saucer.small ? 1000 : 200);
+        explodeSaucer(); break;
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  SPLIT / DSTRCT for asteroids
+// ---------------------------------------------------------------------------
+function splitAsteroid(a) {
+  playExplosion(a.size);
+  a.exploding = true;
+  a.expTimer  = EXP_FRAMES;
+  rtimer = 50;   // SPLIT: LDA I,50 / STA RTIMER
+  spawnParticles(a.x, a.y, 5, 25, 40);
+  if (a.size <= 0) return;
+  const nAlive = asteroids.filter(r => r.alive && !r.exploding).length;
+  if (nAlive < 11) spawnRock(a.x, a.y, a.vx, a.vy, a.size - 1);
+  const nAlive2 = asteroids.filter(r => r.alive && !r.exploding).length;
+  if (nAlive2 < 11) spawnRock(a.x, a.y, a.vx, a.vy, a.size - 1);
+}
+
+function explodeSaucer() {
+  if (!saucer) return;
+  playExplosion(saucer.small ? 1 : 2);
+  saucer.exploding = true;
+  saucer.expTimer  = EXP_FRAMES;
+  spawnParticles(saucer.x, saucer.y, 10, 35, 60);
+}
+
+// ---------------------------------------------------------------------------
+//  Score (POINTS: extra life every 10000)
+// ---------------------------------------------------------------------------
+function addScore(pts) {
+  const prev = scores[curPlayer];
+  scores[curPlayer] += pts;
+  if (scores[curPlayer] > highScore) highScore = scores[curPlayer];
+  if (Math.floor(scores[curPlayer] / 10000) > Math.floor(prev / 10000)) {
+    lives[curPlayer]++;
+    playExtraLife();
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  High score table (UPDATE / GETINT in A35131.1A)
+// ---------------------------------------------------------------------------
+
+// UPDATE: insert each player's score if it beats an entry (strictly greater,
+// so ties rank below existing entries). New entries start with initials "A  ".
+function registerHighScores() {
+  const added = [];
+  for (let p = 0; p < nPlayers; p++) {
+    const s = scores[p];
+    if (s <= 0) continue;
+    let i = hiTable.findIndex(e => e.score < s);
+    if (i < 0) i = hiTable.length;
+    if (i >= HI_MAX) continue;
+    const entry = { score: s, ini: [1, 0, 0], player: p + 1 };
+    hiTable.splice(i, 0, entry);
+    if (hiTable.length > HI_MAX) hiTable.pop();
+    added.push(entry);
+  }
+  // A later, better score may have pushed an earlier entry off the table
+  entryQueue = added.filter(e => hiTable.includes(e));
+}
+
+function startEntry() {
+  gameState      = 'hiscore';
+  entryPos       = 0;
+  entryTimer     = ENTRY_TIMEOUT;
+  entryRepeat    = 0;
+  entryLastHyper = !!keys['Shift'];   // require a fresh press, like the switch debounce
+}
+
+function finishEntry() {
+  entryQueue   = [];
+  gameState    = 'attract';
+  attractTimer = 0;                   // show the table first
+}
+
+// GETINT: rotate selects the letter (blank, A..Z, wrapping), hyperspace accepts it.
+function updateEntry() {
+  const e = entryQueue[0];
+
+  if (--entryTimer <= 0) { finishEntry(); return; }   // timeout abandons entry
+
+  // Port addition: step immediately on press, then repeat every 8th frame
+  // (the original only samples the switches on every 8th frame).
+  const dir = keys['ArrowLeft'] ? 1 : (keys['ArrowRight'] ? -1 : 0);
+  if (dir === 0) {
+    entryRepeat = 0;
+  } else {
+    if (entryRepeat === 0) {
+      e.ini[entryPos] = (e.ini[entryPos] + dir + LETTERS.length) % LETTERS.length;
+      entryRepeat = 8;
+    }
+    entryRepeat--;
+  }
+
+  const hyperNow = !!keys['Shift'];
+  if (hyperNow && !entryLastHyper) {
+    entryTimer = ENTRY_TIMEOUT;          // each accepted letter resets the timeout
+    if (++entryPos >= 3) {
+      entryQueue.shift();
+      entryPos = 0;
+      if (entryQueue.length === 0) { finishEntry(); return; }
+    } else {
+      e.ini[entryPos] = 1;               // next initial starts at A
+    }
+  }
+  entryLastHyper = hyperNow;
+}
+
+// ---------------------------------------------------------------------------
+//  Particles (visual only, not in original)
+//  Positions in sub-pixel units, velocities in sub-pixel/frame
+// ---------------------------------------------------------------------------
+function spawnParticles(x, y, n, speed, life) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    particles.push(makeParticle(x, y,
+      Math.cos(a) * speed, Math.sin(a) * speed, life));
+  }
+}
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  Wave clear and game over detection (CHKST1 / NEWAST in original)
+// ---------------------------------------------------------------------------
+function checkWave() {
+  const aliveRocks  = asteroids.filter(a => a.alive && !a.exploding).length;
+  const saucerAlive = saucer && saucer.alive && !saucer.exploding;
+
+  if (aliveRocks === 0 && !saucerAlive && (gameState === 'playing' || gameState === 'waveclear')) {
+    waveClearTimer++;
+    if (waveClearTimer === 1) {
+      // Kill all torpedoes when wave ends
+      torpedoes.forEach(t => { t.alive = false; });
+      saucTorps.forEach(t => { t.alive = false; });
+      gameState = 'waveclear';
+    }
+    if (waveClearTimer > 90) {
+      // next wave: NEWAST adds 2 rocks
+      difcty = Math.min(11, difcty + 1);
+      gameState = 'playing';
+      waveClearTimer = 0;
+      startWave();
+    }
+  } else if (gameState === 'waveclear') {
+    // A new rock or saucer appeared mid-flash; resume
+    if (aliveRocks > 0 || saucerAlive) {
+      gameState = 'playing';
+      waveClearTimer = 0;
+    }
+  }
+
+  // Player turn switching and Game Over logic
+  if (turnEnded && !ship.alive && !ship.exploding) {
+    const anyTorps = torpedoes.some(t => t.alive);
+    if (!anyTorps) {
+      if (nPlayers === 2) {
+        const other = 1 - curPlayer;
+        if (lives[other] > 0) {
+          // Switch to other player!
+          savePlayerState(curPlayer);
+          curPlayer = other;
+          loadPlayerState(curPlayer);
+
+          // Reset ship for the loaded player
+          ship.x = CX0; ship.y = CY0;
+          ship.vx = 0; ship.vxf = 0;
+          ship.vy = 0; ship.vyf = 0;
+          ship.sdelay  = 0x80; // Standard spawn delay
+          ship.alive   = false;
+          ship.visible = false;
+          ship.rentry  = 0;
+
+          turnEnded = false;
+          return;
+        }
+      }
+
+      // If we are here, we don't switch players (either 1-player, or the other player is out of lives).
+      if (lives[curPlayer] > 0) {
+        // Current player still has lives left, so they just continue.
+        ship.sdelay = 0x81; // Trigger spawn delay
+        turnEnded = false;
+      } else {
+        // Current player has no lives left (and other has none too). Game Over!
+        if (gameState !== 'gameover') {
+          gameState     = 'gameover';
+          gameOverTimer = 0;
+          registerHighScores();
+          turnEnded = false;
+        }
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+//  Main update
+// ---------------------------------------------------------------------------
+function update() {
+  frame++;
+
+  if (gameState === 'attract') {
+    stopAllSounds();
+    attractTimer++;
+    return;
+  }
+
+  if (gameState === 'gameover') {
+    stopAllSounds();
+    gameOverTimer++;
+    updateParticles();
+    if (entryQueue.length > 0) {
+      if (gameOverTimer > 120) startEntry();
+    } else if (gameOverTimer > 300) {
+      gameState    = 'attract';
+      attractTimer = 0;
+    }
+    return;
+  }
+
+  if (gameState === 'hiscore') {
+    stopAllSounds();
+    updateEntry();
+    return;
+  }
+
+  updateShip();
+  updateTorpedoes();
+  updateAsteroids();
+  updateSaucer();
+  updateSaucerSound();
+  updateThump();
+  updateParticles();
+  checkCollisions();
+  checkWave();
+}
+
+// ---------------------------------------------------------------------------
+//  Drawing
+// ---------------------------------------------------------------------------
+
+function drawShip() {
+  if (!ship || !ship.visible) return;
+  const color = '#7fff7f';
+
+  if (ship.exploding) {
+    // SHPEXP: fragments fly outward from last position
+    for (let i = 0; i < 6; i++) {
+      const t = ship.expTimer / 0xA0;
+      const alpha = Math.max(0, t);
+      ctx.fillStyle = `rgba(127,255,127,${alpha.toFixed(2)})`;
+      ctx.beginPath();
+      ctx.arc(ship.expPx[i] / SCALE, ship.expPy[i] / SCALE, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    return;
+  }
+
+  // SHPPIC: use pre-rotated frame table indexed by ANGLE
+  const thrusting = keys['ArrowUp'] && frame % 8 < 4;
+  ctx.globalAlpha = ship.fade > 0 ? 1 - ship.fade / SHIP_FADE_FRAMES : 1;
+  drawShipFrame(ship.x, ship.y, ship.angle, thrusting, color);
+  ctx.globalAlpha = 1;
+}
+
+function drawAsteroids() {
+  for (const a of asteroids) {
+    if (!a.alive) continue;
+    const color = a.exploding
+      ? `rgba(200,200,80,${Math.max(0, a.expTimer / EXP_FRAMES).toFixed(2)})`
+      : '#7fff7f';
+    drawSegs(a.x, a.y, ROCKS[a.shape], color, ROCK_PIC[a.size]);
+  }
+}
+
+function drawTorpedoes() {
+  for (const pool of [torpedoes, saucTorps]) {
+    const color = pool === saucTorps ? '#ff9f9f' : '#7fff7f';
+    for (const t of pool) {
+      if (!t.alive) continue;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(t.x / SCALE, t.y / SCALE, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawSaucer() {
+  if (!saucer) return;
+  const color = saucer.exploding
+    ? `rgba(255,180,60,${Math.max(0, saucer.expTimer / EXP_FRAMES).toFixed(2)})`
+    : '#ff7f7f';
+  drawSegs(saucer.x, saucer.y, SAUCER_SEGS, color, saucer.small ? PIC_QUARTER : PIC_HALF);
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    const a = p.life / p.maxLife;
+    ctx.fillStyle = `rgba(255,200,100,${a.toFixed(2)})`;
+    ctx.beginPath();
+    ctx.arc(p.x / SCALE, p.y / SCALE, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawHUD() {
+  const sc = 1.0;
+  // Scores in sub-pixel space so drawText positions correctly
+  const s0 = String(scores[0]).padStart(5, '0');
+  drawText(s0, 20 * SCALE, 44 * SCALE, sc, '#7fff7f');
+
+  const hs = String(highScore).padStart(5, '0');
+  drawText(hs, (W / 2) * SCALE - tw(hs, sc) / 2, 44 * SCALE, sc, '#55cc55');
+
+  if (nPlayers === 2) {
+    const s1 = String(scores[1]).padStart(5, '0');
+    drawText(s1, (W - 20) * SCALE - tw(s1, sc), 44 * SCALE, sc, '#7fff7f');
+  }
+
+  // Lives icons (PARAMS/LIVES: OBJXH=160/4=40, OBJYH=876/4=219 -> bottom area)
+  for (let i = 0; i < lives[curPlayer]; i++) {
+    drawSegs((28 + i * 22) * SCALE, (H - 18) * SCALE, SHIP17, '#7fff7f', PIC_QUARTER);
+  }
+  if (nPlayers === 2) {
+    const other = 1 - curPlayer;
+    for (let i = 0; i < lives[other]; i++) {
+      drawSegs((W - 28 - i * 22) * SCALE, (H - 18) * SCALE, SHIP17, '#55cc55', PIC_QUARTER);
+    }
+    const lbl = `PLAYER ${curPlayer + 1}`;
+    drawText(lbl, (W / 2) * SCALE - tw(lbl, 0.7) / 2, (H - 18) * SCALE, 0.7, '#7fff7f');
+  }
+}
+
+// SCORES: "HIGH SCORES" followed by up to ten lines "rank. score initials"
+function drawScoreTable() {
+  const C1 = '#7fff7f', C2 = '#55cc55', C3 = '#336633';
+  const hdr = 'HIGH SCORES';
+  drawText(hdr, (W/2)*SCALE - tw(hdr, 1.2)/2, 110*SCALE, 1.2, C1);
+
+  const sc = 1.5;
+  const x0 = (W/2)*SCALE - tw('00. 000000 000', sc)/2;
+  hiTable.forEach((e, i) => {
+    const line = String(i + 1).padStart(2, ' ') + '. ' +
+                 String(e.score).padStart(6, ' ') + ' ' +
+                 e.ini.map(c => LETTERS[c]).join('');
+    drawText(line, x0, (170 + i * 40)*SCALE, sc, i === 0 ? C1 : C2);
+  });
+
+  if (flashTimer % 70 < 50)
+    drawText('PUSH START', (W/2)*SCALE - tw('PUSH START',0.9)/2, 620*SCALE, 0.9, C1);
+  drawText('PRESS 1  ONE PLAYER',  (W/2)*SCALE - tw('PRESS 1  ONE PLAYER',0.55)/2,  660*SCALE, 0.55, C3);
+  drawText('PRESS 2  TWO PLAYERS', (W/2)*SCALE - tw('PRESS 2  TWO PLAYERS',0.55)/2, 678*SCALE, 0.55, C3);
+}
+
+// GETINT screen: instructions plus the three initials being entered
+function drawHiScoreEntry() {
+  const C1 = '#7fff7f', C2 = '#55cc55';
+  const e = entryQueue[0];
+  const msg = (s, y, c) => drawText(s, (W/2)*SCALE - tw(s, 0.8)/2, y*SCALE, 0.8, c);
+
+  if (nPlayers === 2) {
+    const lbl = `PLAYER ${e.player}`;
+    drawText(lbl, (W/2)*SCALE - tw(lbl, 1.2)/2, 140*SCALE, 1.2, C1);
+    msg('YOUR SCORE IS ONE OF THE TEN BEST', 200, C2);
+    msg('PLEASE ENTER YOUR INITIALS',        240, C2);
+    msg('PUSH ROTATE TO SELECT LETTER',      280, C2);
+    msg('PUSH HYPERSPACE WHEN LETTER IS CORRECT', 320, C2);
+  } else {
+    msg('YOUR SCORE IS ONE OF THE TEN BEST', 220, C2);
+    msg('PLEASE ENTER YOUR INITIALS',        260, C2);
+    msg('PUSH ROTATE TO SELECT LETTER',      300, C2);
+    msg('PUSH HYPERSPACE WHEN LETTER IS CORRECT', 340, C2);
+  }
+
+  const sc = 4, y = 520;
+  const x0 = (W/2)*SCALE - tw('   ', sc)/2;
+  for (let i = 0; i < 3; i++) {
+    const x = x0 + i * 12 * 8 * sc;
+    const col = i === entryPos ? C1 : C2;
+    drawText(LETTERS[e.ini[i]], x, y*SCALE, sc, col);
+    if (e.ini[i] === 0) {                       // INITAL: underline a blank
+      ctx.strokeStyle = col;
+      ctx.beginPath();
+      ctx.moveTo(x / SCALE, y);
+      ctx.lineTo(x / SCALE + 8 * sc, y);
+      ctx.stroke();
+    }
+  }
+}
+
+function drawAttract() {
+  flashTimer++;
+  if (hiTable.length > 0 && Math.floor(attractTimer / ATTRACT_PHASE) % 2 === 0) {
+    drawScoreTable();
+    return;
+  }
+  const C1 = '#7fff7f', C2 = '#55cc55', C3 = '#336633';
+  const s1 = 1.4;
+  const title = 'ASTEROIDS';
+  drawText(title, (W/2) * SCALE - tw(title, s1)/2, (H/2 - 50) * SCALE, s1, C1);
+  drawText('BY ATARI', (W/2)*SCALE - tw('BY ATARI',0.8)/2, (H/2 + 10)*SCALE, 0.8, C2);
+  if (flashTimer % 70 < 50)
+    drawText('PUSH START', (W/2)*SCALE - tw('PUSH START',0.9)/2, (H/2+60)*SCALE, 0.9, C1);
+  if (highScore > 0) {
+    drawText('HIGH SCORE', (W/2)*SCALE - tw('HIGH SCORE',0.7)/2, (H/2+100)*SCALE, 0.7, C2);
+    const hs = String(highScore);
+    drawText(hs, (W/2)*SCALE - tw(hs,0.7)/2, (H/2+122)*SCALE, 0.7, C2);
+  }
+  drawText('PRESS 1  ONE PLAYER',  (W/2)*SCALE - tw('PRESS 1  ONE PLAYER',0.55)/2,  (H/2+160)*SCALE, 0.55, C3);
+  drawText('PRESS 2  TWO PLAYERS', (W/2)*SCALE - tw('PRESS 2  TWO PLAYERS',0.55)/2, (H/2+178)*SCALE, 0.55, C3);
+}
+
+function drawWaveClear() {
+  // Flash screen on wave completion
+  const t = waveClearTimer;
+  const alpha = t < 20 ? t / 20 : Math.max(0, 1 - (t - 20) / 70);
+  if (alpha > 0) {
+    ctx.fillStyle = `rgba(127,255,127,${(alpha * 0.4).toFixed(2)})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function drawGameOver() {
+  if (gameOverTimer % 60 < 45) {
+    const sc = 1.2;
+    const go = 'GAME OVER';
+    drawText(go, (W/2)*SCALE - tw(go,sc)/2, (H/2-20)*SCALE, sc, '#ff4444');
+    const sc2 = 0.65;
+    const ret = 'PRESS 1 OR 2 TO PLAY AGAIN';
+    drawText(ret, (W/2)*SCALE - tw(ret,sc2)/2, (H/2+30)*SCALE, sc2, '#aa2222');
+  }
+}
+
+function draw() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+
+  if (gameState === 'attract') { drawAttract(); return; }
+  if (gameState === 'hiscore') { drawHiScoreEntry(); return; }
+
+  drawAsteroids();
+  drawTorpedoes();
+  drawSaucer();
+  drawShip();
+  drawParticles();
+  drawHUD();
+
+  if (gameState === 'waveclear') drawWaveClear();
+  if (gameState === 'gameover')  drawGameOver();
+}
+
+// ---------------------------------------------------------------------------
+//  Main loop
+// ---------------------------------------------------------------------------
+// Fixed 60 Hz logic step (the original advances once per 16 ms frame),
+// independent of the display refresh rate.
+const STEP_MS = 1000 / 60;
+let lastT = null, acc = 0;
+function loop(t) {
+  if (lastT === null) lastT = t || 0;
+  acc += Math.min((t || 0) - lastT, 100);   // clamp after tab switches
+  lastT = t || 0;
+  while (acc >= STEP_MS) { update(); acc -= STEP_MS; }
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// ---------------------------------------------------------------------------
+//  Input
+// ---------------------------------------------------------------------------
+document.addEventListener('keydown', e => {
+  getAudioContext();
+  keys[e.key] = true;
+  if (e.key === '1' || e.key === '2') {
+    // Start is blocked while a new high score is waiting for initials
+    if (gameState === 'attract' || (gameState === 'gameover' && entryQueue.length === 0))
+      initGame(Number(e.key));
+    e.preventDefault();
+  }
+  if ([' ', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+});
+document.addEventListener('keyup', e => { keys[e.key] = false; });
+document.addEventListener('pointerdown', () => { getAudioContext(); });
+
+// ---------------------------------------------------------------------------
+//  Boot
+// ---------------------------------------------------------------------------
+loop();
+</script>
+</body>
+</html>

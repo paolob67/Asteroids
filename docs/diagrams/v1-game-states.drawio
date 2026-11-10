@@ -1,0 +1,55 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="v1-states" name="v1 game states">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="650" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="attract" value="attract&#xa;title and score table alternate&#xa;every 600 frames" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="260" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="playing" value="playing&#xa;updateShip, rocks, saucer,&#xa;collisions, checkWave" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="320" y="260" width="260" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="waveclear" value="waveclear&#xa;flash, then wait 127 frames,&#xa;then next wave (+2 rocks, max 11)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="320" y="80" width="260" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="gameover" value="gameover&#xa;blinking GAME OVER" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="680" y="260" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="hiscore" value="hiscore&#xa;enter 3 initials (GETINT),&#xa;64 s timeout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="680" y="440" width="200" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e1" value="press 1 or 2" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="attract" target="playing">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="all rocks and&#xa;saucer gone" style="endArrow=classic;html=1;exitX=0.2;exitY=0;entryX=0.2;entryY=1;" edge="1" parent="1" source="playing" target="waveclear">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="next wave&#xa;starts" style="endArrow=classic;html=1;exitX=0.8;exitY=1;entryX=0.8;entryY=0;" edge="1" parent="1" source="waveclear" target="playing">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="no lives left" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="playing" target="gameover">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="score in top 10,&#xa;after 120 frames" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="gameover" target="hiscore">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="initials accepted or timeout" style="endArrow=classic;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=1;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="hiscore" target="attract">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="no new high score, after 300 frames" style="endArrow=classic;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=0;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="gameover" target="attract">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="780" y="30"/><mxPoint x="140" y="30"/></Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e8" value="press 1 or 2 (if no initials pending)" style="endArrow=classic;html=1;dashed=1;exitX=0.1;exitY=1;entryX=0.5;entryY=1;edgeStyle=orthogonalEdgeStyle;" edge="1" parent="1" source="gameover" target="playing">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="700" y="390"/><mxPoint x="450" y="390"/></Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

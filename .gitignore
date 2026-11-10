@@ -1,0 +1,14 @@
+.DS_Store
+# Machine-local Bob configuration (MCP endpoint and token)
+.bob/
+# Editor settings
+.vscode/
+# Python virtual environments and caches (planned CLM experiments)
+.venv/
+__pycache__/
+# Generated pilot logs and model outputs; large and reproducible
+*.jsonl
+node_modules/
+
+# Original Atari source: no licence upstream, so never redistributed from here
+asteroids-main/
