@@ -2,7 +2,7 @@
 
 Version 3 is the working copy, [`asteroids.html`](../asteroids.html). It starts from the frozen [version 2](VERSION_2.md) and adds one thing: a second autopilot, `smartPilot`, that looks ahead, moves the ship with thrust to dodge, and uses hyperspace only when nothing else works. The game rules are unchanged from version 2.
 
-Version 3 is not frozen yet. An autopilot based on a decision model (CLM) is planned for a later step and is not part of this document. The model reference and the design decisions so far are in [CLM.md](CLM.md).
+Version 3 is not frozen yet. An autopilot based on a decision model (such as Laya, Kev, Jev, or CLM) is planned for a later step and is not part of this document. The decision model landscape, Apple Silicon M1 feasibility, and autopilot design decisions are in [DECISION_MODELS.md](DECISION_MODELS.md), with specific facts on CLM in [CLM.md](CLM.md).
 
 ## 1. What changed
 
@@ -92,5 +92,5 @@ node scripts/dev/death_causes.js asteroids.html 1500000 smartPilot
 
 ## 7. Not done yet
 
-- A pilot based on a decision model (CLM, [model card](https://huggingface.co/Contrastive-LM/CLM-v0.1-8B)). CLM scores a closed list of candidate actions against a text description of the state, served from Python over HTTP on top of a Qwen3-8B encoder. The game and the model will run asynchronously: the game never waits for an answer. Details and open questions in [CLM.md](CLM.md). Planned for a later step.
+- A pilot based on a decision model (System One model). The pilot scores a closed list of candidate action primitives against a structured state description via the standard `/v1/systemone` protocol, running asynchronously without blocking the 60 Hz game loop. Candidate models to test locally on the M1 are `laya-mlx` (sub-frame latency) and `Kev` (Qwen base with pointer readout), alongside hosted Jev and remote CLM-8B. Details, model comparisons, and hardware feasibility in [DECISION_MODELS.md](DECISION_MODELS.md) and [CLM.md](CLM.md). Planned for a later step.
 - Freezing version 3 into `versions/v3/`.
