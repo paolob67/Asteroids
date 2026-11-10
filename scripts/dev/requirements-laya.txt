@@ -1,0 +1,4 @@
+# Dependencies for scripts/dev/laya_server.py (Apple Silicon only).
+# Pinned to the version used for the measurements in docs/VERSION_3.md.
+# mlx, numpy, tokenizers and huggingface-hub are installed as dependencies of laya-mlx.
+laya-mlx==0.6.0

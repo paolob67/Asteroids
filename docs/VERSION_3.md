@@ -1,8 +1,8 @@
 # Version 3: a smarter autopilot and a Manual | Simple | Smart selector
 
-Version 3 is the working copy, [`asteroids.html`](../asteroids.html). It starts from the frozen [version 2](VERSION_2.md) and adds one thing: a second autopilot, `smartPilot`, that looks ahead, moves the ship with thrust to dodge, and uses hyperspace only when nothing else works. The game rules are unchanged from version 2.
+Version 3 is frozen in [`versions/v3/`](../versions/v3/) (SHA-256 `9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6`). It starts from the frozen [version 2](VERSION_2.md) and adds one thing: a second autopilot, `smartPilot`, that looks ahead, moves the ship with thrust to dodge, and uses hyperspace only when nothing else works. The game rules are unchanged from version 2.
 
-Version 3 is not frozen yet. An autopilot based on a decision model (such as Laya, Kev, Jev, or CLM) is planned for a later step and is not part of this document. The decision model landscape, Apple Silicon M1 feasibility, and autopilot design decisions are in [DECISION_MODELS.md](DECISION_MODELS.md), with dedicated plans in [LAYA.md](LAYA.md) and [CLM.md](CLM.md).
+The root [`asteroids.html`](../asteroids.html) was identical to the frozen file at the moment of freezing and is now the working copy for later work. See [`versions/v3/README.md`](../versions/v3/README.md) for the checksum and verification commands. Autopilots based on other decision models (such as Kev, Jev, or CLM) are planned for later steps and are not part of this document. The decision model landscape, Apple Silicon M1 feasibility, and autopilot design decisions are in [DECISION_MODELS.md](DECISION_MODELS.md), with dedicated plans in [LAYA.md](LAYA.md) and [CLM.md](CLM.md).
 
 ## 1. What changed
 
@@ -76,11 +76,11 @@ When using **Laya**, the local MLX decision server must be running:
 ```bash
 .venv/bin/python scripts/dev/laya_server.py --port 8700
 ```
-Verify the server with `curl -s http://127.0.0.1:8700/health`. If the server is offline when Laya is selected, the Decision panel alerts you with a connection notice.
+Setup (virtual environment, `requirements-laya.txt`, first-run model download) is in [LAYA.md](LAYA.md#32-setup-and-serving-commands). Verify the server with `curl -s http://127.0.0.1:8700/health`. If the server is offline when Laya is selected, the Decision panel alerts you with a connection notice.
 
 ## 6. Validation
 
-`scripts/run_all.sh` passes on the working copy and on both frozen versions. The new selector test is skipped for versions that do not have the selector.
+`scripts/run_all.sh` passes on the working copy and on all three frozen versions. The new selector test is skipped for versions that do not have the selector.
 
 | Script | Purpose |
 |--------|---------|
@@ -103,5 +103,4 @@ node scripts/dev/death_causes.js asteroids.html 1500000 smartPilot
 
 ## 7. Not done yet
 
-- A pilot based on a decision model (System One model). The pilot scores a closed list of candidate action primitives against a structured state description via the standard `/v1/systemone` protocol, running asynchronously without blocking the 60 Hz game loop. Candidate models to test locally on the M1 are `laya-mlx` (sub-frame latency) and `Kev` (Qwen base with pointer readout), alongside hosted Jev and remote CLM-8B. Details, model comparisons, and hardware feasibility in [DECISION_MODELS.md](DECISION_MODELS.md), [LAYA.md](LAYA.md), and [CLM.md](CLM.md). Planned for a later step.
-- Freezing version 3 into `versions/v3/`.
+- Pilots based on the other decision models: `Kev` (Qwen base with pointer readout), hosted Jev and remote CLM-8B. `laya-mlx` is done and included in this version. Details, model comparisons, and hardware feasibility in [DECISION_MODELS.md](DECISION_MODELS.md), [LAYA.md](LAYA.md), and [CLM.md](CLM.md). Planned for a later step.

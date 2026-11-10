@@ -5,7 +5,7 @@ Version 2 is frozen in [`versions/v2/`](../versions/v2/) (SHA-256 `dcf850dc81f41
 1. It restores behavior that was lost or wrong in the first port. These are corrections to the 6502 reading, not new features.
 2. It makes the game state and the player's decisions visible, and uses that to run a very simple autopilot that plays far better than a human would expect from so little logic.
 
-The working copy, [`asteroids.html`](../asteroids.html), is now version 3 and will diverge from this file. Every statement below describes the frozen v2. See [`versions/v2/README.md`](../versions/v2/README.md) for the checksum and verification commands.
+Version 3 ([`versions/v3/`](../versions/v3/)) is frozen and the working copy, [`asteroids.html`](../asteroids.html), will diverge from it. Every statement below describes the frozen v2. See [`versions/v2/README.md`](../versions/v2/README.md) for the checksum and verification commands.
 
 - Fidelity notes, controls, sound: [PORT_NOTES.md](PORT_NOTES.md)
 - Structure and routine mapping: [ARCHITECTURE.md](ARCHITECTURE.md)

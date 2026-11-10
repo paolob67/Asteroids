@@ -12,7 +12,21 @@ The page shows the game on a 4:3 monitor on the left. On the right, the top pane
 |---------|----------|--------|
 | v1 | [`versions/v1/`](versions/v1/) | Frozen, read-only baseline of the first manual port. Reference for the planned article comparing this step with a code modernization approach. |
 | v2 | [`versions/v2/`](versions/v2/) | Frozen, read-only. Restores behavior lost in the first port, adds the State and Decision panels, and adds a very simple autopilot (rotates and fires from the centre; no thrust, no movement, no hyperspace). |
-| v3 (working copy) | [`asteroids.html`](asteroids.html) | Adds `smartPilot`, `layaPilot`, and the Manual / Simple / Smart / Laya selector. Not frozen. All further work happens here. |
+| v3 | [`versions/v3/`](versions/v3/) | Frozen, read-only. Adds `smartPilot`, `layaPilot`, and the Manual / Simple / Smart / Laya selector. |
+| Working copy | [`asteroids.html`](asteroids.html) | Currently identical to v3. All further work happens here. |
+
+## Run the Laya server (optional)
+
+The **Laya** button needs a local decision server. Without it the button is disabled and the game flies `smartPilot` instead. Apple Silicon is required (Python 3.12 was used for the measurements; the install also works on 3.14). From the repository root:
+
+```bash
+python3 -m venv .venv                                   # once
+.venv/bin/pip install -r scripts/dev/requirements-laya.txt   # once
+.venv/bin/python scripts/dev/laya_server.py --port 8700      # keep running
+curl -s http://127.0.0.1:8700/health                    # from another terminal
+```
+
+The first start downloads the model weights from Hugging Face. Details, model options and troubleshooting: [Laya-MLX local autopilot plan](docs/LAYA.md#32-setup-and-serving-commands).
 
 ## Documentation
 
@@ -25,7 +39,7 @@ The page shows the game on a 4:3 monitor on the left. On the right, the top pane
 - [Version 1 baseline](docs/VERSION_1.md): what was done, feature list, known deviations from the original, validation results, article metrics.
 - [Architecture](docs/ARCHITECTURE.md): structure of the script, state machine, mapping from 6502 routines to JavaScript functions, and the v2 state and decision loop, with diagrams.
 - [Port notes](docs/PORT_NOTES.md): controls, sound synthesis, fidelity to the original, known approximations, validation scripts.
-- [Frozen v1 README](versions/v1/README.md) and [frozen v2 README](versions/v2/README.md): checksum, integrity and comparison commands.
+- [Frozen v1 README](versions/v1/README.md), [frozen v2 README](versions/v2/README.md) and [frozen v3 README](versions/v3/README.md): checksum, integrity and comparison commands.
 
 Diagram sources (`.drawio`) and exports (`.png`) are in [`docs/diagrams/`](docs/diagrams/).
 
@@ -35,20 +49,22 @@ Diagram sources (`.drawio`) and exports (`.png`) are in [`docs/diagrams/`](docs/
 scripts/run_all.sh                              # working copy
 scripts/run_all.sh versions/v1/asteroids.html   # frozen v1
 scripts/run_all.sh versions/v2/asteroids.html   # frozen v2
+scripts/run_all.sh versions/v3/asteroids.html   # frozen v3
 
 node scripts/dev/measure_autopilot.js asteroids.html 3000000   # autopilot against baselines
 node scripts/dev/measure_pilots.js asteroids.html 1200000 simplePilot,smartPilot 8   # Simple against Smart
 node scripts/dev/check_thrust_physics.js asteroids.html 300000 smartPilot            # pilot moves the ship only through the keys
 node scripts/dev/compare_versions.js                           # v1 against v2
-node scripts/dev/compare_versions.js versions/v2/asteroids.html asteroids.html   # v2 against the working copy
+node scripts/dev/compare_versions.js versions/v2/asteroids.html asteroids.html   # v2 against the working copy (also v3 once the working copy diverges)
 ```
 
 ## Repository layout
 
 ```
-asteroids.html        working copy of the game (version 3)
+asteroids.html        working copy of the game (identical to version 3 at the freeze)
 versions/v1/          frozen version 1 + SHA256SUMS
 versions/v2/          frozen version 2 + SHA256SUMS
+versions/v3/          frozen version 3 + SHA256SUMS
 docs/                 documentation and diagrams
 scripts/              validation and measurement scripts (run_all.sh, check_syntax.js, dev/)
 ```

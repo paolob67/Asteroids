@@ -61,11 +61,23 @@ While Laya can also be pulled through Ollama (or Ollaya), native `laya-mlx` was 
 2. **True Probability Calibration**: `laya-mlx` retains the author's fitted temperature scaling and confidence calibration. Ollama outputs raw softmax scores without specialized calibration.
 3. **Structured Criteria Support**: `laya-mlx` accepts detailed `criteria` descriptions per candidate action, allowing the model to distinguish nuanced flight conditions.
 
-### 3.2 Serving Commands
-To run the local Laya-MLX server on port 8700 using the project's virtual environment:
+### 3.2 Setup and Serving Commands
+Requirements: a Mac with Apple Silicon. Python 3.12 was used for the measurements; a fresh install of `requirements-laya.txt` also imports cleanly on 3.14. The server uses only the Python standard library plus `laya-mlx`, so no web framework is needed.
+
+One-time setup, from the repository root:
+```bash
+python3 -m venv .venv
+.venv/bin/pip install -r scripts/dev/requirements-laya.txt
+```
+
+Start the server (keep the terminal open; stop it with `Ctrl+C`):
 ```bash
 .venv/bin/python scripts/dev/laya_server.py --port 8700
 ```
+
+The first start downloads the `aac6fef/laya-mlx` weights from Hugging Face into `~/.cache/huggingface/` and needs network access. Later starts load from the cache. The server listens on `127.0.0.1` only. To use another model, pass `--model` with a Hugging Face ID from the table in section 2. If the port is taken ("Address already in use"), a server is probably already running: check with the health probe below.
+
+`.venv` is listed in `.gitignore` and is not committed.
 
 ### 3.3 How to Verify the Server is Running
 
@@ -75,32 +87,34 @@ You can verify that the local inference server is active and reachable using any
    ```bash
    curl -s http://127.0.0.1:8700/health
    ```
-   *Expected response*: `{"status": "ok", "model": "aac6fef/laya-multilingual-mlx"}`
+   *Expected response*: `{"status": "ok", "model": "aac6fef/laya-mlx"}` (the model ID is the value of `--model`, so another model shows its own ID)
 
 2. **In the Browser Game UI**:
    Open `asteroids.html` in your browser and click the **Laya** button in the Decision panel:
    * **When active**: The Decision panel note displays real-time telemetry:
      ```text
-     Laya decision: stay_and_fire (p=0.92, conf=0.88). Latency: 32.1 ms (avg 33.4 ms).
+     Laya decision: stay_and_fire (p=0.92, conf=0.88). Latency: 11.2 ms (avg 11.2 ms).
      ```
-   * **When offline**: The Decision panel displays an explicit alert:
+     (The numbers shown are an example. The latency depends on the machine and the model.)
+   * **When offline**: The Laya button is disabled, the game runs `smartPilot` as a fallback, and the Decision panel shows:
      ```text
-     Laya server error (Failed to fetch). Is laya-mlx-serve running on port 8700?
+     Laya server offline. Running Smart fallback. (To enable Laya: .venv/bin/python scripts/dev/laya_server.py --port 8700)
      ```
+     The game reconnects by itself once the server is up.
 
 3. **Browser DevTools Network Tab**:
-   Open DevTools (`Cmd + Option + I`), go to the **Network** tab, and filter by `Fetch/XHR`. When **Laya** is active, you will see `POST /v1/systemone` requests returning `200 OK` every ~30 to 40 ms.
+   Open DevTools (`Cmd + Option + I`), go to the **Network** tab, and filter by `Fetch/XHR`. When **Laya** is active, you will see `POST /v1/systemone` requests returning `200 OK`, one after another as each decision completes.
 
 ---
 
 ## 4. Step-by-Step Implementation Plan
 
 ### Phase 1: Local Server Setup and Baseline Verification
-1. Create a lightweight Python environment on the machine:
+1. Create a lightweight Python environment on the machine (same as section 3.2; the `[server]` extra of `laya-mlx` is not needed because `scripts/dev/laya_server.py` uses the standard library HTTP server):
    ```bash
-   python3 -m venv .venv-laya
-   source .venv-laya/bin/activate
-   pip install "laya-mlx[server]"
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install -r scripts/dev/requirements-laya.txt
    ```
 2. Run the reference verification probe to ensure the MLX engine matches published reference values:
    ```python

@@ -3,7 +3,7 @@
 Version 1 is the result of the first porting pass: the original Atari Asteroids 6502 source translated by hand into one JavaScript file. It is frozen in [`versions/v1/`](../versions/v1/) and is the starting point for later work, and the reference for the planned article that compares this first step with a code modernization approach.
 
 - Frozen copy: [`versions/v1/asteroids.html`](../versions/v1/asteroids.html) (SHA-256 `8b544821dd5fcc9328c854bb8c53a183ed4e9a93994bdc1e8465a27fbdac2d86`)
-- Next version, frozen: [`versions/v2/asteroids.html`](../versions/v2/asteroids.html). What changed is described in [VERSION_2.md](VERSION_2.md). The working copy [`asteroids.html`](../asteroids.html) is now version 3.
+- Next version, frozen: [`versions/v2/asteroids.html`](../versions/v2/asteroids.html). What changed is described in [VERSION_2.md](VERSION_2.md). Version 3 is also frozen, in [`versions/v3/`](../versions/v3/); the working copy [`asteroids.html`](../asteroids.html) continues from it.
 - Architecture and source mapping: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Fidelity notes, sound design, controls: [PORT_NOTES.md](PORT_NOTES.md)
 
