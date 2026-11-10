@@ -45,6 +45,7 @@
   #ctl button:last-child { border-right: 0; }
   #ctl button:hover { color: #c9d1d9; }
   #ctl button[aria-pressed="true"] { background: #2ea043; color: #fff; }
+  #ctl button:disabled { opacity: 0.45; cursor: not-allowed; }
   #ctl button:focus-visible { outline: 2px solid #58a6ff; outline-offset: -2px; }
 
   /* Decision panel */
@@ -2490,7 +2491,10 @@ function layaPilot(s) {
         };
         layaLastTick = s.frame;
       }).catch(err => {
-        layaLastAction = { choice: 'stay_and_fire', why: `Laya server error (${err.message}). Is laya-mlx-serve running on port 8700?` };
+        layaLastAction = {
+          choice: 'stay_and_fire',
+          why: `Laya server offline. To enable, run in terminal: .venv/bin/python scripts/dev/laya_server.py --port 8700`
+        };
       }).finally(() => {
         layaPending = false;
       });
@@ -2556,6 +2560,29 @@ for (const n in CONTROLLERS) {
   const b = $('ctl-' + n);
   if (b && b.addEventListener) b.addEventListener('click', () => setController(n));
 }
+
+// Probes the local Laya-MLX server upon load and enables the Laya controller button if active
+function checkLayaServer() {
+  const b = $('ctl-laya');
+  if (!b || typeof fetch !== 'function') return;
+  fetch('http://127.0.0.1:8700/health', { method: 'GET' })
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      if (b.removeAttribute) b.removeAttribute('disabled');
+      b.disabled = false;
+      b.title = 'Version 3 decision model: Laya-MLX on Apple Silicon (' + (data.model || 'Connected') + ')';
+      console.log('[Laya Autopilot] Server online: http://127.0.0.1:8700 (model: ' + (data.model || 'laya-mlx') + ')');
+    })
+    .catch(() => {
+      b.disabled = true;
+      b.title = 'Laya server offline. Run: .venv/bin/python scripts/dev/laya_server.py --port 8700';
+      console.warn('[Laya Autopilot] Local server is offline (http://127.0.0.1:8700).\nTo enable Laya autopilot, start the server in a terminal:\n  .venv/bin/python scripts/dev/laya_server.py --port 8700');
+    });
+}
+checkLayaServer();
 
 function stateText() {
   const s = snapshot(), n = Math.round;
