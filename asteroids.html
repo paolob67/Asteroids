@@ -61,6 +61,17 @@
   #note { font-size: 12px; line-height: 1.5; color: #c9d1d9; min-height: 3em; }
   #decision-json { font-size: 11px; color: #9ecbff; white-space: pre-wrap; word-break: break-all; }
 
+  /* Laya server status banner */
+  #laya-banner { font-size: 11px; line-height: 1.4; padding: 7px 10px; border-radius: 6px;
+                 display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #laya-banner .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  #laya-banner.banner-offline { background: #211c1d; border: 1px solid #4a282b; color: #f85149; }
+  #laya-banner.banner-offline .dot { background: #f85149; }
+  #laya-banner.banner-offline code { background: #120d0e; color: #ff7b72; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
+  #laya-banner.banner-online { background: #13231b; border: 1px solid #234e33; color: #3fb950; }
+  #laya-banner.banner-online .dot { background: #3fb950; }
+  #laya-banner.banner-online code { background: #0d1912; color: #7ee787; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
+
   #info { font-size: 11px; color: #6e7681; }
 </style>
 </head>
@@ -83,6 +94,10 @@
           </div>
         </h2>
         <div id="decision-body">
+          <div id="laya-banner" class="banner-offline">
+            <span class="dot"></span>
+            <span>Laya Server Offline &nbsp;&bull;&nbsp; Run: <code>.venv/bin/python scripts/dev/laya_server.py --port 8700</code></span>
+          </div>
           <div id="mode"></div>
           <div id="keys">
             <div class="key" id="k-left">LEFT</div>
@@ -2456,11 +2471,19 @@ const LAYA_QUESTIONS = {
   }
 };
 
+let layaServerOnline = false;
+let layaLastFailTime = 0;
+let layaFallbackLogged = false;
+
 function layaPilot(s) {
   const sh = s.ship;
   if (!sh || !sh.alive || !sh.visible || sh.exploding) return { why: 'Ship is not active: no action.' };
 
-  if (!layaPending && typeof fetch === 'function') {
+  const now = Date.now();
+  // If the server recently failed, throttle retries to once every 3 seconds
+  const canFetch = !layaPending && typeof fetch === 'function' && (layaServerOnline || (now - layaLastFailTime > 3000));
+
+  if (canFetch) {
     const stateText = layaFormatState(s);
     if (stateText) {
       layaPending = true;
@@ -2469,7 +2492,18 @@ function layaPilot(s) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state: stateText, questions: LAYA_QUESTIONS })
-      }).then(r => r.json()).then(data => {
+      }).then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      }).then(data => {
+        layaServerOnline = true;
+        if (layaFallbackLogged) {
+          console.log('[Laya Autopilot] Server reconnected on http://127.0.0.1:8700. Resuming live neural decision control.');
+          layaFallbackLogged = false;
+        }
+        const b = $('ctl-laya');
+        if (b) { b.disabled = false; b.removeAttribute('disabled'); }
+
         const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         const lat = t1 - t0;
         layaLatencies.push(lat);
@@ -2487,18 +2521,41 @@ function layaPilot(s) {
           conf,
           lat,
           avgLat,
+          isFallback: false,
           why: `Laya decision: ${choice} (p=${prob.toFixed(2)}, conf=${conf.toFixed(2)}). Latency: ${lat.toFixed(1)} ms (avg ${avgLat} ms).`
         };
         layaLastTick = s.frame;
       }).catch(err => {
+        layaServerOnline = false;
+        layaLastFailTime = Date.now();
+        if (!layaFallbackLogged) {
+          console.warn('[Laya Autopilot] Server offline. Falling back to Smart pilot.\nTo start the Laya server, run:\n  .venv/bin/python scripts/dev/laya_server.py --port 8700');
+          layaFallbackLogged = true;
+        }
+        const b = $('ctl-laya');
+        if (b) b.disabled = true;
+
         layaLastAction = {
-          choice: 'stay_and_fire',
-          why: `Laya server offline. To enable, run in terminal: .venv/bin/python scripts/dev/laya_server.py --port 8700`
+          isFallback: true,
+          why: `Laya server offline. Running Smart fallback. (To enable Laya: .venv/bin/python scripts/dev/laya_server.py --port 8700)`
         };
       }).finally(() => {
         layaPending = false;
       });
     }
+  }
+
+  // Graceful fallback to smartPilot when server is offline
+  if (layaLastAction.isFallback) {
+    const smart = smartPilot(s);
+    return {
+      left: smart.left,
+      right: smart.right,
+      thrust: smart.thrust,
+      fire: smart.fire,
+      hyper: smart.hyper,
+      why: `${layaLastAction.why} [Smart: ${smart.why}]`
+    };
   }
 
   const choice = layaLastAction.choice || 'stay_and_fire';
@@ -2547,6 +2604,9 @@ const $ = id => document.getElementById(id);
 const CONTROLLERS = { manual: null, simple: simplePilot, smart: smartPilot, laya: layaPilot };
 function setController(name) {
   AUTOPILOT = CONTROLLERS[name];
+  if (name === 'laya' && !layaServerOnline) {
+    console.warn('[Laya Autopilot] Laya controller selected while server is offline. Running Smart pilot fallback.\nTo start the Laya server, run:\n  .venv/bin/python scripts/dev/laya_server.py --port 8700');
+  }
   for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', ' ', 'Shift']) keys[k] = false;   // release held keys
   for (const n in CONTROLLERS) {
     const b = $('ctl-' + n);
@@ -2564,6 +2624,7 @@ for (const n in CONTROLLERS) {
 // Probes the local Laya-MLX server upon load and enables the Laya controller button if active
 function checkLayaServer() {
   const b = $('ctl-laya');
+  const banner = $('laya-banner');
   if (!b || typeof fetch !== 'function') return;
   fetch('http://127.0.0.1:8700/health', { method: 'GET' })
     .then(r => {
@@ -2571,18 +2632,30 @@ function checkLayaServer() {
       return r.json();
     })
     .then(data => {
+      layaServerOnline = true;
       if (b.removeAttribute) b.removeAttribute('disabled');
       b.disabled = false;
       b.title = 'Version 3 decision model: Laya-MLX on Apple Silicon (' + (data.model || 'Connected') + ')';
+      if (banner) {
+        banner.className = 'banner-online';
+        banner.innerHTML = '<span class="dot"></span><span>Laya Server Online &nbsp;&bull;&nbsp; <code>' + (data.model || 'laya-mlx') + '</code></span>';
+      }
       console.log('[Laya Autopilot] Server online: http://127.0.0.1:8700 (model: ' + (data.model || 'laya-mlx') + ')');
     })
     .catch(() => {
+      layaServerOnline = false;
       b.disabled = true;
       b.title = 'Laya server offline. Run: .venv/bin/python scripts/dev/laya_server.py --port 8700';
+      if (banner) {
+        banner.className = 'banner-offline';
+        banner.innerHTML = '<span class="dot"></span><span>Laya Server Offline &nbsp;&bull;&nbsp; Run: <code>.venv/bin/python scripts/dev/laya_server.py --port 8700</code></span>';
+      }
       console.warn('[Laya Autopilot] Local server is offline (http://127.0.0.1:8700).\nTo enable Laya autopilot, start the server in a terminal:\n  .venv/bin/python scripts/dev/laya_server.py --port 8700');
     });
 }
 checkLayaServer();
+if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('focus', checkLayaServer);
+if (typeof setInterval === 'function') setInterval(checkLayaServer, 5000);
 
 function stateText() {
   const s = snapshot(), n = Math.round;
