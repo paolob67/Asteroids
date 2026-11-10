@@ -2480,57 +2480,59 @@ function layaPilot(s) {
         const conf = ans?.confidence ?? prob;
         const avgLat = (layaLatencies.reduce((a, b) => a + b, 0) / layaLatencies.length).toFixed(1);
 
-        let left = false, right = false, thrust = false, fire = false, hyper = false;
-        let note = '';
-        if (choice === 'hyperspace') {
-          hyper = true;
-          note = 'hyperspace jump triggered';
-        } else if (choice === 'turn_left_and_thrust') {
-          left = true; thrust = true; fire = true;
-          note = 'dodging left with thrust';
-        } else if (choice === 'turn_right_and_thrust') {
-          right = true; thrust = true; fire = true;
-          note = 'dodging right with thrust';
-        } else {
-          // stay_and_fire: aim nose at target and fire
-          const target = spPickTarget(s, null);
-          if (target) {
-            const aimAt = spAngle(target.ax, -target.ay);
-            const d = spSigned(aimAt - sh.angle);
-            left = d > 3;
-            right = d < -3;
-            const aimed = Math.abs(d) <= 3;
-            fire = aimed;
-            note = aimed ? 'aimed: fire' : (d > 0 ? 'turning left to aim' : 'turning right to aim');
-          } else {
-            fire = true;
-            note = 'clear space: fire';
-          }
-        }
-
         layaLastAction = {
-          left, right, thrust, fire, hyper,
-          why: `Laya decision: ${choice} (p=${prob.toFixed(2)}, conf=${conf.toFixed(2)}). ${note}. Latency: ${lat.toFixed(1)} ms (avg ${avgLat} ms).`
+          choice,
+          prob,
+          conf,
+          lat,
+          avgLat,
+          why: `Laya decision: ${choice} (p=${prob.toFixed(2)}, conf=${conf.toFixed(2)}). Latency: ${lat.toFixed(1)} ms (avg ${avgLat} ms).`
         };
         layaLastTick = s.frame;
       }).catch(err => {
-        layaLastAction = { why: `Laya server error (${err.message}). Is laya-mlx-serve running on port 8700?` };
+        layaLastAction = { choice: 'stay_and_fire', why: `Laya server error (${err.message}). Is laya-mlx-serve running on port 8700?` };
       }).finally(() => {
         layaPending = false;
       });
     }
   }
 
-  const fresh = (s.frame - layaLastTick) <= 12;
-  const act = fresh ? layaLastAction : { why: layaLastAction.why || 'Awaiting Laya response...' };
-  return {
-    left: !!act.left,
-    right: !!act.right,
-    thrust: !!act.thrust,
-    fire: !!act.fire && s.frame % 2 === 0,
-    hyper: !!act.hyper && s.frame % 2 === 0,
-    why: act.why || ''
-  };
+  const choice = layaLastAction.choice || 'stay_and_fire';
+  let left = false, right = false, thrust = false, fire = false, hyper = false;
+  let note = '';
+
+  if (choice === 'hyperspace') {
+    hyper = s.frame % 2 === 0;
+    note = 'hyperspace escape jump triggered';
+  } else if (choice === 'turn_left_and_thrust') {
+    left = true;
+    thrust = true;
+    fire = s.frame % 2 === 0;
+    note = 'dodging left with thrust';
+  } else if (choice === 'turn_right_and_thrust') {
+    right = true;
+    thrust = true;
+    fire = s.frame % 2 === 0;
+    note = 'dodging right with thrust';
+  } else {
+    // stay_and_fire: real-time aiming and shooting on current tick
+    const target = spPickTarget(s, null);
+    if (target) {
+      const aimAt = spAngle(target.ax, -target.ay);
+      const d = spSigned(aimAt - sh.angle);
+      left = d > 3;
+      right = d < -3;
+      const aimed = Math.abs(d) <= 3;
+      fire = aimed && s.frame % 2 === 0;
+      note = aimed ? 'aligned: fire' : (d > 0 ? 'turning left to aim' : 'turning right to aim');
+    } else {
+      fire = s.frame % 2 === 0;
+      note = 'airspace clear: fire';
+    }
+  }
+
+  const why = layaLastAction.why ? `${layaLastAction.why} [${note}]` : note;
+  return { left, right, thrust, fire, hyper, why };
 }
 
 // ---------------------------------------------------------------------------

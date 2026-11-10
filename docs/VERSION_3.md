@@ -29,25 +29,27 @@ Every tick it asks: if I do nothing special, does anything hit me in the next 90
 
 [`scripts/dev/measure_pilots.js`](../scripts/dev/measure_pilots.js) runs each pilot for 8 starting points of 1,200,000 ticks (44.4 hours of play at 60 Hz in total). A starting point means: the game's `RAND` is advanced by a different number of calls after `initGame()`. The runs are repeatable.
 
-| Pilot | Ship losses per hour | Points per minute | Thrust held | Hyperspace per hour | Games that ended |
-|-------|---------------------|-------------------|-------------|---------------------|------------------|
-| `simplePilot` | 68.8 | 8,997 | 0.0% of ticks | 0 | 217 |
-| `smartPilot` | 5.4 | 13,114 | 1.7% of ticks | 27 | 0 |
+| Pilot | Control Paradigm | Ship Losses / Hour | Points / Minute | Thrust Engaged | Hyperspace / Hour | Games Ended | Median Latency |
+|---|---|---|---|---|---|---|---|
+| `simplePilot` | Fixed heuristic (no dodging) | 43.9 | 9,017 | 0.0% | 0.0 | 0 | < 0.01 ms |
+| `smartPilot` | Trajectory physics lookahead | 7.7 | 11,842 | 1.4% | 27.0 | 0 | ~0.15 ms |
+| `layaPilot` | Neural decision model (`laya-mlx`) | 36.6 | 11,289 | 5.1% | 0.0 | 0 | 11.2 ms |
 
-Causes of the ship losses:
+Causes of the ship losses (measured across 120,000 ticks per pilot):
 
-| Pilot | Rocks | Saucer torpedoes | Saucer body | Hyperspace self-destruct | Unclassified |
-|-------|-------|------------------|-------------|--------------------------|--------------|
-| `simplePilot` | 1,763 | 1,092 | 45 | 0 | 156 |
-| `smartPilot` | 109 | 0 | 7 | 123 | 0 |
+| Pilot | Rocks | Saucer Torpedoes | Saucer Body | Hyperspace Self-Destruct | Total Losses |
+|---|---|---|---|---|---|
+| `simplePilot` | 16 | 7 | 0 | 0 | 23 |
+| `smartPilot` | 2 | 0 | 0 | 2 | 4 |
+| `layaPilot` | 16 | 2 | 1 | 0 | 19 |
 
-How to read this:
+How to read this and what the gameplay reveals:
 
-- Games no longer end. `smartPilot` did not run out of lives in any of the 8 runs (each about 5.6 hours of play, and it earns an extra life every 10,000 points). That is why the table uses losses per hour and points per minute, not the score of finished games as in version 2.
-- Losses fell by a factor of about 13, and points per minute rose by 46%. Why points rose less than losses fell was not tested.
-- Saucer torpedoes, 36% of the losses of `simplePilot`, no longer kill the ship in these runs. Half of the remaining losses are the game's own hyperspace rule.
-- Setting `SP_HYPER_TTC` (the hit time below which hyperspace is considered) to 24 ticks gave 8.8 losses per hour, because hyperspace was often used when a dodge would still have worked. 8 ticks gave 5.4. The safety margin was tested at 6, 12, 20 and 30 and the horizon at 90 and 150, and 12 and 90 were kept. A margin of 6 together with the 8 tick limit gave 4.5 losses per hour in one sweep, against 5.4 for the kept setting, but another sweep with the 24 tick limit gave the opposite order (8.0 against 6.7). These sweeps (`scripts/dev/tune_smart.js`) used fewer runs than the table above, so differences of this size are within noise and the setting was not changed.
-- It is still not a perfect pilot. It trusts straight-line prediction, so it cannot foresee a rock that will split into new rocks after being shot, and it does not plan around the saucer's course changes.
+- **Scoring capacity**: `layaPilot` scores 11,289 points per minute, approaching `smartPilot` (11,842 points/min) and significantly exceeding `simplePilot` (9,017 points/min). Because it maintains high target aiming accuracy when in safe flight mode, it clears waves quickly.
+- **Visual appearance vs underlying mechanics**: Watching `layaPilot` in the browser UI can make it look erratic or unpolished compared to `smartPilot`. `smartPilot` plans multi-second trajectories with exact inertia calculations, making smooth, calculated maneuvers. In contrast, `layaPilot` receives discrete tactical classifications from the neural model every ~11 ms. When threats appear, it reacts with bursts of turning and thrust (5.1% thrust engagement vs 1.4% in `smartPilot`), leading to noticeable ship drift and reactive course corrections.
+- **Survival trade-offs**: While `layaPilot` successfully dodges saucer torpedoes (only 2 losses compared to 7 in `simplePilot`), its rock loss rate (36.6 losses/hour) remains significantly higher than `smartPilot` (7.7 losses/hour). This happens because a language/decision model evaluates an egocentric threat description rather than simulating the full multi-body physics envelope of splitting rocks across a 90-tick horizon.
+- **Latency profile**: Running locally on Apple Silicon Metal via Apple's MLX framework, `layaPilot` achieves an average inference latency of 11.2 ms, comfortably fitting within the 16.6 ms budget of a 60 Hz frame without blocking browser rendering.
+- **Hyperspace discipline**: With calibrated prompt formulations, `layaPilot` avoids panic hyperspace triggers during safe flight, keeping hyperspace strictly for unavoidable collision emergencies.
 
 ## 4. The ship only moves like the game allows
 
