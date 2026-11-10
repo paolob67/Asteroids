@@ -4,7 +4,7 @@ JavaScript canvas port of the original Atari Asteroids 6502 source, published at
 
 Open [`asteroids.html`](asteroids.html) in a browser to play. No build step, no dependencies.
 
-The page shows the game on a 4:3 monitor on the left. On the right, the top panel shows the game state (`snapshot()`) and the bottom panel shows the decision (the keys pressed and why). The **Manual | Simple | Smart** selector in the Decision panel chooses who flies: you with the keyboard, the very simple v2 pilot ([Version 2](docs/VERSION_2.md#5-how-well-the-autopilot-plays)), or the v3 pilot that looks ahead, dodges with thrust and uses hyperspace as a last resort ([Version 3](docs/VERSION_3.md#3-how-well-it-plays)).
+The page shows the game on a 4:3 monitor on the left. On the right, the top panel shows the game state (`snapshot()`) and the bottom panel shows the decision (the keys pressed and why). The **Manual | Simple | Smart | Laya** selector in the Decision panel chooses who flies: you with the keyboard, the simple v2 pilot ([Version 2](docs/VERSION_2.md#5-how-well-the-autopilot-plays)), the v3 smart pilot that looks ahead and dodges with thrust ([Version 3](docs/VERSION_3.md#3-how-well-it-plays)), or the local `Laya-MLX` decision model running on Apple Silicon ([Laya Plan](docs/LAYA.md)).
 
 ## Versions
 
@@ -12,12 +12,13 @@ The page shows the game on a 4:3 monitor on the left. On the right, the top pane
 |---------|----------|--------|
 | v1 | [`versions/v1/`](versions/v1/) | Frozen, read-only baseline of the first manual port. Reference for the planned article comparing this step with a code modernization approach. |
 | v2 | [`versions/v2/`](versions/v2/) | Frozen, read-only. Restores behavior lost in the first port, adds the State and Decision panels, and adds a very simple autopilot (rotates and fires from the centre; no thrust, no movement, no hyperspace). |
-| v3 (working copy) | [`asteroids.html`](asteroids.html) | Adds `smartPilot` and the Manual / Simple / Smart selector. Not frozen. All further work happens here. |
+| v3 (working copy) | [`asteroids.html`](asteroids.html) | Adds `smartPilot`, `layaPilot`, and the Manual / Simple / Smart / Laya selector. Not frozen. All further work happens here. |
 
 ## Documentation
 
 - [Version 3: smarter autopilot and controller selector](docs/VERSION_3.md): how `smartPilot` predicts and dodges, proof that it moves the ship only through the keys, and measurements against the v2 pilot.
 - [Decision models and autopilot design](docs/DECISION_MODELS.md): overview of decision models (System One models like Laya, Kev, Jev, CLM), local feasibility analysis for Apple Silicon M1, selection of `laya-mlx` and `Kev` as local candidates, the `/v1/systemone` protocol, and autopilot architecture.
+- [Laya-MLX local autopilot plan](docs/LAYA.md): serving specifications, sub-frame latency benchmarks on Apple Silicon M1, ModernBERT architecture, and phased implementation plan for `laya-mlx`.
 - [CLM reference](docs/CLM.md): architecture facts, Qwen3-8B encoder with dual projection heads, serving stack, and remote GPU deployment notes for the Contrastive Language Model.
 - [Version 2: restored behavior, state, decisions, autopilot](docs/VERSION_2.md): what changed from v1 with measurements, how the state is represented, how the pilot decides, and how well it plays.
 - [Version 1 baseline](docs/VERSION_1.md): what was done, feature list, known deviations from the original, validation results, article metrics.

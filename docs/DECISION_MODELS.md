@@ -2,7 +2,9 @@
 
 This document analyzes the landscape of decision models (System One models), compares their architectural trade-offs, evaluates hardware feasibility on the development machine (Apple M1), and selects the primary candidates to test for the Asteroids autopilot.
 
-For specific implementation details on CLM, see [CLM.md](CLM.md).
+For specific implementation and serving specifications:
+- **Laya-MLX (Local Apple Silicon execution)**: [LAYA.md](LAYA.md)
+- **CLM (Remote GPU Contrastive Language Model)**: [CLM.md](CLM.md)
 
 ---
 

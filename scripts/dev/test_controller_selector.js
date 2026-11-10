@@ -34,10 +34,15 @@ check('smart marks only smart', () => pressed().join() === 'smart');
 check('switching releases held keys', () => !keys['ArrowUp'] && !keys[' ']);
 press('simple'); check('simple sets simplePilot', () => AUTOPILOT === simplePilot);
 check('simple marks only simple', () => pressed().join() === 'simple');
+if (typeof layaPilot !== 'undefined') {
+  press('laya');   check('laya sets layaPilot', () => AUTOPILOT === layaPilot);
+  check('laya marks only laya', () => pressed().join() === 'laya');
+}
 press('manual'); check('manual clears the autopilot', () => AUTOPILOT === null);
 check('manual marks only manual', () => pressed().join() === 'manual');
 // each controller can really play a few thousand ticks through applyAutopilot()
-for (const n of ['simple', 'smart', 'manual']) {
+const list = typeof layaPilot !== 'undefined' ? ['simple', 'smart', 'laya', 'manual'] : ['simple', 'smart', 'manual'];
+for (const n of list) {
   press(n); initGame(1);
   let ok = true;
   try { for (let i = 0; i < 5000; i++) { applyAutopilot(); update(); updatePanels(); } } catch (e) { ok = e.message; }

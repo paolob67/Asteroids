@@ -78,6 +78,7 @@
             <button type="button" id="ctl-manual" aria-pressed="true" title="You fly with the keyboard">Manual</button>
             <button type="button" id="ctl-simple" aria-pressed="false" title="Version 2 autopilot: turns and fires from the centre">Simple</button>
             <button type="button" id="ctl-smart" aria-pressed="false" title="Version 3 autopilot: looks ahead, dodges with thrust, hyperspace as a last resort">Smart</button>
+            <button type="button" id="ctl-laya" aria-pressed="false" title="Version 3 decision model: Laya-MLX on Apple Silicon">Laya</button>
           </div>
         </h2>
         <div id="decision-body">
@@ -2369,23 +2370,189 @@ function smartPilot(s) {
 
 
 // ---------------------------------------------------------------------------
+//  layaPilot (version 3): local decision model on Apple Silicon via /v1/systemone
+// ---------------------------------------------------------------------------
+// Uses the local laya-mlx HTTP server (default http://127.0.0.1:8700/v1/systemone).
+// Runs asynchronously: dispatches state snapshots over fetch() without blocking the 60 Hz loop.
+const LAYA_ENDPOINT = 'http://127.0.0.1:8700/v1/systemone';
+let layaPending = false;
+let layaLastAction = { why: 'Laya initialized: waiting for first decision.' };
+let layaLastTick = 0;
+let layaLatencies = [];
+
+function layaFormatState(s) {
+  const sh = s.ship;
+  if (!sh || !sh.alive || !sh.visible || sh.exploding) return null;
+  const shipAngleDeg = ((sh.angle || 0) * 360) / 256;
+  const speed = Math.hypot(sh.vx || 0, sh.vy || 0);
+
+  let nearestDist = Infinity;
+  let nearestRelAngle = 0;
+  let nearestClosingSpeed = 0;
+  let nearestType = 'none';
+
+  let imminentThreat = null;
+  let minThreatTtc = Infinity;
+
+  const items = (s.asteroids || []).filter(a => !a.exploding);
+  if (s.saucer && !s.saucer.exploding) items.push({ ...s.saucer, isSaucer: true });
+
+  for (const item of items) {
+    let dx = item.x - sh.x;
+    let dy = item.y - sh.y;
+    if (dx > 4096) dx -= 8192; else if (dx < -4096) dx += 8192;
+    if (dy > 3072) dy -= 6144; else if (dy < -3072) dy += 6144;
+    const dist = Math.hypot(dx, dy);
+    const itemBearingDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
+    let rel = itemBearingDeg - shipAngleDeg;
+    while (rel > 180) rel -= 360;
+    while (rel < -180) rel += 360;
+
+    const relVx = (item.vx || 0) - (sh.vx || 0);
+    const relVy = (item.vy || 0) - (sh.vy || 0);
+    const closing = -Math.round((dx * relVx + dy * relVy) / (dist || 1));
+
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestType = item.isSaucer ? 'saucer' : (item.size === 2 ? 'large rock' : item.size === 1 ? 'medium rock' : 'small rock');
+      nearestRelAngle = Math.round(rel);
+      nearestClosingSpeed = closing;
+    }
+
+    if (closing > 0 && dist < 1200) {
+      const ttc = dist / closing;
+      if (ttc < minThreatTtc) {
+        minThreatTtc = ttc;
+        imminentThreat = {
+          dist, rel: Math.round(rel), closing, ttc,
+          type: item.isSaucer ? 'saucer' : (item.size === 2 ? 'large rock' : item.size === 1 ? 'medium rock' : 'small rock')
+        };
+      }
+    }
+  }
+
+  if (imminentThreat && minThreatTtc <= 8) {
+    return `Situation: Fatal collision emergency. Unavoidable impact with ${imminentThreat.type} in ${Math.round(minThreatTtc)} ticks. Emergency hyperspace jump required.`;
+  }
+  if (imminentThreat && minThreatTtc <= 60) {
+    const side = imminentThreat.rel > 0 ? 'right' : 'left';
+    const dodge = side === 'right' ? 'left' : 'right';
+    return `Situation: Danger. ${imminentThreat.type} is incoming from the ${side} on a collision path in ${Math.round(minThreatTtc)} ticks. Pilot needs to turn ${dodge} and thrust to dodge.`;
+  }
+  return `Situation: Safe. No collision danger. Ship speed is ${speed.toFixed(1)} px/tick. Target ${nearestType} is ${Math.round(nearestDist)} units away. Ready to aim and shoot.`;
+}
+
+const LAYA_QUESTIONS = {
+  action: {
+    type: 'choice',
+    instructions: 'Determine the required flight action for the spaceship.',
+    criteria: {
+      stay_and_fire: 'Safe situation. Aim weapons towards target rock and fire.',
+      turn_left_and_thrust: 'Asteroid on right side. Turn left and thrust away to dodge.',
+      turn_right_and_thrust: 'Asteroid on left side. Turn right and thrust away to dodge.',
+      hyperspace: 'Fatal emergency when collision is unavoidable. Hyperspace escape jump.'
+    }
+  }
+};
+
+function layaPilot(s) {
+  const sh = s.ship;
+  if (!sh || !sh.alive || !sh.visible || sh.exploding) return { why: 'Ship is not active: no action.' };
+
+  if (!layaPending && typeof fetch === 'function') {
+    const stateText = layaFormatState(s);
+    if (stateText) {
+      layaPending = true;
+      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      fetch(LAYA_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: stateText, questions: LAYA_QUESTIONS })
+      }).then(r => r.json()).then(data => {
+        const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        const lat = t1 - t0;
+        layaLatencies.push(lat);
+        if (layaLatencies.length > 30) layaLatencies.shift();
+
+        const ans = data.answers?.action;
+        const choice = ans?.choice || 'stay_and_fire';
+        const prob = ans?.probabilities?.[choice] ?? ans?.confidence ?? 1;
+        const conf = ans?.confidence ?? prob;
+        const avgLat = (layaLatencies.reduce((a, b) => a + b, 0) / layaLatencies.length).toFixed(1);
+
+        let left = false, right = false, thrust = false, fire = false, hyper = false;
+        let note = '';
+        if (choice === 'hyperspace') {
+          hyper = true;
+          note = 'hyperspace jump triggered';
+        } else if (choice === 'turn_left_and_thrust') {
+          left = true; thrust = true; fire = true;
+          note = 'dodging left with thrust';
+        } else if (choice === 'turn_right_and_thrust') {
+          right = true; thrust = true; fire = true;
+          note = 'dodging right with thrust';
+        } else {
+          // stay_and_fire: aim nose at target and fire
+          const target = spPickTarget(s, null);
+          if (target) {
+            const aimAt = spAngle(target.ax, -target.ay);
+            const d = spSigned(aimAt - sh.angle);
+            left = d > 3;
+            right = d < -3;
+            const aimed = Math.abs(d) <= 3;
+            fire = aimed;
+            note = aimed ? 'aimed: fire' : (d > 0 ? 'turning left to aim' : 'turning right to aim');
+          } else {
+            fire = true;
+            note = 'clear space: fire';
+          }
+        }
+
+        layaLastAction = {
+          left, right, thrust, fire, hyper,
+          why: `Laya decision: ${choice} (p=${prob.toFixed(2)}, conf=${conf.toFixed(2)}). ${note}. Latency: ${lat.toFixed(1)} ms (avg ${avgLat} ms).`
+        };
+        layaLastTick = s.frame;
+      }).catch(err => {
+        layaLastAction = { why: `Laya server error (${err.message}). Is laya-mlx-serve running on port 8700?` };
+      }).finally(() => {
+        layaPending = false;
+      });
+    }
+  }
+
+  const fresh = (s.frame - layaLastTick) <= 12;
+  const act = fresh ? layaLastAction : { why: layaLastAction.why || 'Awaiting Laya response...' };
+  return {
+    left: !!act.left,
+    right: !!act.right,
+    thrust: !!act.thrust,
+    fire: !!act.fire && s.frame % 2 === 0,
+    hyper: !!act.hyper && s.frame % 2 === 0,
+    why: act.why || ''
+  };
+}
+
+// ---------------------------------------------------------------------------
 //  Demo panels (right column) and controller selector
 // ---------------------------------------------------------------------------
 const $ = id => document.getElementById(id);
-// Who controls the ship: 'manual' (keyboard), 'simple' (simplePilot, v2) or 'smart' (smartPilot, v3).
-const CONTROLLERS = { manual: null, simple: simplePilot, smart: smartPilot };
+// Who controls the ship: 'manual' (keyboard), 'simple' (simplePilot, v2), 'smart' (smartPilot, v3) or 'laya' (layaPilot, v3).
+const CONTROLLERS = { manual: null, simple: simplePilot, smart: smartPilot, laya: layaPilot };
 function setController(name) {
   AUTOPILOT = CONTROLLERS[name];
   for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', ' ', 'Shift']) keys[k] = false;   // release held keys
   for (const n in CONTROLLERS) {
     const b = $('ctl-' + n);
-    b.setAttribute('aria-pressed', String(n === name));
-    b.blur();                                      // keep Space and the arrows for the game, not for the buttons
+    if (b) {
+      b.setAttribute('aria-pressed', String(n === name));
+      b.blur();                                      // keep Space and the arrows for the game, not for the buttons
+    }
   }
 }
 for (const n in CONTROLLERS) {
   const b = $('ctl-' + n);
-  if (b.addEventListener) b.addEventListener('click', () => setController(n));
+  if (b && b.addEventListener) b.addEventListener('click', () => setController(n));
 }
 
 function stateText() {
@@ -2432,7 +2599,8 @@ function updatePanels() {
            : sp < 0.5 ? ' &nbsp;|&nbsp; ship at rest'
            : ` &nbsp;|&nbsp; coasting at ${sp.toFixed(1)} units/tick (inertia), last thrust ${ago < 60 ? ago.toFixed(1) + ' s ago' : 'long ago'}`;
   }
-  $('mode').innerHTML = (AUTOPILOT ? `Controller: <b>autopilot (${AUTOPILOT === smartPilot ? 'smart' : 'simple'})</b>` : 'Controller: <b>human (keyboard)</b>') + motion;
+  const ctlName = AUTOPILOT === smartPilot ? 'smart' : AUTOPILOT === simplePilot ? 'simple' : AUTOPILOT === layaPilot ? 'Laya-MLX' : 'custom';
+  $('mode').innerHTML = (AUTOPILOT ? `Controller: <b>autopilot (${ctlName})</b>` : 'Controller: <b>human (keyboard)</b>') + motion;
   $('note').textContent = AUTOPILOT ? lastWhy : 'Autopilot is off. The keys shown are the ones you hold.';
   $('decision-json').textContent = JSON.stringify(dec);
 }

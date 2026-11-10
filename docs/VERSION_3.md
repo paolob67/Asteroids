@@ -2,13 +2,13 @@
 
 Version 3 is the working copy, [`asteroids.html`](../asteroids.html). It starts from the frozen [version 2](VERSION_2.md) and adds one thing: a second autopilot, `smartPilot`, that looks ahead, moves the ship with thrust to dodge, and uses hyperspace only when nothing else works. The game rules are unchanged from version 2.
 
-Version 3 is not frozen yet. An autopilot based on a decision model (such as Laya, Kev, Jev, or CLM) is planned for a later step and is not part of this document. The decision model landscape, Apple Silicon M1 feasibility, and autopilot design decisions are in [DECISION_MODELS.md](DECISION_MODELS.md), with specific facts on CLM in [CLM.md](CLM.md).
+Version 3 is not frozen yet. An autopilot based on a decision model (such as Laya, Kev, Jev, or CLM) is planned for a later step and is not part of this document. The decision model landscape, Apple Silicon M1 feasibility, and autopilot design decisions are in [DECISION_MODELS.md](DECISION_MODELS.md), with dedicated plans in [LAYA.md](LAYA.md) and [CLM.md](CLM.md).
 
 ## 1. What changed
 
 | Area | Version 2 | Version 3 |
 |------|-----------|-----------|
-| Controllers | Autopilot on/off switch (`simplePilot` only) | Selector with three buttons: **Manual**, **Simple** (`simplePilot`, unchanged), **Smart** (`smartPilot`) |
+| Controllers | Autopilot on/off switch (`simplePilot` only) | Selector with four buttons: **Manual**, **Simple** (`simplePilot`), **Smart** (`smartPilot`), **Laya** (`layaPilot`) |
 | `snapshot()` | No fractional velocity, exploding rocks looked alive | Adds `ship.vxf`, `ship.vyf` (needed to predict the ship's path) and `exploding` on rocks and the saucer |
 | Decision panel | Keys light only on the tick they are held | A key held in the last 0.4 s stays dimly lit, and a line says whether the ship is thrusting, coasting or at rest |
 | Measurement | `measure_autopilot.js` | Adds `measure_pilots.js` (several seeds, losses per hour, causes), `death_causes.js`, `check_thrust_physics.js` and `test_controller_selector.js` |
@@ -65,9 +65,16 @@ The Decision panel header now has one selector instead of the switch:
 |--------|-----------|
 | Manual | The keyboard (default) |
 | Simple | `simplePilot`, as in version 2 |
-| Smart | `smartPilot` |
+| Smart | `smartPilot` (rule-based lookahead and physics simulation) |
+| Laya | `layaPilot` (local decision model on Apple Silicon via `/v1/systemone`) |
 
-Changing the selection releases every key, so a held key does not stay stuck. From the browser console, `AUTOPILOT = smartPilot`, `AUTOPILOT = simplePilot` and `AUTOPILOT = null` do the same, but the selector will not update its highlight.
+Changing the selection releases every key, so a held key does not stay stuck. From the browser console, `AUTOPILOT = smartPilot`, `AUTOPILOT = simplePilot`, `AUTOPILOT = layaPilot` and `AUTOPILOT = null` do the same, but the selector will not update its highlight.
+
+When using **Laya**, the local MLX decision server must be running:
+```bash
+.venv/bin/python scripts/dev/laya_server.py --port 8700
+```
+Verify the server with `curl -s http://127.0.0.1:8700/health`. If the server is offline when Laya is selected, the Decision panel alerts you with a connection notice.
 
 ## 6. Validation
 
@@ -78,7 +85,9 @@ Changing the selection releases every key, so a held key does not stay stuck. Fr
 | [`dev/measure_pilots.js`](../scripts/dev/measure_pilots.js) | Section 3 table. Measurement, not pass/fail |
 | [`dev/death_causes.js`](../scripts/dev/death_causes.js) | Classifies every ship loss for one pilot |
 | [`dev/check_thrust_physics.js`](../scripts/dev/check_thrust_physics.js) | Section 4 check. Fails if a pilot moves the ship in any way the keys do not explain |
-| [`dev/test_controller_selector.js`](../scripts/dev/test_controller_selector.js) | Fake DOM test of the Manual, Simple and Smart buttons, and 5,000 ticks with each controller |
+| [`dev/test_controller_selector.js`](../scripts/dev/test_controller_selector.js) | Fake DOM test of the Manual, Simple, Smart, and Laya buttons, and 5,000 ticks with each controller |
+| [`dev/eval_laya_offline.js`](../scripts/dev/eval_laya_offline.js) | Offline evaluation harness for Laya-MLX against recorded pilot logs |
+| [`dev/laya_server.py`](../scripts/dev/laya_server.py) | Local Python MLX HTTP daemon exposing TypeSafe `/v1/systemone` |
 | [`dev/tune_smart.js`](../scripts/dev/tune_smart.js) | Parameter sweep used for the tuning in section 3 |
 | [`dev/lib/load_game.js`](../scripts/dev/lib/load_game.js) | Shared headless loader for the scripts above |
 
@@ -92,5 +101,5 @@ node scripts/dev/death_causes.js asteroids.html 1500000 smartPilot
 
 ## 7. Not done yet
 
-- A pilot based on a decision model (System One model). The pilot scores a closed list of candidate action primitives against a structured state description via the standard `/v1/systemone` protocol, running asynchronously without blocking the 60 Hz game loop. Candidate models to test locally on the M1 are `laya-mlx` (sub-frame latency) and `Kev` (Qwen base with pointer readout), alongside hosted Jev and remote CLM-8B. Details, model comparisons, and hardware feasibility in [DECISION_MODELS.md](DECISION_MODELS.md) and [CLM.md](CLM.md). Planned for a later step.
+- A pilot based on a decision model (System One model). The pilot scores a closed list of candidate action primitives against a structured state description via the standard `/v1/systemone` protocol, running asynchronously without blocking the 60 Hz game loop. Candidate models to test locally on the M1 are `laya-mlx` (sub-frame latency) and `Kev` (Qwen base with pointer readout), alongside hosted Jev and remote CLM-8B. Details, model comparisons, and hardware feasibility in [DECISION_MODELS.md](DECISION_MODELS.md), [LAYA.md](LAYA.md), and [CLM.md](CLM.md). Planned for a later step.
 - Freezing version 3 into `versions/v3/`.
