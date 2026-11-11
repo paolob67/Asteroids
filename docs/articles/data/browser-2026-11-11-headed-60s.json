@@ -1,0 +1,64 @@
+{
+  "date": "2026-11-11T08:04:18.445Z",
+  "command": "/Users/paolo/Documents/2026/Articles/Asteroids/scripts/dev/browser_check.js 60 simple,smart,laya --headed --json=docs/articles/data/browser-2026-11-11-headed-60s.json",
+  "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 Safari/537.36",
+    "dpr": 2,
+    "w": 1383,
+    "h": 783,
+    "laya": "function"
+  },
+  "secondsPerPilot": 60,
+  "results": [
+    {
+      "pilot": "simple",
+      "seconds": 60.2,
+      "ticks": 3601,
+      "ticksPerSecond": 59.86,
+      "framesPerSecond": 59.75,
+      "slowFrames": 1,
+      "longestGapMs": 266.7,
+      "points": 8260,
+      "losses": 0,
+      "gamesEnded": 0
+    },
+    {
+      "pilot": "smart",
+      "seconds": 60.1,
+      "ticks": 3608,
+      "ticksPerSecond": 59.99,
+      "framesPerSecond": 59.99,
+      "slowFrames": 0,
+      "longestGapMs": 17.8,
+      "points": 9560,
+      "losses": 0,
+      "gamesEnded": 0
+    },
+    {
+      "pilot": "laya",
+      "seconds": 60.1,
+      "ticks": 3604,
+      "ticksPerSecond": 59.99,
+      "framesPerSecond": 59.99,
+      "slowFrames": 0,
+      "longestGapMs": 17.8,
+      "points": 8140,
+      "losses": 2,
+      "gamesEnded": 0,
+      "laya": {
+        "requests": 468,
+        "latencyMs": {
+          "median": 103.8,
+          "p95": 108.8,
+          "max": 355.7
+        },
+        "gapTicks": {
+          "median": 7,
+          "p95": 7,
+          "max": 22,
+          "mean": 6.85
+        }
+      }
+    }
+  ]
+}

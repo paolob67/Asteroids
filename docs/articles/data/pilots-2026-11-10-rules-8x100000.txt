@@ -1,0 +1,6 @@
+Measuring simplePilot, smartPilot on asteroids.html: 8 seeds x 100000 ticks
+simplePilot  8 seeds x 0.46 h   flying 3.49 h   losses=236   losses/hour= 67.6 (seed range 59.5 to 75.9)   points/min=  9169   thrust=0%   hyperspace/hour=0   games ended=20 (median score 69760)   [2s]
+             losses by cause: rock 152, saucer-torpedo 80, saucer-body 4
+smartPilot   8 seeds x 0.46 h   flying 3.47 h   losses=20   losses/hour=  5.8 (seed range 2.3 to 9.2)   points/min= 13717   thrust=1.6%   hyperspace/hour=26.5   games ended=0   [12s]
+             losses by cause: hyperspace 13, rock 7
+wrote docs/articles/data/pilots-2026-11-10-rules-8x100000.json

@@ -1,0 +1,921 @@
+{
+  "date": "2026-11-11 00:54:07",
+  "machine": "macOS-27.2-arm64-arm-64bit",
+  "mlx": "0.32.4",
+  "laya_mlx": "0.6.0",
+  "default_device": "Device(gpu, 0)",
+  "calls": 30,
+  "configs": [
+    {
+      "name": "laya-mlx fp16 gpu (server default)",
+      "model": "aac6fef/laya-mlx",
+      "options": {
+        "device": "gpu",
+        "dtype": "float16"
+      },
+      "load_s": 0.4,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 87.7,
+          "min": 84.6,
+          "p95": 90.3
+        },
+        "danger": {
+          "n": 30,
+          "median": 88.5,
+          "min": 84.8,
+          "p95": 90.3
+        },
+        "fatal": {
+          "n": 30,
+          "median": 88.1,
+          "min": 84.5,
+          "p95": 89.7
+        },
+        "short-state": {
+          "n": 30,
+          "median": 66.5,
+          "min": 63.7,
+          "p95": 68.4
+        },
+        "long-state": {
+          "n": 30,
+          "median": 125.0,
+          "min": 122.4,
+          "p95": 126.1
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 65.8,
+          "min": 63.4,
+          "p95": 67.4
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 66.7,
+          "min": 63.7,
+          "p95": 67.5
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 66.8,
+          "min": 63.5,
+          "p95": 67.7
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "stay_and_fire",
+          "p": 0.748,
+          "confidence": 0.412
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.969,
+          "confidence": 0.878
+        },
+        "fatal": {
+          "choice": "hyperspace",
+          "p": 0.417,
+          "confidence": 0.09
+        },
+        "short-state": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.577,
+          "confidence": 0.225
+        },
+        "long-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.518,
+          "confidence": 0.187
+        },
+        "safe+short-question": {
+          "choice": "stay_and_fire",
+          "p": 0.552,
+          "confidence": 0.168
+        },
+        "danger+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.684,
+          "confidence": 0.341
+        },
+        "fatal+short-question": {
+          "choice": "hyperspace",
+          "p": 0.723,
+          "confidence": 0.419
+        }
+      }
+    },
+    {
+      "name": "laya-mlx fp16 cpu",
+      "model": "aac6fef/laya-mlx",
+      "options": {
+        "device": "cpu",
+        "dtype": "float16"
+      },
+      "load_s": 0.4,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 280.1,
+          "min": 278.2,
+          "p95": 291.8
+        },
+        "danger": {
+          "n": 30,
+          "median": 278.7,
+          "min": 277.7,
+          "p95": 282.2
+        },
+        "fatal": {
+          "n": 30,
+          "median": 279.0,
+          "min": 276.0,
+          "p95": 317.0
+        },
+        "short-state": {
+          "n": 30,
+          "median": 236.0,
+          "min": 231.9,
+          "p95": 250.5
+        },
+        "long-state": {
+          "n": 30,
+          "median": 423.8,
+          "min": 421.3,
+          "p95": 438.8
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 227.4,
+          "min": 225.5,
+          "p95": 240.7
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 223.5,
+          "min": 222.2,
+          "p95": 226.2
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 225.8,
+          "min": 223.9,
+          "p95": 240.5
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.459,
+          "confidence": 0.275
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.472,
+          "confidence": 0.308
+        },
+        "fatal": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.751,
+          "confidence": 0.411
+        },
+        "short-state": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.815,
+          "confidence": 0.514
+        },
+        "long-state": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.73,
+          "confidence": 0.381
+        },
+        "safe+short-question": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.487,
+          "confidence": 0.186
+        },
+        "danger+short-question": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.677,
+          "confidence": 0.35
+        },
+        "fatal+short-question": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.585,
+          "confidence": 0.253
+        }
+      }
+    },
+    {
+      "name": "laya-mlx fp32 gpu",
+      "model": "aac6fef/laya-mlx",
+      "options": {
+        "device": "gpu",
+        "dtype": "float32"
+      },
+      "load_s": 0.5,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 113.4,
+          "min": 112.7,
+          "p95": 114.8
+        },
+        "danger": {
+          "n": 30,
+          "median": 113.2,
+          "min": 110.1,
+          "p95": 115.3
+        },
+        "fatal": {
+          "n": 30,
+          "median": 113.2,
+          "min": 109.7,
+          "p95": 116.7
+        },
+        "short-state": {
+          "n": 30,
+          "median": 87.3,
+          "min": 86.0,
+          "p95": 88.6
+        },
+        "long-state": {
+          "n": 30,
+          "median": 164.7,
+          "min": 161.8,
+          "p95": 168.3
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 86.6,
+          "min": 85.9,
+          "p95": 87.9
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 86.5,
+          "min": 84.1,
+          "p95": 89.1
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 86.6,
+          "min": 84.6,
+          "p95": 88.1
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "stay_and_fire",
+          "p": 0.748,
+          "confidence": 0.413
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.969,
+          "confidence": 0.88
+        },
+        "fatal": {
+          "choice": "hyperspace",
+          "p": 0.417,
+          "confidence": 0.09
+        },
+        "short-state": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.576,
+          "confidence": 0.225
+        },
+        "long-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.518,
+          "confidence": 0.187
+        },
+        "safe+short-question": {
+          "choice": "stay_and_fire",
+          "p": 0.551,
+          "confidence": 0.167
+        },
+        "danger+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.683,
+          "confidence": 0.34
+        },
+        "fatal+short-question": {
+          "choice": "hyperspace",
+          "p": 0.726,
+          "confidence": 0.422
+        }
+      }
+    },
+    {
+      "name": "laya-mlx fp32 cpu",
+      "model": "aac6fef/laya-mlx",
+      "options": {
+        "device": "cpu",
+        "dtype": "float32"
+      },
+      "load_s": 0.7,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 300.8,
+          "min": 292.7,
+          "p95": 309.2
+        },
+        "danger": {
+          "n": 30,
+          "median": 290.7,
+          "min": 286.8,
+          "p95": 301.5
+        },
+        "fatal": {
+          "n": 30,
+          "median": 289.8,
+          "min": 285.0,
+          "p95": 307.0
+        },
+        "short-state": {
+          "n": 30,
+          "median": 240.9,
+          "min": 238.1,
+          "p95": 248.1
+        },
+        "long-state": {
+          "n": 30,
+          "median": 448.8,
+          "min": 441.4,
+          "p95": 467.6
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 236.4,
+          "min": 232.8,
+          "p95": 254.0
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 234.8,
+          "min": 232.1,
+          "p95": 239.5
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 237.4,
+          "min": 232.3,
+          "p95": 256.6
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "stay_and_fire",
+          "p": 0.748,
+          "confidence": 0.413
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.969,
+          "confidence": 0.88
+        },
+        "fatal": {
+          "choice": "hyperspace",
+          "p": 0.417,
+          "confidence": 0.09
+        },
+        "short-state": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.576,
+          "confidence": 0.225
+        },
+        "long-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.518,
+          "confidence": 0.187
+        },
+        "safe+short-question": {
+          "choice": "stay_and_fire",
+          "p": 0.551,
+          "confidence": 0.167
+        },
+        "danger+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.683,
+          "confidence": 0.34
+        },
+        "fatal+short-question": {
+          "choice": "hyperspace",
+          "p": 0.726,
+          "confidence": 0.422
+        }
+      }
+    },
+    {
+      "name": "laya-mlx bf16 gpu",
+      "model": "aac6fef/laya-mlx",
+      "options": {
+        "device": "gpu",
+        "dtype": "bfloat16"
+      },
+      "load_s": 0.4,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 106.8,
+          "min": 103.9,
+          "p95": 117.9
+        },
+        "danger": {
+          "n": 30,
+          "median": 106.9,
+          "min": 104.2,
+          "p95": 117.0
+        },
+        "fatal": {
+          "n": 30,
+          "median": 105.5,
+          "min": 102.1,
+          "p95": 107.0
+        },
+        "short-state": {
+          "n": 30,
+          "median": 78.4,
+          "min": 76.4,
+          "p95": 79.2
+        },
+        "long-state": {
+          "n": 30,
+          "median": 149.8,
+          "min": 147.7,
+          "p95": 151.0
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 77.7,
+          "min": 76.9,
+          "p95": 78.1
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 77.5,
+          "min": 74.6,
+          "p95": 78.8
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 77.7,
+          "min": 74.9,
+          "p95": 78.3
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "stay_and_fire",
+          "p": 0.73,
+          "confidence": 0.386
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.968,
+          "confidence": 0.875
+        },
+        "fatal": {
+          "choice": "hyperspace",
+          "p": 0.405,
+          "confidence": 0.084
+        },
+        "short-state": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.572,
+          "confidence": 0.231
+        },
+        "long-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.509,
+          "confidence": 0.178
+        },
+        "safe+short-question": {
+          "choice": "stay_and_fire",
+          "p": 0.555,
+          "confidence": 0.17
+        },
+        "danger+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.679,
+          "confidence": 0.336
+        },
+        "fatal+short-question": {
+          "choice": "hyperspace",
+          "p": 0.75,
+          "confidence": 0.448
+        }
+      }
+    },
+    {
+      "name": "laya-mlx fp16 gpu compile",
+      "model": "aac6fef/laya-mlx",
+      "options": {
+        "device": "gpu",
+        "dtype": "float16",
+        "compile": "True"
+      },
+      "load_s": 0.7,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 85.5,
+          "min": 84.1,
+          "p95": 86.3
+        },
+        "danger": {
+          "n": 30,
+          "median": 85.6,
+          "min": 84.2,
+          "p95": 86.4
+        },
+        "fatal": {
+          "n": 30,
+          "median": 86.9,
+          "min": 83.8,
+          "p95": 87.9
+        },
+        "short-state": {
+          "n": 30,
+          "median": 65.9,
+          "min": 63.2,
+          "p95": 84.0
+        },
+        "long-state": {
+          "n": 30,
+          "median": 131.8,
+          "min": 129.1,
+          "p95": 134.5
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 68.9,
+          "min": 67.4,
+          "p95": 70.7
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 70.5,
+          "min": 68.3,
+          "p95": 71.2
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 70.3,
+          "min": 68.9,
+          "p95": 70.9
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "stay_and_fire",
+          "p": 0.748,
+          "confidence": 0.412
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.969,
+          "confidence": 0.878
+        },
+        "fatal": {
+          "choice": "hyperspace",
+          "p": 0.417,
+          "confidence": 0.09
+        },
+        "short-state": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.577,
+          "confidence": 0.225
+        },
+        "long-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.518,
+          "confidence": 0.187
+        },
+        "safe+short-question": {
+          "choice": "stay_and_fire",
+          "p": 0.552,
+          "confidence": 0.168
+        },
+        "danger+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.684,
+          "confidence": 0.341
+        },
+        "fatal+short-question": {
+          "choice": "hyperspace",
+          "p": 0.723,
+          "confidence": 0.419
+        }
+      }
+    },
+    {
+      "name": "laya-mlx fp16 gpu cache_prompts",
+      "model": "aac6fef/laya-mlx",
+      "options": {
+        "device": "gpu",
+        "dtype": "float16",
+        "cache_prompts": "True"
+      },
+      "load_s": 0.3,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 91.8,
+          "min": 87.5,
+          "p95": 95.3
+        },
+        "danger": {
+          "n": 30,
+          "median": 94.4,
+          "min": 91.9,
+          "p95": 122.6
+        },
+        "fatal": {
+          "n": 30,
+          "median": 98.7,
+          "min": 95.5,
+          "p95": 100.4
+        },
+        "short-state": {
+          "n": 30,
+          "median": 75.8,
+          "min": 73.5,
+          "p95": 77.3
+        },
+        "long-state": {
+          "n": 30,
+          "median": 140.6,
+          "min": 136.0,
+          "p95": 142.6
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 73.2,
+          "min": 70.2,
+          "p95": 81.7
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 74.0,
+          "min": 71.0,
+          "p95": 76.2
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 76.0,
+          "min": 73.5,
+          "p95": 77.0
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "stay_and_fire",
+          "p": 0.748,
+          "confidence": 0.412
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.969,
+          "confidence": 0.878
+        },
+        "fatal": {
+          "choice": "hyperspace",
+          "p": 0.417,
+          "confidence": 0.09
+        },
+        "short-state": {
+          "choice": "turn_right_and_thrust",
+          "p": 0.577,
+          "confidence": 0.225
+        },
+        "long-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.518,
+          "confidence": 0.187
+        },
+        "safe+short-question": {
+          "choice": "stay_and_fire",
+          "p": 0.552,
+          "confidence": 0.168
+        },
+        "danger+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.684,
+          "confidence": 0.341
+        },
+        "fatal+short-question": {
+          "choice": "hyperspace",
+          "p": 0.723,
+          "confidence": 0.419
+        }
+      }
+    },
+    {
+      "name": "laya-multilingual fp16 gpu",
+      "model": "aac6fef/laya-multilingual-mlx",
+      "options": {
+        "device": "gpu",
+        "dtype": "float16"
+      },
+      "load_s": 1.5,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 34.6,
+          "min": 32.4,
+          "p95": 35.3
+        },
+        "danger": {
+          "n": 30,
+          "median": 27.0,
+          "min": 26.4,
+          "p95": 32.3
+        },
+        "fatal": {
+          "n": 30,
+          "median": 27.0,
+          "min": 26.3,
+          "p95": 27.9
+        },
+        "short-state": {
+          "n": 30,
+          "median": 26.1,
+          "min": 25.1,
+          "p95": 26.9
+        },
+        "long-state": {
+          "n": 30,
+          "median": 50.2,
+          "min": 49.3,
+          "p95": 51.3
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 26.6,
+          "min": 26.2,
+          "p95": 27.5
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 27.9,
+          "min": 25.6,
+          "p95": 33.9
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 27.2,
+          "min": 25.6,
+          "p95": 31.1
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "stay_and_fire",
+          "p": 0.828,
+          "confidence": 0.622
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.579,
+          "confidence": 0.26
+        },
+        "fatal": {
+          "choice": "hyperspace",
+          "p": 0.998,
+          "confidence": 0.988
+        },
+        "short-state": {
+          "choice": "hyperspace",
+          "p": 0.651,
+          "confidence": 0.262
+        },
+        "long-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.368,
+          "confidence": 0.041
+        },
+        "safe+short-question": {
+          "choice": "hyperspace",
+          "p": 0.57,
+          "confidence": 0.406
+        },
+        "danger+short-question": {
+          "choice": "hyperspace",
+          "p": 0.464,
+          "confidence": 0.272
+        },
+        "fatal+short-question": {
+          "choice": "hyperspace",
+          "p": 0.958,
+          "confidence": 0.841
+        }
+      }
+    },
+    {
+      "name": "laya-multilingual fp16 cpu",
+      "model": "aac6fef/laya-multilingual-mlx",
+      "options": {
+        "device": "cpu",
+        "dtype": "float16"
+      },
+      "load_s": 1.4,
+      "predict_ms": {
+        "safe": {
+          "n": 30,
+          "median": 126.7,
+          "min": 123.1,
+          "p95": 136.7
+        },
+        "danger": {
+          "n": 30,
+          "median": 113.1,
+          "min": 109.8,
+          "p95": 118.4
+        },
+        "fatal": {
+          "n": 30,
+          "median": 109.3,
+          "min": 105.0,
+          "p95": 115.0
+        },
+        "short-state": {
+          "n": 30,
+          "median": 96.4,
+          "min": 91.9,
+          "p95": 103.5
+        },
+        "long-state": {
+          "n": 30,
+          "median": 174.0,
+          "min": 168.6,
+          "p95": 178.9
+        },
+        "safe+short-question": {
+          "n": 30,
+          "median": 91.5,
+          "min": 86.7,
+          "p95": 94.0
+        },
+        "danger+short-question": {
+          "n": 30,
+          "median": 81.8,
+          "min": 79.2,
+          "p95": 89.0
+        },
+        "fatal+short-question": {
+          "n": 30,
+          "median": 82.8,
+          "min": 78.0,
+          "p95": 89.9
+        }
+      },
+      "answers": {
+        "safe": {
+          "choice": "turn_left_and_thrust",
+          "p": 1.0,
+          "confidence": 1.0
+        },
+        "danger": {
+          "choice": "turn_left_and_thrust",
+          "p": 1.0,
+          "confidence": 1.0
+        },
+        "fatal": {
+          "choice": "hyperspace",
+          "p": 0.778,
+          "confidence": 0.614
+        },
+        "short-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 1.0,
+          "confidence": 1.0
+        },
+        "long-state": {
+          "choice": "turn_left_and_thrust",
+          "p": 1.0,
+          "confidence": 1.0
+        },
+        "safe+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 1.0,
+          "confidence": 0.999
+        },
+        "danger+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 1.0,
+          "confidence": 1.0
+        },
+        "fatal+short-question": {
+          "choice": "turn_left_and_thrust",
+          "p": 0.997,
+          "confidence": 0.985
+        }
+      }
+    }
+  ]
+}

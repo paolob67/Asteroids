@@ -20,7 +20,7 @@ The Laya autopilot combines a high-speed 60 Hz deterministic game loop running i
 |   | Wrap & Distance  |     | Threat & TTC text |     | (Non-blocking, cached state) |   | |
 |   +------------------+     +-------------------+     +------------------------------+   | |
 |                                                                     ^                   | |
-|                                                                     | 7-14 ms latency   | |
+|                                                                     | ~90-140 ms latency| |
 |  4. Low-Level Actuation                                             v                   | |
 |   +---------------------------------------------------------------------------------+   | |
 |   | * hyperspace            -> pulsed hyper key                                     |   | |

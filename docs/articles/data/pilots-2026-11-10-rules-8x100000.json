@@ -1,0 +1,307 @@
+{
+  "meta": {
+    "date": "2026-11-10T21:54:57.398Z",
+    "command": "node scripts/dev/measure_pilots.js asteroids.html 100000 simplePilot,smartPilot 8 --json=docs/articles/data/pilots-2026-11-10-rules-8x100000.json",
+    "file": "asteroids.html",
+    "fileSha256": "9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6",
+    "gitCommit": "2a5e31f",
+    "gitDirty": true,
+    "node": "v26.3.1",
+    "os": "Darwin 27.2.0 arm64",
+    "cpu": "Apple M1",
+    "memoryGB": 16,
+    "layaModel": null,
+    "ticksPerSeed": 100000,
+    "seeds": 8,
+    "answerCache": null
+  },
+  "results": [
+    {
+      "pilot": "simplePilot",
+      "seeds": 8,
+      "ticksPerSeed": 100000,
+      "flyingHours": 3.49,
+      "flyingShare": 0.9425,
+      "losses": 236,
+      "lossesPerHour": 67.6,
+      "lossesPerHourBySeedMin": 59.5,
+      "lossesPerHourBySeedMax": 75.9,
+      "pointsPerMin": 9169,
+      "thrustPct": 0,
+      "hyperspacePerHour": 0,
+      "gamesEnded": 20,
+      "medianGameScore": 69760,
+      "causes": {
+        "saucer-torpedo": 80,
+        "rock": 152,
+        "saucer-body": 4
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "causes": {
+            "saucer-torpedo": 7,
+            "rock": 20
+          },
+          "losses": 27,
+          "thrust": 0,
+          "play": 94413,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 236260,
+          "lossesPerHour": 61.7711543961107,
+          "gamesEnded": 2
+        },
+        {
+          "seed": 1,
+          "causes": {
+            "rock": 18,
+            "saucer-torpedo": 14,
+            "saucer-body": 1
+          },
+          "losses": 33,
+          "thrust": 0,
+          "play": 93906,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 228960,
+          "lossesPerHour": 75.90569292696952,
+          "gamesEnded": 4
+        },
+        {
+          "seed": 2,
+          "causes": {
+            "rock": 25,
+            "saucer-torpedo": 6
+          },
+          "losses": 31,
+          "thrust": 0,
+          "play": 94287,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 240350,
+          "lossesPerHour": 71.01721340163543,
+          "gamesEnded": 3
+        },
+        {
+          "seed": 3,
+          "causes": {
+            "saucer-torpedo": 12,
+            "rock": 14
+          },
+          "losses": 26,
+          "thrust": 0,
+          "play": 94412,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 255780,
+          "lossesPerHour": 59.4839639028937,
+          "gamesEnded": 1
+        },
+        {
+          "seed": 4,
+          "causes": {
+            "rock": 16,
+            "saucer-torpedo": 12,
+            "saucer-body": 1
+          },
+          "losses": 29,
+          "thrust": 0,
+          "play": 94539,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 259050,
+          "lossesPerHour": 66.25836956176816,
+          "gamesEnded": 1
+        },
+        {
+          "seed": 5,
+          "causes": {
+            "rock": 15,
+            "saucer-torpedo": 13,
+            "saucer-body": 2
+          },
+          "losses": 30,
+          "thrust": 0,
+          "play": 94033,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 239260,
+          "lossesPerHour": 68.9119777099529,
+          "gamesEnded": 3
+        },
+        {
+          "seed": 6,
+          "causes": {
+            "rock": 23,
+            "saucer-torpedo": 9
+          },
+          "losses": 32,
+          "thrust": 0,
+          "play": 94031,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 226370,
+          "lossesPerHour": 73.50767300145696,
+          "gamesEnded": 4
+        },
+        {
+          "seed": 7,
+          "causes": {
+            "rock": 21,
+            "saucer-torpedo": 7
+          },
+          "losses": 28,
+          "thrust": 0,
+          "play": 94413,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 234430,
+          "lossesPerHour": 64.05897492929999,
+          "gamesEnded": 2
+        }
+      ],
+      "wallSeconds": 2
+    },
+    {
+      "pilot": "smartPilot",
+      "seeds": 8,
+      "ticksPerSeed": 100000,
+      "flyingHours": 3.47,
+      "flyingShare": 0.9367,
+      "losses": 20,
+      "lossesPerHour": 5.8,
+      "lossesPerHourBySeedMin": 2.3,
+      "lossesPerHourBySeedMax": 9.2,
+      "pointsPerMin": 13717,
+      "thrustPct": 1.6,
+      "hyperspacePerHour": 26.5,
+      "gamesEnded": 0,
+      "medianGameScore": null,
+      "causes": {
+        "hyperspace": 13,
+        "rock": 7
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "causes": {
+            "hyperspace": 2
+          },
+          "losses": 2,
+          "thrust": 1696,
+          "play": 93777,
+          "fallback": 0,
+          "hypers": 9,
+          "points": 358520,
+          "lossesPerHour": 4.606673278095909,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 1,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 1589,
+          "play": 93777,
+          "fallback": 0,
+          "hypers": 17,
+          "points": 355190,
+          "lossesPerHour": 2.3033366390479544,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 2,
+          "causes": {
+            "rock": 1,
+            "hyperspace": 2
+          },
+          "losses": 3,
+          "thrust": 1519,
+          "play": 93396,
+          "fallback": 0,
+          "hypers": 8,
+          "points": 344620,
+          "lossesPerHour": 6.938198638057305,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 3,
+          "causes": {
+            "rock": 1,
+            "hyperspace": 1
+          },
+          "losses": 2,
+          "thrust": 1367,
+          "play": 93523,
+          "fallback": 0,
+          "hypers": 10,
+          "points": 372780,
+          "lossesPerHour": 4.619184585609957,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 4,
+          "causes": {
+            "hyperspace": 3,
+            "rock": 1
+          },
+          "losses": 4,
+          "thrust": 1410,
+          "play": 93777,
+          "fallback": 0,
+          "hypers": 15,
+          "points": 362660,
+          "lossesPerHour": 9.213346556191818,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 5,
+          "causes": {
+            "rock": 1,
+            "hyperspace": 3
+          },
+          "losses": 4,
+          "thrust": 1349,
+          "play": 93650,
+          "fallback": 0,
+          "hypers": 9,
+          "points": 357650,
+          "lossesPerHour": 9.225840896956754,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 6,
+          "causes": {
+            "hyperspace": 1
+          },
+          "losses": 1,
+          "thrust": 1397,
+          "play": 93777,
+          "fallback": 0,
+          "hypers": 11,
+          "points": 353400,
+          "lossesPerHour": 2.3033366390479544,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 7,
+          "causes": {
+            "rock": 2,
+            "hyperspace": 1
+          },
+          "losses": 3,
+          "thrust": 1341,
+          "play": 93650,
+          "fallback": 0,
+          "hypers": 13,
+          "points": 350400,
+          "lossesPerHour": 6.9193806727175655,
+          "gamesEnded": 0
+        }
+      ],
+      "wallSeconds": 12
+    }
+  ]
+}

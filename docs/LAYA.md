@@ -33,7 +33,7 @@ For detailed runtime implementation and data flow, see [LAYA_IMPLEMENTATION.md](
 | Checkpoint | Parameters | Context Window | Best Use |
 |---|---|---|---|
 | `aac6fef/laya-mlx` | 421M | 512 tokens | High-precision English structured decisions. |
-| `aac6fef/laya-multilingual-mlx` | 322M | 1,024 tokens | Fastest throughput (7.4 ms median latency), compact footprint. |
+| `aac6fef/laya-multilingual-mlx` | 322M | 1,024 tokens | Compact footprint. Quoted upstream as the fastest (7.4 ms median latency); not reproduced here (see section 7). |
 | `aac6fef/laya-typed-decisions-mlx` | 421M | 1,024 tokens | Upstream typed-decisions and complex rule sets. |
 
 ---
@@ -51,13 +51,13 @@ asteroids.html (Browser)  ──►  POST http://localhost:8700/v1/systemone
 ### Resource Footprint on Development Machine (Apple M1, 16 GB RAM)
 * **Model Size**: ~680 MB (322M) to ~940 MB (421M) in FP16 precision.
 * **RAM Allocation**: Under 1.0 GB peak memory usage.
-* **Inference Latency**: **7.4 ms to 13.9 ms** end-to-end on Apple Silicon Metal.
-* **Game Loop Fit**: At 60 Hz (16.6 ms per frame), inference executes in less than one game tick ($L \le 1$), enabling near real-time reaction without blocking the browser.
+* **Inference Latency**: measured with `aac6fef/laya-mlx` on this machine: median 91 to 104 ms per HTTP request when idle, 137 ms (95th percentile 156 ms) during the pilot runs. An earlier version of this document quoted 7.4 ms to 13.9 ms; that was not reproduced (see section 7).
+* **Game Loop Fit**: At 60 Hz (16.7 ms per frame), 90 to 140 ms is 5 to 8 ticks. The request is asynchronous, so rendering is never blocked, but the ship acts on an answer that is several ticks old.
 
 ### 3.1 Why Native `laya-mlx` Over Ollama
 While Laya can also be pulled through Ollama (or Ollaya), native `laya-mlx` was selected for the Asteroids autopilot for three decisive reasons:
 
-1. **Sub-Frame Game Latency**: `laya-mlx` executes directly on Apple Silicon Metal in 7.4 ms to 13.9 ms, returning answers in under one 60 Hz frame ($L \le 1$). Running through Ollama / GGUF introduces translation overhead, increasing latency to 30 ms to 80 ms (2 to 5 frames of reaction lag).
+1. **Latency**: `laya-mlx` executes directly on Apple Silicon Metal. The earlier claim of sub-frame latency (7.4 ms to 13.9 ms) was not reproduced; the measured figure is 90 to 140 ms (section 7). The 30 ms to 80 ms quoted for Ollama / GGUF was never measured in this project and is unverified.
 2. **True Probability Calibration**: `laya-mlx` retains the author's fitted temperature scaling and confidence calibration. Ollama outputs raw softmax scores without specialized calibration.
 3. **Structured Criteria Support**: `laya-mlx` accepts detailed `criteria` descriptions per candidate action, allowing the model to distinguish nuanced flight conditions.
 
@@ -93,7 +93,7 @@ You can verify that the local inference server is active and reachable using any
    Open `asteroids.html` in your browser and click the **Laya** button in the Decision panel:
    * **When active**: The Decision panel note displays real-time telemetry:
      ```text
-     Laya decision: stay_and_fire (p=0.92, conf=0.88). Latency: 11.2 ms (avg 11.2 ms).
+     Laya decision: stay_and_fire (p=0.92, conf=0.88). Latency: 104 ms (avg 98 ms).
      ```
      (The numbers shown are an example. The latency depends on the machine and the model.)
    * **When offline**: The Laya button is disabled, the game runs `smartPilot` as a fallback, and the Decision panel shows:
@@ -157,7 +157,7 @@ You can verify that the local inference server is active and reachable using any
 4. **Decision Panel Telemetry**: Display Laya's top choice, probability score, confidence level, and round-trip inference latency (in ms).
 
 ### Phase 4: Performance Measurement and Shielding
-1. Run [`scripts/dev/measure_pilots.js`](../scripts/dev/measure_pilots.js) across 8 random seeds for 1,200,000 ticks:
+1. Run [`scripts/dev/measure_pilots.js`](../scripts/dev/measure_pilots.js). The plan was 8 random seeds of 1,200,000 ticks; at the measured latency that would take days for Laya, so the Laya run is 12 seeds of 8,000 ticks (section 7):
    * Record ship losses per hour, points per minute, thrust percentage, and hyperspace frequency.
 2. Compare two operating modes:
    * **Unshielded**: Direct execution of Laya's top probability action.
@@ -196,7 +196,7 @@ To maximize classification accuracy, candidate options should include explicit d
 | **Local M1 Execution** | **Yes** (Native MLX on Metal) | **No** (Requires Linux with NVIDIA CUDA) |
 | **Model Size** | ~680 MB to 940 MB | ~16 GB (16-bit) |
 | **RAM Footprint** | < 1 GB | ~16 GB VRAM |
-| **Latency on Apple Silicon** | **7.4 ms to 13.9 ms** | N/A (local), ~28 ms (remote RTX 4090) |
+| **Latency on Apple Silicon** | Measured 90 to 140 ms (earlier 7.4 ms to 13.9 ms claim not reproduced) | N/A (local), ~28 ms (remote RTX 4090, not measured here) |
 | **Serving Dependency** | `pip install laya-mlx` (lightweight) | `vllm` pooling server + `clm-serve` + CUDA |
 | **API Wire Protocol** | TypeSafe `/v1/systemone` | TypeSafe `/v1/systemone` / `/v1/rank` |
 
@@ -204,31 +204,35 @@ To maximize classification accuracy, candidate options should include explicit d
 
 ## 7. Empirical Performance & Benchmark Results
 
-The table below reports measured figures from headless test runs comparing `layaPilot` against `smartPilot` and `simplePilot` (6 seeds per pilot, 20,000 ticks per seed, total 120,000 ticks / 33.3 minutes of live 60 Hz play per pilot):
+**Correction (2026-11-10).** The first version of this section reported 6 seeds of 20,000 ticks measured with two different scripts that counted losses and flying time differently. The figures are replaced by a re-run of all three pilots with one script ([`measure_pilots.js`](../scripts/dev/measure_pilots.js)), 12 seeds of 8,000 ticks each (about 0.41 flying hours per pilot), with Laya answers delayed by 6 ticks to match the measured latency. Raw files and definitions: [`docs/articles/data/`](articles/data/README.md). The old figures (`simplePilot` 43.9, `smartPilot` 7.7, `layaPilot` 36.6 losses per hour) should not be quoted.
 
-| Pilot | Paradigm | Ship Losses / Hour | Points / Minute | Thrust Engaged | Hyperspace / Hour | Median Latency |
+| Pilot | Paradigm | Ship Losses / Hour | Losses | Points / Minute | Thrust Engaged | Hyperspace / Hour |
 |---|---|---|---|---|---|---|
-| `simplePilot` | Fixed heuristic (no dodging) | 43.9 | 9,017 | 0.0% | 0.0 | < 0.01 ms |
-| `smartPilot` | Trajectory physics lookahead | 7.7 | 11,842 | 1.4% | 27.0 | ~0.15 ms |
-| `layaPilot` | Neural decision model (`laya-mlx`) | 36.6 | 11,289 | 5.1% | 0.0 | 11.2 ms |
+| `simplePilot` | Fixed heuristic (no dodging) | 33.6 | 14 | 7,991 | 0.0% | 0.0 |
+| `smartPilot` | Trajectory physics lookahead | 4.9 | 2 | 10,493 | 1.4% | 14.6 |
+| `layaPilot` | Neural decision model (`laya-mlx`) | 53.3 | 22 | 10,096 | 3.8% | 19.4 |
+
+Laya latency during this run: median 137.1 ms, 95th percentile 155.8 ms (11,495 requests to the server, 3,735 answers served from a cache of identical requests).
 
 ### Breakdown of Ship Losses by Cause
 
 | Pilot | Asteroid Impacts | Saucer Torpedoes | Saucer Collisions | Hyperspace Self-Destruct | Total Losses |
 |---|---|---|---|---|---|
-| `simplePilot` | 16 | 7 | 0 | 0 | 23 |
-| `smartPilot` | 2 | 0 | 0 | 2 | 4 |
-| `layaPilot` | 16 | 2 | 1 | 0 | 19 |
+| `simplePilot` | 12 | 2 | 0 | 0 | 14 |
+| `smartPilot` | 0 | 0 | 0 | 2 | 2 |
+| `layaPilot` | 22 | 0 | 0 | 0 | 22 |
+
+With 14, 2 and 22 losses the rates are imprecise. An exact test on the counts separates `smartPilot` from both others (p = 0.004 against `simplePilot`, p < 0.0001 against `layaPilot`); `layaPilot` and `simplePilot` cannot be told apart (p = 0.18).
 
 ### Qualitative Analysis of Gameplay Behavior
 
 Watching `layaPilot` in the browser game reveals distinctive characteristics of neural decision control:
 
 1. **Reactive vs Predictive Movement**:
-   `smartPilot` plans multi-second trajectories with exact inertia calculations, making smooth, calculated maneuvers. In contrast, `layaPilot` evaluates discrete tactical classifications from the neural model every ~11 ms. When threats appear, it reacts with bursts of turning and thrust (5.1% thrust engagement vs 1.4% in `smartPilot`), leading to noticeable ship drift and reactive course corrections that look less polished in the UI.
+   `smartPilot` plans multi-second trajectories with exact inertia calculations, making smooth, calculated maneuvers. In contrast, `layaPilot` evaluates discrete tactical classifications from the neural model, each answer arriving about 90 to 140 ms after the request. When threats appear, it reacts with bursts of turning and thrust (3.8% thrust engagement vs 1.4% in `smartPilot`), leading to noticeable ship drift and reactive course corrections that look less polished in the UI.
 
 2. **High Scoring Velocity**:
-   `layaPilot` achieves 11,289 points/min, approaching `smartPilot` (11,842 pts/min) and outperforming `simplePilot` (9,017 pts/min). In safe conditions, its real-time aiming and shooting pipeline clears asteroids rapidly.
+   `layaPilot` achieves 10,096 points/min, approaching `smartPilot` (10,493 pts/min) and above `simplePilot` (7,991 pts/min), probably because it shares the target picker (`spPickTarget`) with `smartPilot`; `simplePilot` has its own intercept code.
 
 3. **Collision Limits of Semantic Reasoning**:
-   While `layaPilot` reduces saucer torpedo deaths from 7 to 2 by executing lateral dodges, its asteroid loss rate (36.6 losses/hour) is higher than `smartPilot` (7.7 losses/hour). A natural-language state summary cannot replace full multi-body physics integration across splitting rock trajectories.
+   All 22 `layaPilot` losses in this run were asteroid impacts. Its loss rate (53.3 per hour) is not distinguishable from `simplePilot` (33.6) and far above `smartPilot` (4.9). The earlier claim that `layaPilot` dodges saucer torpedoes better than `simplePilot` is not supported: it had no torpedo losses here, but this run is too short to show a saucer effect (`simplePilot` had 2). A natural-language summary of the nearest threat is a plausible reason for the rock losses, but this has not been tested.

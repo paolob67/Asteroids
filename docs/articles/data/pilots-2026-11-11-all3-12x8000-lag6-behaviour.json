@@ -1,0 +1,1089 @@
+{
+  "meta": {
+    "date": "2026-11-11T08:54:42.580Z",
+    "command": "node scripts/dev/measure_pilots.js asteroids.html 8000 simplePilot,smartPilot,layaPilot 12 --lag=6 --json=docs/articles/data/pilots-2026-11-11-all3-12x8000-lag6-behaviour.json",
+    "file": "asteroids.html",
+    "fileSha256": "9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6",
+    "gitCommit": "2a5e31f",
+    "gitDirty": true,
+    "node": "v26.3.1",
+    "os": "Darwin 27.2.0 arm64",
+    "cpu": "Apple M1",
+    "memoryGB": 16,
+    "layaModel": "aac6fef/laya-mlx",
+    "ticksPerSeed": 8000,
+    "seeds": 12,
+    "answerCache": true
+  },
+  "results": [
+    {
+      "pilot": "simplePilot",
+      "seeds": 12,
+      "ticksPerSeed": 8000,
+      "flyingHours": 0.42,
+      "flyingShare": 0.9381,
+      "losses": 14,
+      "lossesPerHour": 33.6,
+      "lossesPerHourBySeedMin": 0,
+      "lossesPerHourBySeedMax": 57.7,
+      "pointsPerMin": 7991,
+      "thrustPct": 0,
+      "hyperspacePerHour": 0,
+      "gamesEnded": 0,
+      "medianGameScore": null,
+      "causes": {
+        "saucer-torpedo": 2,
+        "rock": 12
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "causes": {
+            "saucer-torpedo": 1
+          },
+          "losses": 1,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 15660,
+          "shipTicks": 7311,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "0": 1
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 28.830752802989853,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 1,
+          "causes": {
+            "rock": 1,
+            "saucer-torpedo": 1
+          },
+          "losses": 2,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 17440,
+          "shipTicks": 7139,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "0": 1,
+            "1": 1
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 57.661505605979706,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 2,
+          "causes": {},
+          "losses": 0,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 18510,
+          "shipTicks": 7491,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 3,
+          "causes": {},
+          "losses": 0,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 17080,
+          "shipTicks": 7491,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 4,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 15250,
+          "shipTicks": 6993,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "1": 1
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 28.830752802989853,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 5,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 0,
+          "play": 7619,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 14170,
+          "shipTicks": 6540,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "1": 1,
+            "3": 1
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 56.70035437721485,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 6,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 17130,
+          "shipTicks": 7202,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "1": 2
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 57.661505605979706,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 7,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 18560,
+          "shipTicks": 7315,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "1": 1
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 28.830752802989853,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 8,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 15300,
+          "shipTicks": 7049,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "1": 2
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 57.661505605979706,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 9,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 15100,
+          "shipTicks": 7193,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "1": 1,
+            "2": 1
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 57.661505605979706,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 10,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 0,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 18180,
+          "shipTicks": 7315,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {
+            "1": 1
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 28.830752802989853,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 11,
+          "causes": {},
+          "losses": 0,
+          "thrust": 0,
+          "play": 7518,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 17510,
+          "shipTicks": 7517,
+          "speedSum": 0,
+          "drift": 0,
+          "distSum": 0,
+          "bursts": 0,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        }
+      ],
+      "wallSeconds": 1,
+      "behaviour": {
+        "shipTicks": 86556,
+        "meanSpeed": 0,
+        "driftPct": 0,
+        "meanDistFromCentre": 0,
+        "thrustBurstsPerMin": 0,
+        "meanBurstTicks": null,
+        "threatsAtLoss": {
+          "0": 2,
+          "1": 10,
+          "2": 1,
+          "3": 1
+        }
+      }
+    },
+    {
+      "pilot": "smartPilot",
+      "seeds": 12,
+      "ticksPerSeed": 8000,
+      "flyingHours": 0.41,
+      "flyingShare": 0.9246,
+      "losses": 2,
+      "lossesPerHour": 4.9,
+      "lossesPerHourBySeedMin": 0,
+      "lossesPerHourBySeedMax": 57.7,
+      "pointsPerMin": 10493,
+      "thrustPct": 1.4,
+      "hyperspacePerHour": 14.6,
+      "gamesEnded": 0,
+      "medianGameScore": null,
+      "causes": {
+        "hyperspace": 2
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 132,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 1,
+          "points": 21860,
+          "shipTicks": 7316,
+          "speedSum": 4469.862487489978,
+          "drift": 582,
+          "distSum": 9337566.723382596,
+          "bursts": 40,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 1,
+          "causes": {},
+          "losses": 0,
+          "thrust": 160,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 1,
+          "points": 21810,
+          "shipTicks": 7443,
+          "speedSum": 5452.728120970051,
+          "drift": 892,
+          "distSum": 16508504.99465412,
+          "bursts": 52,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 2,
+          "causes": {},
+          "losses": 0,
+          "thrust": 88,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 21370,
+          "shipTicks": 7364,
+          "speedSum": 3188.3962139823598,
+          "drift": 278,
+          "distSum": 5856141.134094233,
+          "bursts": 22,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 3,
+          "causes": {},
+          "losses": 0,
+          "thrust": 29,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 22250,
+          "shipTicks": 7364,
+          "speedSum": 1118.1755715348527,
+          "drift": 129,
+          "distSum": 1146259.5583383366,
+          "bursts": 11,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 4,
+          "causes": {
+            "hyperspace": 2
+          },
+          "losses": 2,
+          "thrust": 73,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 2,
+          "points": 20610,
+          "shipTicks": 6985,
+          "speedSum": 3022.1435776301983,
+          "drift": 402,
+          "distSum": 2803672.7007580306,
+          "bursts": 23,
+          "threatsAtLoss": {
+            "1": 2
+          },
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 57.661505605979706,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 5,
+          "causes": {},
+          "losses": 0,
+          "thrust": 103,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 20500,
+          "shipTicks": 7364,
+          "speedSum": 2886.609935315745,
+          "drift": 418,
+          "distSum": 5927574.113005064,
+          "bursts": 25,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 6,
+          "causes": {},
+          "losses": 0,
+          "thrust": 109,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 1,
+          "points": 21400,
+          "shipTicks": 7316,
+          "speedSum": 4153.522182743423,
+          "drift": 458,
+          "distSum": 13522385.367520075,
+          "bursts": 36,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 7,
+          "causes": {},
+          "losses": 0,
+          "thrust": 113,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 20550,
+          "shipTicks": 7364,
+          "speedSum": 2990.279077073018,
+          "drift": 554,
+          "distSum": 7010301.61398243,
+          "bursts": 38,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 8,
+          "causes": {},
+          "losses": 0,
+          "thrust": 65,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 22840,
+          "shipTicks": 7364,
+          "speedSum": 3264.362550406604,
+          "drift": 406,
+          "distSum": 5574673.692814044,
+          "bursts": 25,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 9,
+          "causes": {},
+          "losses": 0,
+          "thrust": 80,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 20680,
+          "shipTicks": 7364,
+          "speedSum": 3299.2739645612646,
+          "drift": 424,
+          "distSum": 6814603.971390906,
+          "bursts": 29,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 10,
+          "causes": {},
+          "losses": 0,
+          "thrust": 229,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 1,
+          "points": 22010,
+          "shipTicks": 7443,
+          "speedSum": 8746.61968375809,
+          "drift": 1053,
+          "distSum": 5583476.321852541,
+          "bursts": 89,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 11,
+          "causes": {},
+          "losses": 0,
+          "thrust": 44,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 22830,
+          "shipTicks": 7364,
+          "speedSum": 1771.8585458726393,
+          "drift": 220,
+          "distSum": 2323510.679809378,
+          "bursts": 20,
+          "threatsAtLoss": {},
+          "answers": 0,
+          "choiceChanges": 0,
+          "choiceTicks": {},
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        }
+      ],
+      "wallSeconds": 2,
+      "behaviour": {
+        "shipTicks": 88051,
+        "meanSpeed": 0.5,
+        "driftPct": 6.6,
+        "meanDistFromCentre": 936,
+        "thrustBurstsPerMin": 16.8,
+        "meanBurstTicks": 3,
+        "threatsAtLoss": {
+          "1": 2
+        }
+      }
+    },
+    {
+      "pilot": "layaPilot",
+      "seeds": 12,
+      "ticksPerSeed": 8000,
+      "flyingHours": 0.41,
+      "flyingShare": 0.9293,
+      "losses": 22,
+      "lossesPerHour": 53.3,
+      "lossesPerHourBySeedMin": 0,
+      "lossesPerHourBySeedMax": 88,
+      "pointsPerMin": 10096,
+      "thrustPct": 3.8,
+      "hyperspacePerHour": 19.4,
+      "gamesEnded": 0,
+      "medianGameScore": null,
+      "causes": {
+        "rock": 22
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "causes": {
+            "rock": 3
+          },
+          "losses": 3,
+          "thrust": 226,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 2,
+          "points": 20230,
+          "shipTicks": 6745,
+          "speedSum": 13423.047275289182,
+          "drift": 2463,
+          "distSum": 15177507.831440324,
+          "bursts": 14,
+          "threatsAtLoss": {
+            "1": 2,
+            "2": 1
+          },
+          "answers": 1130,
+          "choiceChanges": 35,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6511,
+            "turn_right_and_thrust": 150,
+            "turn_left_and_thrust": 76,
+            "hyperspace": 2
+          },
+          "lossesPerHour": 86.49225840896956,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 1,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 137,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 20060,
+          "shipTicks": 7137,
+          "speedSum": 10828.374910863664,
+          "drift": 2042,
+          "distSum": 16050031.436218707,
+          "bursts": 11,
+          "threatsAtLoss": {
+            "1": 1,
+            "3": 1
+          },
+          "answers": 1195,
+          "choiceChanges": 23,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6994,
+            "turn_left_and_thrust": 48,
+            "turn_right_and_thrust": 89
+          },
+          "lossesPerHour": 57.661505605979706,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 2,
+          "causes": {
+            "rock": 3
+          },
+          "losses": 3,
+          "thrust": 292,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 20890,
+          "shipTicks": 6810,
+          "speedSum": 20316.4892964919,
+          "drift": 2542,
+          "distSum": 6623454.828380648,
+          "bursts": 15,
+          "threatsAtLoss": {
+            "1": 2,
+            "3": 1
+          },
+          "answers": 1141,
+          "choiceChanges": 32,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6512,
+            "turn_right_and_thrust": 171,
+            "turn_left_and_thrust": 121
+          },
+          "lossesPerHour": 87.9837067209776,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 3,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 398,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 1,
+          "points": 16770,
+          "shipTicks": 6791,
+          "speedSum": 29515.13082298539,
+          "drift": 2971,
+          "distSum": 13687351.37360772,
+          "bursts": 17,
+          "threatsAtLoss": {
+            "0": 1,
+            "2": 1
+          },
+          "answers": 1137,
+          "choiceChanges": 42,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6385,
+            "turn_left_and_thrust": 150,
+            "turn_right_and_thrust": 248,
+            "hyperspace": 2
+          },
+          "lossesPerHour": 57.661505605979706,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 4,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 169,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 23150,
+          "shipTicks": 7012,
+          "speedSum": 12905.224575951564,
+          "drift": 2582,
+          "distSum": 17062185.185020108,
+          "bursts": 12,
+          "threatsAtLoss": {
+            "1": 2
+          },
+          "answers": 1175,
+          "choiceChanges": 24,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6837,
+            "turn_left_and_thrust": 84,
+            "turn_right_and_thrust": 85
+          },
+          "lossesPerHour": 58.65580448065173,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 5,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 134,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 20250,
+          "shipTicks": 7293,
+          "speedSum": 9205.606607237876,
+          "drift": 1493,
+          "distSum": 9239075.760276243,
+          "bursts": 9,
+          "threatsAtLoss": {
+            "2": 1
+          },
+          "answers": 1219,
+          "choiceChanges": 19,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 7153,
+            "turn_right_and_thrust": 50,
+            "turn_left_and_thrust": 84
+          },
+          "lossesPerHour": 29.327902240325866,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 6,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 479,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 2,
+          "points": 20760,
+          "shipTicks": 7001,
+          "speedSum": 39387.763212852566,
+          "drift": 3932,
+          "distSum": 21412780.203398727,
+          "bursts": 19,
+          "threatsAtLoss": {
+            "1": 1,
+            "2": 1
+          },
+          "answers": 1174,
+          "choiceChanges": 54,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6513,
+            "turn_left_and_thrust": 211,
+            "turn_right_and_thrust": 268,
+            "hyperspace": 3
+          },
+          "lossesPerHour": 57.661505605979706,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 7,
+          "causes": {},
+          "losses": 0,
+          "thrust": 348,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 22030,
+          "shipTicks": 7364,
+          "speedSum": 32617.795392736345,
+          "drift": 4160,
+          "distSum": 14486732.049705,
+          "bursts": 19,
+          "threatsAtLoss": {},
+          "answers": 1232,
+          "choiceChanges": 45,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 7010,
+            "turn_right_and_thrust": 246,
+            "turn_left_and_thrust": 102
+          },
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 8,
+          "causes": {},
+          "losses": 0,
+          "thrust": 270,
+          "play": 7476,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 2,
+          "points": 22310,
+          "shipTicks": 7379,
+          "speedSum": 22351.112728841228,
+          "drift": 3149,
+          "distSum": 14890439.058938527,
+          "bursts": 13,
+          "threatsAtLoss": {},
+          "answers": 1235,
+          "choiceChanges": 36,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 7099,
+            "turn_right_and_thrust": 150,
+            "turn_left_and_thrust": 120,
+            "hyperspace": 4
+          },
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 9,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 270,
+          "play": 7365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 1,
+          "points": 21650,
+          "shipTicks": 6964,
+          "speedSum": 18935.466682795963,
+          "drift": 3303,
+          "distSum": 14638677.358659009,
+          "bursts": 15,
+          "threatsAtLoss": {
+            "1": 2
+          },
+          "answers": 1168,
+          "choiceChanges": 36,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6686,
+            "turn_right_and_thrust": 140,
+            "turn_left_and_thrust": 130,
+            "hyperspace": 2
+          },
+          "lossesPerHour": 58.65580448065173,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 10,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 290,
+          "play": 7448,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 21360,
+          "shipTicks": 7037,
+          "speedSum": 21740.195203496223,
+          "drift": 2844,
+          "distSum": 10988482.442936132,
+          "bursts": 17,
+          "threatsAtLoss": {
+            "1": 2
+          },
+          "answers": 1179,
+          "choiceChanges": 43,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6741,
+            "turn_left_and_thrust": 134,
+            "turn_right_and_thrust": 156
+          },
+          "lossesPerHour": 58.00214822771214,
+          "gamesEnded": 0
+        },
+        {
+          "seed": 11,
+          "causes": {
+            "rock": 3
+          },
+          "losses": 3,
+          "thrust": 400,
+          "play": 7492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 20730,
+          "shipTicks": 6927,
+          "speedSum": 26716.43334848837,
+          "drift": 3519,
+          "distSum": 11188463.107904227,
+          "bursts": 23,
+          "threatsAtLoss": {
+            "1": 1,
+            "2": 2
+          },
+          "answers": 1158,
+          "choiceChanges": 48,
+          "choiceTicks": {
+            "none": 6,
+            "stay_and_fire": 6521,
+            "turn_right_and_thrust": 256,
+            "turn_left_and_thrust": 144
+          },
+          "lossesPerHour": 86.49225840896956,
+          "gamesEnded": 0
+        }
+      ],
+      "wallSeconds": 1527,
+      "behaviour": {
+        "shipTicks": 84460,
+        "meanSpeed": 3.05,
+        "driftPct": 41.4,
+        "meanDistFromCentre": 1959,
+        "thrustBurstsPerMin": 7.8,
+        "meanBurstTicks": 18.5,
+        "threatsAtLoss": {
+          "0": 1,
+          "1": 13,
+          "2": 6,
+          "3": 2
+        },
+        "answersPerSecond": 10.05,
+        "choiceChangesPerMin": 18.6,
+        "choiceShare": {
+          "none": 0.1,
+          "stay_and_fire": 95.9,
+          "turn_right_and_thrust": 2.4,
+          "turn_left_and_thrust": 1.7,
+          "hyperspace": 0
+        }
+      },
+      "laya": {
+        "requestsToServer": 11495,
+        "answersFromCache": 3735,
+        "transportRetries": 2,
+        "medianLatencyMs": 134.7,
+        "p95LatencyMs": 161.4
+      }
+    }
+  ]
+}

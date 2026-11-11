@@ -30,6 +30,7 @@ The first start downloads the model weights from Hugging Face. Details, model op
 
 ## Documentation
 
+- [Article series](docs/articles/README.md): write-up plan, outlines and LinkedIn texts for the three-part series on code modernization with Bob.
 - [Version 3: two new autopilots, rules in the code and a decision model](docs/VERSION_3.md): how `smartPilot` (rule-based lookahead) and `layaPilot` (decision model) fly, proof that they move the ship only through the keys, and measurements of both against the v2 pilot.
 - [Decision models and autopilot design](docs/DECISION_MODELS.md): overview of decision models (System One models like Laya, Kev, Jev, CLM), local feasibility analysis for Apple Silicon M1, selection of `laya-mlx` and `Kev` as local candidates, the `/v1/systemone` protocol, and autopilot architecture.
 - [Laya-MLX local autopilot plan](docs/LAYA.md): serving specifications, sub-frame latency benchmarks on Apple Silicon M1, ModernBERT architecture, and phased implementation plan for `laya-mlx`.

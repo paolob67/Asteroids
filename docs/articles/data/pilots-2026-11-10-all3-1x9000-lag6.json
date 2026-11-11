@@ -1,0 +1,136 @@
+{
+  "meta": {
+    "date": "2026-11-10T23:32:07.302Z",
+    "command": "node scripts/dev/measure_pilots.js asteroids.html 9000 simplePilot,smartPilot,layaPilot 1 --lag=6 --json=docs/articles/data/pilots-2026-11-10-all3-1x9000-lag6.json",
+    "file": "asteroids.html",
+    "fileSha256": "9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6",
+    "gitCommit": "2a5e31f",
+    "gitDirty": true,
+    "node": "v26.3.1",
+    "os": "Darwin 27.2.0 arm64",
+    "cpu": "Apple M1",
+    "memoryGB": 16,
+    "layaModel": "aac6fef/laya-mlx",
+    "ticksPerSeed": 9000,
+    "seeds": 1,
+    "answerCache": true
+  },
+  "results": [
+    {
+      "pilot": "simplePilot",
+      "seeds": 1,
+      "ticksPerSeed": 9000,
+      "flyingHours": 0.04,
+      "flyingShare": 0.9436,
+      "losses": 2,
+      "lossesPerHour": 50.9,
+      "lossesPerHourBySeedMin": 50.9,
+      "lossesPerHourBySeedMax": 50.9,
+      "pointsPerMin": 7126,
+      "thrustPct": 0,
+      "hyperspacePerHour": 0,
+      "gamesEnded": 0,
+      "medianGameScore": null,
+      "causes": {
+        "saucer-torpedo": 1,
+        "rock": 1
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "causes": {
+            "saucer-torpedo": 1,
+            "rock": 1
+          },
+          "losses": 2,
+          "thrust": 0,
+          "play": 8492,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 0,
+          "points": 16810,
+          "lossesPerHour": 50.87140838436175,
+          "gamesEnded": 0
+        }
+      ],
+      "wallSeconds": 0
+    },
+    {
+      "pilot": "smartPilot",
+      "seeds": 1,
+      "ticksPerSeed": 9000,
+      "flyingHours": 0.04,
+      "flyingShare": 0.9294,
+      "losses": 0,
+      "lossesPerHour": 0,
+      "lossesPerHourBySeedMin": 0,
+      "lossesPerHourBySeedMax": 0,
+      "pointsPerMin": 11095,
+      "thrustPct": 1.7,
+      "hyperspacePerHour": 25.8,
+      "gamesEnded": 0,
+      "medianGameScore": null,
+      "causes": {},
+      "rows": [
+        {
+          "seed": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 139,
+          "play": 8365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 1,
+          "points": 25780,
+          "lossesPerHour": 0,
+          "gamesEnded": 0
+        }
+      ],
+      "wallSeconds": 0
+    },
+    {
+      "pilot": "layaPilot",
+      "seeds": 1,
+      "ticksPerSeed": 9000,
+      "flyingHours": 0.04,
+      "flyingShare": 0.9294,
+      "losses": 3,
+      "lossesPerHour": 77.5,
+      "lossesPerHourBySeedMin": 77.5,
+      "lossesPerHourBySeedMax": 77.5,
+      "pointsPerMin": 10010,
+      "thrustPct": 3.1,
+      "hyperspacePerHour": 51.6,
+      "gamesEnded": 0,
+      "medianGameScore": null,
+      "causes": {
+        "rock": 3
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "causes": {
+            "rock": 3
+          },
+          "losses": 3,
+          "thrust": 262,
+          "play": 8365,
+          "fallback": 0,
+          "laya_error": null,
+          "hypers": 2,
+          "points": 23260,
+          "lossesPerHour": 77.46563060370592,
+          "gamesEnded": 0
+        }
+      ],
+      "wallSeconds": 132,
+      "laya": {
+        "requestsToServer": 1242,
+        "answersFromCache": 137,
+        "transportRetries": 0,
+        "medianLatencyMs": 105.2,
+        "p95LatencyMs": 111.4
+      }
+    }
+  ]
+}

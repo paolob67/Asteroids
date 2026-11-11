@@ -36,36 +36,49 @@ Every tick it asks: if I do nothing special, does anything hit me in the next 90
 
 1. **Describe the situation.** The pilot turns the snapshot into one sentence in the ship's own frame: either "Safe" (with the speed and the nearest target), or "Danger" (which rock or saucer, which side, ticks to collision, which way to turn), or "Fatal collision emergency" when impact is 8 ticks away or less. The sentence is built by a few lines of JavaScript, so the geometry is still computed by code; the model does not see coordinates.
 2. **Ask the model.** The request carries the sentence and one question with four options: `stay_and_fire`, `turn_left_and_thrust`, `turn_right_and_thrust` and `hyperspace`, each with a short criteria text. The model answers with the chosen option, its probability and its confidence.
-3. **Act on the answer.** The last answer is turned into keys every tick. The request is asynchronous, so the 60 Hz loop never waits for the model; the ship follows the most recent decision, which is on average about 11 ms old. `stay_and_fire` aims and shoots with the same targeting maths as the other pilots; the dodge options hold turn and thrust; `hyperspace` presses the hyperspace key.
+3. **Act on the answer.** The last answer is turned into keys every tick. The request is asynchronous, so the 60 Hz loop never waits for the model; the ship follows the most recent decision, which on the machine used for the measurements is about 90 to 140 ms old (5 to 8 ticks). `stay_and_fire` aims and shoots with the same target picker as `smartPilot` (`spPickTarget`); the dodge options hold turn and thrust; `hyperspace` presses the hyperspace key.
 4. **No server, no problem.** If the server is not running, the pilot falls back to `smartPilot` and says so in the Decision panel, retrying every 3 seconds.
 
 There is no safety check between the model and the keys: whatever the model chooses is executed. The measurements in section 3 therefore show the model's own behaviour. Setup is in [LAYA.md](LAYA.md#32-setup-and-serving-commands).
 
 ## 3. How well it plays
 
-[`scripts/dev/measure_pilots.js`](../scripts/dev/measure_pilots.js) runs each pilot from several starting points. A starting point means: the game's `RAND` is advanced by a different number of calls after `initGame()`. The runs are repeatable. `simplePilot` and `smartPilot` were run for 8 starting points of 1,200,000 ticks (44.4 hours of play at 60 Hz in total). The `layaPilot` row comes from the shorter run described in [LAYA.md](LAYA.md#7-empirical-performance--benchmark-results) (6 starting points of 20,000 ticks), so it has a wider margin of error.
+[`scripts/dev/measure_pilots.js`](../scripts/dev/measure_pilots.js) runs each pilot from several starting points. A starting point means: the game's `RAND` is advanced by a different number of calls after `initGame()`. The runs are repeatable. All three pilots use one definition: flying time is the ticks spent in the `playing` state, and a loss is a call that removes a life. Definitions, environment and raw files are in [`docs/articles/data/`](articles/data/README.md).
 
-| Pilot | Control Paradigm | Ship Losses / Hour | Points / Minute | Thrust Engaged | Hyperspace / Hour | Games Ended | Median Latency |
-|---|---|---|---|---|---|---|---|
-| `simplePilot` | Fixed heuristic (no dodging) | 43.9 | 9,017 | 0.0% | 0.0 | 0 | < 0.01 ms |
-| `smartPilot` | Rules in code: trajectory lookahead | 7.7 | 11,842 | 1.4% | 27.0 | 0 | ~0.15 ms |
-| `layaPilot` | Decision model (`laya-mlx`) | 36.6 | 11,289 | 5.1% | 0.0 | 0 | 11.2 ms |
+The two rule-based pilots were run for 8 starting points of 1,200,000 ticks (about 42 flying hours each). `layaPilot` is slow (one answer takes about 90 to 140 ms on the test machine), so all three pilots were also run together for 12 starting points of 8,000 ticks (about 0.41 flying hours each), with `layaPilot` answers delayed by 6 ticks. Rows from runs of different length must not be compared with each other.
 
-Causes of the ship losses (measured across 120,000 ticks per pilot):
+Long run, rule-based pilots (8 x 1,200,000 ticks):
 
-| Pilot | Rocks | Saucer Torpedoes | Saucer Body | Hyperspace Self-Destruct | Total Losses |
-|---|---|---|---|---|---|
-| `simplePilot` | 16 | 7 | 0 | 0 | 23 |
-| `smartPilot` | 2 | 0 | 0 | 2 | 4 |
-| `layaPilot` | 16 | 2 | 1 | 0 | 19 |
+| Pilot | Control Paradigm | Ship Losses / Hour (range over starting points) | Points / Minute | Thrust Engaged | Hyperspace / Hour | Games Ended |
+|---|---|---|---|---|---|---|
+| `simplePilot` | Fixed heuristic (no dodging) | 69.1 (66.9 to 70.7) | 9,527 | 0.0% | 0.0 | 217 |
+| `smartPilot` | Rules in code: trajectory lookahead | 5.7 (3.5 to 7.1) | 13,992 | 1.7% | 29.1 | 0 |
+
+Short run, all three pilots (12 x 8,000 ticks, `--lag=6`):
+
+| Pilot | Control Paradigm | Ship Losses / Hour | Losses | Points / Minute | Thrust Engaged | Hyperspace / Hour |
+|---|---|---|---|---|---|---|
+| `simplePilot` | Fixed heuristic (no dodging) | 33.6 | 14 | 7,991 | 0.0% | 0.0 |
+| `smartPilot` | Rules in code: trajectory lookahead | 4.9 | 2 | 10,493 | 1.4% | 14.6 |
+| `layaPilot` | Decision model (`laya-mlx`) | 53.3 | 22 | 10,096 | 3.8% | 19.4 |
+
+Causes of the ship losses:
+
+| Run | Pilot | Rocks | Saucer Torpedoes | Saucer Body | Hyperspace Self-Destruct | Total Losses |
+|---|---|---|---|---|---|---|
+| Long | `simplePilot` | 1,763 | 1,092 | 45 | 0 | 2,900 |
+| Long | `smartPilot` | 109 | 0 | 7 | 123 | 239 |
+| Short | `simplePilot` | 12 | 2 | 0 | 0 | 14 |
+| Short | `smartPilot` | 0 | 0 | 0 | 2 | 2 |
+| Short | `layaPilot` | 22 | 0 | 0 | 0 | 22 |
 
 What the comparison shows:
 
-- **Rules in code win on survival.** `smartPilot` loses a ship about 6 times less often than `simplePilot` (7.7 against 43.9 per hour) and scores 31% more points per minute. It sees every body over a 90-tick horizon, including the pieces rocks will split into, and picks a manoeuvre that clears all of them.
-- **The decision model is a clear step up from the baseline, but not from the rules.** `layaPilot` scores almost as many points as `smartPilot` (11,289 against 11,842 per minute) because aiming and shooting use the same code. It dodges saucer torpedoes well (2 losses against 7 for `simplePilot`), but its loss rate stays close to the baseline (36.6 per hour), mostly from rocks. The model sees a one-sentence summary of the nearest threat, not the multi-body paths of splitting rocks.
-- **The two look different on screen.** `smartPilot` plans a path and moves in short, smooth taps (thrust engaged 1.4% of the time). `layaPilot` reacts to each new classification with bursts of turning and thrust (5.1%), so the ship drifts more and corrects often.
-- **Hyperspace.** `smartPilot` uses it only when no manoeuvre is safe, and two of its four losses were hyperspace self-destructs. `layaPilot` never pressed it in these runs.
-- **Cost of a decision.** `smartPilot` answers in about 0.15 ms inside the page. `layaPilot` needs a server round trip, 11.2 ms on Apple Silicon, which fits inside one 16.6 ms frame at 60 Hz without blocking rendering.
+- **Rules in code win on survival.** In the long run `smartPilot` loses a ship about 12 times less often than `simplePilot` (5.7 against 69.1 per hour) and scores 47% more points per minute. It sees every body over a 90-tick horizon, including the pieces rocks will split into, and picks a manoeuvre that clears all of them. `simplePilot` also ended 217 games; `smartPilot` never ended one.
+- **In the short run the decision model does not beat the baseline.** `layaPilot` scores almost as many points as `smartPilot` (10,096 against 10,493 per minute) probably because it shares the target picker with `smartPilot`, but it lost 22 ships against 14 for `simplePilot` and 2 for `smartPilot`. An exact test on the loss counts says `smartPilot` is better than both others (p = 0.004 against `simplePilot`, p < 0.0001 against `layaPilot`), while `layaPilot` and `simplePilot` cannot be told apart (p = 0.18). With 14, 2 and 22 losses the individual rates are imprecise.
+- **The two look different on screen.** `smartPilot` plans a path and moves in short, smooth taps (thrust engaged 1.4% of the time). `layaPilot` reacts to each new classification with bursts of turning and thrust (3.8%), so the ship drifts more and corrects often.
+- **Hyperspace.** `smartPilot` uses it when no manoeuvre is safe (14.6 per hour in the short run) and in the long run 123 of its 239 losses were hyperspace self-destructs. `layaPilot` also pressed it (19.4 per hour).
+- **Cost of a decision.** `smartPilot` answers in about 0.15 ms inside the page. `layaPilot` needs a server round trip. On the test machine (M1, 16 GB) that was a median of 91 to 104 ms when idle and 137 ms (95th percentile 156 ms) during the runs, which is 5 to 8 ticks at 60 Hz. Earlier versions of this document quoted 7.4 to 13.9 ms; that was not reproduced and has been withdrawn.
 
 ## 4. The ship only moves like the game allows
 

@@ -78,7 +78,7 @@ Because every candidate model in this survey supports or can be adapted to this 
 
 | Model | Architecture & Backbone | Serving Runtime | Serving Location | Typical Latency | Key Pros | Key Cons |
 |---|---|---|---|---|---|---|
-| **Laya** (`laya-mlx` / ONNX) | ModernBERT encoder + non-autoregressive head (~1.7 GB) | Native MLX or ONNX Runtime | **Local M1** | **7 to 14 ms** | Sub-frame latency; runs natively on Apple Silicon Metal; minimal memory footprint (< 2 GB). | Compact encoder may struggle with very verbose or multi-entity state text. |
+| **Laya** (`laya-mlx` / ONNX) | ModernBERT encoder + non-autoregressive head (~1.7 GB) | Native MLX or ONNX Runtime | **Local M1** | **Measured 90 to 140 ms** (upstream claim of 7 to 14 ms not reproduced) | Runs natively on Apple Silicon Metal; minimal memory footprint (< 2 GB). | Compact encoder may struggle with very verbose or multi-entity state text; latency is 5 to 8 game ticks on the test machine. |
 | **Kev** (Kev-0.8B / Kev-4B) | Qwen3.5/3.8 + lightweight pointer readout head | MLX, GGUF (`llama.cpp`), or Ollama | **Local M1** | **25 to 60 ms** | Rich linguistic representation from Qwen base; robust calibration; native `/v1/systemone` compatibility. | Latency spans 2 to 4 game frames on M1. |
 | **d1 / d1-3B** (Liquid AI) | Single forward pass LFM backbone (~2.2 GB) | GGUF / Ollama | **Local M1** | **20 to 50 ms** | Fast single forward pass; good benchmark scores under 10B. | Less tested on complex spatial relation tasks. |
 | **Jev 1.14 / 1.13** (TypeSafe) | Flagship RLCD decision model | Hosted Cloud API | **Cloud Endpoint** | **70 to 150 ms** | Frontier decision intelligence; zero local hardware consumption; 64k context window. | Network round-trip introduces ~4 to 9 frames of latency; requires API key. |
@@ -103,7 +103,7 @@ Because every candidate model in this survey supports or can be adapted to this 
    * *Conclusion*: CLM is viable only via remote Linux GPU server with SSH port forwarding (`ssh -L 8700:localhost:8700`).
 
 2. **Why Laya and Kev Are Ideal for Local M1 Testing**:
-   * **`laya-mlx`**: Weights are ~1.7 GB (fitting comfortably within available disk). It runs directly on Apple Silicon Metal via Apple's MLX framework, yielding inference times of 7 to 14 ms. At 60 Hz (16.6 ms per frame), Laya decisions can be returned in under one game frame.
+   * **`laya-mlx`**: Weights are ~1.7 GB (fitting comfortably within available disk). It runs directly on Apple Silicon Metal via Apple's MLX framework. The first version of this document expected 7 to 14 ms (under one 60 Hz frame); measured on this machine it is 90 to 140 ms, or 5 to 8 frames (see section 7).
    * **`Kev-0.8B` / `Kev-4B`**: Runs locally via `llama.cpp` GGUF, Ollama, or MLX. The 0.8B variant uses ~1.2 GB RAM with ~25 to 35 ms latency (1 to 2 frames of lag), while the 4B variant uses ~3.5 GB RAM with ~50 to 60 ms latency.
    * Both run completely offline without token costs or network jitter.
 
@@ -117,9 +117,9 @@ For local experimentation on the M1, we select **`laya-mlx`** and **`Kev`** as t
 
 | Criteria | Laya (`laya-mlx`) | Kev (`Kev-0.8B` / `Kev-4B`) |
 |---|---|---|
-| **Primary Strength** | **Ultra-low latency** (7 to 14 ms). Faster than a single 60 Hz tick. | **Higher semantic capacity** and spatial inference quality from Qwen base. |
+| **Primary Strength** | **Small and local.** Latency was expected to be 7 to 14 ms but measured 90 to 140 ms. | **Higher semantic capacity** and spatial inference quality from Qwen base. |
 | **Memory Footprint** | Extremely light (~1.7 GB total). | Light to moderate (1.5 GB for 0.8B, 4.0 GB for 4B). |
-| **Inference Lag ($L$)** | 0 to 1 frame lag at 60 Hz. | 2 to 4 frames lag at 60 Hz. |
+| **Inference Lag ($L$)** | Measured 5 to 8 frames at 60 Hz (expected 0 to 1). | 2 to 4 frames lag at 60 Hz (expected, not measured here). |
 | **State Text Format** | Best suited for concise, structured key-value summaries. | Handles longer descriptions and raw snapshot summaries well. |
 | **Implementation Route** | Python `mlx` service exposing `/v1/systemone` on localhost:8700, or Node.js ONNX runtime (`receptron/laya`). | GGUF served via Ollama/`llama.cpp`, or Python MLX runner on localhost:8700. |
 
@@ -164,21 +164,23 @@ Before running live browser sessions, candidate models are evaluated offline usi
 
 ## 7. Empirical Findings from Live Asteroids Autopilot Benchmarking
 
-Headless multi-seed benchmarks (6 seeds per pilot, 20,000 ticks per seed, total 120,000 ticks / 33.3 minutes of live 60 Hz play per pilot) produce the following results across the three pilot paradigms:
+**Correction (2026-11-10).** The first version of this section used 6 seeds of 20,000 ticks from two scripts with different loss definitions. It is replaced by one script, 12 seeds of 8,000 ticks per pilot (about 0.41 flying hours each), Laya answers delayed by 6 ticks. Definitions and raw files: [`docs/articles/data/`](articles/data/README.md). The old figures (43.9, 7.7, 36.6 losses per hour) should not be quoted.
 
-| Pilot | Paradigm | Ship Losses / Hour | Points / Minute | Thrust Engaged | Hyperspace / Hour | Median Latency |
+| Pilot | Paradigm | Ship Losses / Hour | Losses | Points / Minute | Thrust Engaged | Hyperspace / Hour |
 |---|---|---|---|---|---|---|
-| `simplePilot` | Fixed heuristic (no dodging) | 43.9 | 9,017 | 0.0% | 0.0 | < 0.01 ms |
-| `smartPilot` | Trajectory physics lookahead | 7.7 | 11,842 | 1.4% | 27.0 | ~0.15 ms |
-| `layaPilot` | Neural decision model (`laya-mlx`) | 36.6 | 11,289 | 5.1% | 0.0 | 11.2 ms |
+| `simplePilot` | Fixed heuristic (no dodging) | 33.6 | 14 | 7,991 | 0.0% | 0.0 |
+| `smartPilot` | Trajectory physics lookahead | 4.9 | 2 | 10,493 | 1.4% | 14.6 |
+| `layaPilot` | Neural decision model (`laya-mlx`) | 53.3 | 22 | 10,096 | 3.8% | 19.4 |
+
+Laya latency during the run: median 137 ms, 95th percentile 156 ms.
 
 ### Key Architectural Takeaways
 
-1. **Sub-Frame Latency on Metal**:
-   `laya-mlx` executes inference on Apple Silicon Metal in 11.2 ms on average. This validates that System One decision models can operate inside real-time interactive game loops without frame drops or network round trips.
+1. **Latency on Metal is several frames**:
+   `laya-mlx` needs about 90 to 140 ms per decision on this machine, not the sub-frame figure first expected. The request is asynchronous, so the game never stalls, but the ship acts on an answer that is 5 to 8 ticks old.
 
 2. **Semantic Classification vs Continuous Trajectory Planning**:
-   While `smartPilot` simulates exact multi-body physics across a 90-tick lookahead horizon, `layaPilot` classifies high-level tactical states via natural language. In live play, this causes `layaPilot` to appear more reactive and jittery in the UI (engaging thrust 5.1% of ticks to correct drift).
+   While `smartPilot` simulates exact multi-body physics across a 90-tick lookahead horizon, `layaPilot` classifies high-level tactical states via natural language. In live play, this causes `layaPilot` to appear more reactive and jittery in the UI (engaging thrust 3.8% of ticks against 1.4%).
 
-3. **Domain Strengths**:
-   Neural decision control excels at tactical mode selection (clearing saucers and maintaining high offensive scoring at 11,289 points/min), while deterministic rule-based solvers remain superior for multi-body collision avoidance in dense asteroid fields.
+3. **Result**:
+   `layaPilot` matches the others on points per minute (10,096), probably because it shares the target picker with `smartPilot`, but its loss rate (53.3 per hour) is not distinguishable from `simplePilot` and far above `smartPilot`. Rule-based solvers were clearly better at multi-body collision avoidance here. Why, whether latency, the one-sentence state or the model itself, has not been isolated.
