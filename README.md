@@ -73,6 +73,15 @@ node scripts/dev/export_pilot_log.js asteroids.html 600000 smartPilot 0 /tmp/sma
 node scripts/dev/eval_laya_offline.js /tmp/smart_0.jsonl 100      # Laya against a recorded pilot log
 ```
 
+### Article images
+
+LinkedIn articles have no tables or code blocks, so both are exported as PNG from JSON specs in [`docs/articles/linkedin/`](docs/articles/linkedin/README.md). Edit the JSON and re-export; do not edit the PNGs. The snippets use the Carbon Gray 100 theme with IBM Plex Mono and need a local Google Chrome. The tables need the draw.io app.
+
+```bash
+node scripts/dev/make_snippet_images.js docs/articles/linkedin/snippets.json docs/diagrams   # code snippets to docs/diagrams/snippet-<id>.png
+node scripts/dev/make_article_tables.js docs/articles/linkedin/tables.json docs/diagrams      # tables to .drawio, then export each to PNG with the draw.io CLI
+```
+
 ## Repository layout
 
 ```
@@ -81,8 +90,8 @@ versions/v1/          frozen version 1 + SHA256SUMS
 versions/v2/          frozen version 2 + SHA256SUMS
 versions/v3/          frozen version 3 + SHA256SUMS
 docs/                 documentation (VERSION_*.md, ARCHITECTURE.md, LAYA*.md, ...)
-docs/diagrams/        .drawio sources and .png exports (v1 and v2 diagrams, v3-pilots)
-docs/articles/        article series material: plan, outlines, findings, test log
+docs/diagrams/        .drawio sources and .png exports (diagrams, article tables), snippet-*.png (article code snippets)
+docs/articles/        article series material: plan, outlines, findings, test log, linkedin/ texts with tables.json and snippets.json
 docs/articles/data/   raw measurement files (JSON) behind every quoted number
 scripts/              validation scripts (run_all.sh, check_syntax.js)
 scripts/dev/          measurement, analysis and tuning scripts (JavaScript and Python), laya_server.py
