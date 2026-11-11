@@ -6,7 +6,7 @@ Editable diagram sources are in [`docs/diagrams/`](diagrams/) (`.drawio`, export
 
 ## Overview (version 1)
 
-![Version 1 architecture: original 6502 source ported by hand into a single HTML file, with validation scripts and a frozen snapshot](diagrams/v1-architecture.png)
+![Version 1 architecture: original 6502 source ported with Bob into a single HTML file, with validation scripts and a frozen snapshot](diagrams/v1-architecture.png)
 
 Source file: [`diagrams/v1-architecture.drawio`](diagrams/v1-architecture.drawio).
 

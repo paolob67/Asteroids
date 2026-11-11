@@ -105,10 +105,10 @@ Sources go in [`../diagrams/`](../diagrams/) as `.drawio` with a `.png` export. 
 
 | ID | Diagram | Part | Status |
 |----|---------|------|--------|
-| G1 | 6502 source set mapped to the single JavaScript file | 1 | New |
-| G2 | Hardware to browser mapping (vector beam to canvas, analog sound to Web Audio, 6502 clock to a fixed 60 Hz step) | 1 | New |
-| G3 | Where the errors came from: translation, convention, and verification gaps | 1 | New |
-| G4 | Validation harness (headless `vm` sandbox, scripts, seeds) | 1 and 2 | New |
+| G1 | 6502 source set mapped to the single JavaScript file | 1 | Done |
+| G2 | Hardware to browser mapping (vector beam to canvas, analog sound to Web Audio, 6502 clock to a fixed 60 Hz step) | 1 | Done |
+| G3 | Where the errors came from: translation, convention, and verification gaps | 1 | Done |
+| G4 | Validation harness (headless `vm` sandbox, scripts, seeds) | 1 and 2 | Done |
 | G5 | v1 architecture | 1 | Exists: `v1-architecture` |
 | G6 | v1 game states | 1 | Exists: `v1-game-states` |
 | G7 | State to decision loop | 2 | Exists: `v2-state-decision-loop` |

@@ -1,0 +1,70 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="g1-src-map" name="G1: Source Set to Single File">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="750" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Left container: Original 6502 Source Set -->
+        <mxCell id="c_orig" value="Original 6502 Source Set (asteroids-main/)&#xa;16 files, 7,722 total lines" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;verticalAlign=top;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="340" height="540" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="src_logic" value="Game Logic Files&#xa;A35131.1A to A35131.1E&#xa;3,653 lines&#xa;(MOTION, MOVE, COLIDE, NEWAST, ENEMY, HYPER)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="80" width="300" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="src_vec" value="Vector Shape Tables&#xa;A35127.XX&#xa;4 rock shapes, 17 ship frames, saucer, SINCOS" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="60" y="190" width="300" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="src_font" value="Vector Font Tables&#xa;VECAN.XX&#xa;Complete vector alphanumeric character definitions" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="60" y="280" width="300" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="src_math" value="Math &amp;amp; Macro Headers&#xa;RTMUL.XX, RTMLCR.XX, VECMAC.XX, ASTDEC.XX&#xa;Hardware register definitions, multiply macros" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="60" y="370" width="300" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="src_skipped" value="Not Ported / Replaced by Web APIs&#xa;COIN65.XX (coin mechanisms), ASTROD.DOC&#xa;Analog audio circuit schematics, self-test ROM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;dashed=1;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="60" y="460" width="300" height="90" as="geometry"/>
+        </mxCell>
+
+        <!-- Center arrow: LLM Translation Pass -->
+        <mxCell id="arrow_llm" value="Bob (Agent Mode)&#xa;Legacy translation pass&#xa;preserving constants &amp;amp; units" style="endArrow=classic;html=1;strokeWidth=3;strokeColor=#3b82d4;fontStyle=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="c_orig" target="c_target">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Right container: asteroids.html -->
+        <mxCell id="c_target" value="Single Self-Contained Web File (asteroids.html)&#xa;Version 1: 1,880 lines, zero dependencies, no build step" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#3b82d4;fontStyle=1;verticalAlign=top;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="660" y="40" width="460" height="540" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dst_tables" value="Data Tables: ROCKS, SHIPS, SAUCER_SEGS, FONT, SINCOS&#xa;Extracted from A35127.XX and VECAN.XX" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="680" y="80" width="420" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dst_logic" value="Core Game Engine (60 Hz fixed tick)&#xa;rand() LFSR, updateShip, updateSaucer, collides, checkWave&#xa;Mapped from A35131.1A to 1E with original opcode annotations" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="680" y="145" width="420" height="75" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dst_audio" value="Web Audio Synthesizer (replaces analog circuits)&#xa;Ship/saucer fire, thrust rumble, heartbeat thump, 3 explosion sizes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="680" y="235" width="420" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dst_render" value="HTML5 2D Canvas Renderer (replaces vector hardware)&#xa;drawSegs, drawHUD, attract mode, 1024x768 resolution" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="680" y="310" width="420" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dst_loop" value="Game Flow &amp;amp; Input Loop&#xa;Attract, Playing, WaveClear, GameOver, HiScore states&#xa;Keyboard event listeners, requestAnimationFrame accumulator" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="680" y="385" width="420" height="65" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dst_units" value="Coordinate System Preserved: X (0..8191), Y (0..6143)&#xa;1 canvas pixel = 8 internal units (ensures physical fidelity)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="680" y="465" width="420" height="50" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

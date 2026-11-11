@@ -1,6 +1,6 @@
 # Version 1 baseline
 
-Version 1 is the result of the first porting pass: the original Atari Asteroids 6502 source translated by hand into one JavaScript file. It is frozen in [`versions/v1/`](../versions/v1/) and is the starting point for later work, and the reference for the planned article that compares this first step with a code modernization approach.
+Version 1 is the result of the first porting pass: the original Atari Asteroids 6502 source ported with Bob into one JavaScript file. It is frozen in [`versions/v1/`](../versions/v1/) and is the starting point for later work, and the reference for the planned article that compares this first step with a code modernization approach.
 
 - Frozen copy: [`versions/v1/asteroids.html`](../versions/v1/asteroids.html) (SHA-256 `8b544821dd5fcc9328c854bb8c53a183ed4e9a93994bdc1e8465a27fbdac2d86`)
 - Next version, frozen: [`versions/v2/asteroids.html`](../versions/v2/asteroids.html). What changed is described in [VERSION_2.md](VERSION_2.md). Version 3 is also frozen, in [`versions/v3/`](../versions/v3/); the working copy [`asteroids.html`](../asteroids.html) continues from it.
@@ -78,9 +78,9 @@ Line counts come from `wc -l` on the files in this repository (2440 + 210 + 460 
 
 ## Questions this baseline sets up for the modernization comparison
 
-- Version 1 is a faithful manual translation. What would the same code look like after structural modernization (modules, classes or an entity list instead of module-level `let` variables, a testable core separated from the DOM)?
+- Version 1 is a direct translation produced by Bob in Agent mode. What would the same code look like after structural modernization (modules, classes or an entity list instead of module-level `let` variables, a testable core separated from the DOM)?
 - Which of the known deviations are fixable by tightening the port (the radix mistakes, the direction interval and the 30,000 threshold are plain bugs), and which require a decision about what "faithful" means (canvas rendering, particles, fade-in)?
-- Why did a careful manual port still carry radix errors, and would a tool-assisted translation have avoided or repeated them?
+- Why did an LLM-assisted port still carry radix and convention errors, and what testing strategy catches them?
 - How much of the validation can move from soak tests to deterministic tests, given the bit-exact `rand()`?
 - What does persistence (high scores in `localStorage`), configuration (lives, difficulty) and touch input cost to add to this structure?
 

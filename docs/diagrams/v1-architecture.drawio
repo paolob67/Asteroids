@@ -21,7 +21,7 @@
           <mxGeometry x="60" y="325" width="220" height="70" as="geometry"/>
         </mxCell>
 
-        <mxCell id="arrow" value="manual port,&#xa;routine by routine" style="endArrow=classic;html=1;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="src" target="v1">
+        <mxCell id="arrow" value="ported with Bob,&#xa;routine by routine" style="endArrow=classic;html=1;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="src" target="v1">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
 

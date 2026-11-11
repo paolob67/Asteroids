@@ -1,0 +1,53 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="g3-errors" name="G3: Error Sources in LLM Legacy Porting">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="720" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Root Header -->
+        <mxCell id="hdr" value="Where LLM Translation Errors Originated: Unstated Conventions vs Explicit Logic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="1080" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Category 1: Radix Conventions -->
+        <mxCell id="c1" value="1. Radix Directives (.RADIX 16)&#xa;Bare numbers are Hex; numbers with trailing dot are Decimal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="340" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="c1_sub" value="Source: LDA I,10. (decimal 10)&#xa;v1 code: edelay = 18 (72 vs 40 frames)&#xa;&#xa;Source: .BYTE -10,0,0,10 (hex +/-16)&#xa;v1 code: vy = +/-10 (slower drift)&#xa;&#xa;Source: LDA I,50 (hex 0x50 = 80)&#xa;v1 code: rtimer = 50 (window too short)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="55" y="140" width="310" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- Category 2: BCD Packing -->
+        <mxCell id="c2" value="2. Binary Coded Decimal (BCD)&#xa;High byte SCORE+1 holds thousands &amp;amp; ten-thousands" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="410" y="90" width="340" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="c2_sub" value="Source: CMP I,30 on SCORE+1&#xa;Intended: 30,000 points&#xa;v1 code: score &amp;gt;= 3000&#xa;Effect: Small saucers appeared at 3,000 pts&#xa;&#xa;Source: CMP I,35 on SCORE+1&#xa;Intended: 35,000 pts (aim tighten)&#xa;v2 initial: 5,300 pts (repeated mistake)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="425" y="140" width="310" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- Category 3: Bitmask Cadence &amp; Timers -->
+        <mxCell id="c3" value="3. Frame Bitmask Cadence &amp;amp; Timers&#xa;Hardware register bit shifts vs numeric modulus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="780" y="90" width="340" height="230" as="geometry"/>
+        </mxCell>
+        <mxCell id="c3_sub" value="Source: LDA FRAME / ASL / BNE&#xa;Intended: 0x00 and 0x80 (128 frames)&#xa;v1 code: (frame &amp;amp; 0xFF) === 0 (256 frames)&#xa;Effect: Saucers turned half as often&#xa;&#xa;Source: RDELAY = 0x7F (127 frames)&#xa;v1 code: 90 frames (wave delay cut short)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="795" y="140" width="310" height="160" as="geometry"/>
+        </mxCell>
+
+        <!-- Bottom Banner: The Verification Insight -->
+        <mxCell id="bot" value="The Verification Finding" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;verticalAlign=top;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="40" y="350" width="1080" height="140" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="b_left" value="Why Static Reading Misses Them:&#xa;The translated JavaScript code looks completely clean, elegant, and logical.&#xa;Every function executes without exceptions, syntax errors, or type errors." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="60" y="390" width="490" height="85" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="b_right" value="Why Dynamic Execution Catches Them:&#xa;Headless simulation (soak scripts) and comparative telemetry across seeds&#xa;reveal behavioral anomalies (e.g. saucer frequency, split velocities, game deaths)." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="610" y="390" width="490" height="85" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

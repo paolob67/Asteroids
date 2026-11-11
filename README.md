@@ -10,7 +10,7 @@ The page shows the game on a 4:3 monitor on the left. On the right, the top pane
 
 | Version | Location | Status |
 |---------|----------|--------|
-| v1 | [`versions/v1/`](versions/v1/) | Frozen, read-only baseline of the first manual port. Reference for the planned article comparing this step with a code modernization approach. |
+| v1 | [`versions/v1/`](versions/v1/) | Frozen, read-only baseline of the initial port produced with Bob. Reference for the article series on code modernization. |
 | v2 | [`versions/v2/`](versions/v2/) | Frozen, read-only. Restores behavior lost in the first port, adds the State and Decision panels, and adds a very simple autopilot (rotates and fires from the centre; no thrust, no movement, no hyperspace). |
 | v3 | [`versions/v3/`](versions/v3/) | Frozen, read-only. Adds two autopilots, `smartPilot` (rules in the code) and `layaPilot` (decision model), and the Manual / Simple / Smart / Laya selector. |
 | Working copy | [`asteroids.html`](asteroids.html) | Currently identical to v3. All further work happens here. |
