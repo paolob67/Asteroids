@@ -2,7 +2,7 @@
 
 *Part 3 of the series "A journey in code modernization with Bob: from 6502 assembly to an AI autopilot"*
 
-A 421M parameter decision model, running locally on a laptop and answering a typed question about the ship's situation, can fly an arcade game. In about 25 minutes of measured play per pilot it scored close to the tuned rule-based pilot from [Part 2](part-2-building-on-a-modern-base.md). It also reacted about 100 ms late, drifted around the field, and lost ships to rocks.
+A 421M parameter decision model, running locally on a laptop and answering a typed question about the ship's situation, can fly an arcade game. In about 25 minutes of measured play per pilot it scored close to the tuned rule-based pilot from [Part 2](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-2-building-on-a-modern-base.md). It also reacted about 100 ms late, drifted around the field, and lost ships to rocks.
 
 That is the whole claim. This article is not a verdict on rules against models. The model pilot is a first version: one model, one prompt, one question, no tuning. The rule-based pilots were tuned. What follows is how the pilot is wired, what it looks like on screen, the first numbers with their limits, and a list of what I have not tried.
 
@@ -14,9 +14,9 @@ A generative language model (the "System Two" kind) writes its answer token by t
 
 A decision model (the "System One" kind) takes a text description and a typed question, and scores the candidate answers in a single forward pass. There is no generation step. The output is a discrete choice with a probability for each option, so there is nothing to parse and nothing to hallucinate in the format. Latency is fixed by the size of the model and the length of the text.
 
-![Generative model writing free text token by token, against a decision model scoring a closed set of options in one pass](../../diagrams/g12-system-one-two.png)
+![Generative model writing free text token by token, against a decision model scoring a closed set of options in one pass](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/g12-system-one-two.png)
 
-Editable source: [`docs/diagrams/g12-system-one-two.drawio`](../../diagrams/g12-system-one-two.drawio).
+Editable source: [`docs/diagrams/g12-system-one-two.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/g12-system-one-two.drawio).
 
 For the game, that is the right shape: a small closed set of tactics in, one tactic out.
 
@@ -26,9 +26,9 @@ For the game, that is the right shape: a small closed set of tactics in, one tac
 
 The development machine is an Apple MacBook Air M1 with 16 GB of memory and about 16 GB of free disk. That rules some candidates out before any test.
 
-![Candidate decision models: where they run, claimed latency, and why or why not](../../diagrams/p3-model-candidates.png)
+![Candidate decision models: where they run, claimed latency, and why or why not](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/p3-model-candidates.png)
 
-Editable source: [`docs/diagrams/p3-model-candidates.drawio`](../../diagrams/p3-model-candidates.drawio).
+Editable source: [`docs/diagrams/p3-model-candidates.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p3-model-candidates.drawio).
 
 The only latency I measured is Laya's, and it did not match its documentation. I come back to that in section 8.
 
@@ -40,22 +40,9 @@ The choice of Laya was practical, not a ranking of the models. It was the one I 
 
 The model sits behind a small local HTTP server (`scripts/dev/laya_server.py`, about 100 lines of Python) on `127.0.0.1:8700`. The wire format is a typed request and a typed response. Abridged from what the page actually sends:
 
-```javascript
-// Snippet S7: request (from the browser) and the part of the response the pilot reads
-POST /v1/systemone
-{ "state": "Situation: Danger. large rock is incoming from the right on a collision path in 21 ticks. Pilot needs to turn left and thrust to dodge.",
-  "questions": { "action": {
-    "type": "choice",
-    "instructions": "Determine the required flight action for the spaceship.",
-    "criteria": {
-      "stay_and_fire":         "Safe situation. Aim weapons towards target rock and fire.",
-      "turn_left_and_thrust":  "Asteroid on right side. Turn left and thrust away to dodge.",
-      "turn_right_and_thrust": "Asteroid on left side. Turn right and thrust away to dodge.",
-      "hyperspace":            "Fatal emergency when collision is unavoidable. Hyperspace escape jump." } } } }
+![A typed request with a state sentence and four action criteria, and the response with the chosen action and its confidence](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/snippet-systemone-request.png)
 
-->  { "answers": { "action": { "choice": "turn_left_and_thrust",
-                               "probabilities": { ... }, "confidence": 0.97 } } }
-```
+Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/snippets.json) (`systemone-request`).
 
 (The sentence above is an example of the format. In a recorded test of the 421M model on a state like this, the probability of the chosen option was 0.97.)
 
@@ -67,15 +54,15 @@ The client does not know which model is behind the endpoint, so another decision
 
 The game runs at a fixed 60 Hz. A model call takes several frames, so the pilot cannot wait for it.
 
-![The selector routes the snapshot to one of three pilots; layaPilot sends a situation sentence to the local Laya server and falls back to smartPilot when it is offline; every decision ends in the same keys table](../../diagrams/v3-pilots.png)
+![The selector routes the snapshot to one of three pilots; layaPilot sends a situation sentence to the local Laya server and falls back to smartPilot when it is offline; every decision ends in the same keys table](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/v3-pilots.png)
 
-Editable source: [`docs/diagrams/v3-pilots.drawio`](../../diagrams/v3-pilots.drawio).
+Editable source: [`docs/diagrams/v3-pilots.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/v3-pilots.drawio).
 
 The same flow as a sequence between the four parts involved:
 
-![Sequence between the game loop, the pilot in the page, the local server and the model; the game keeps running while a request is pending](../../diagrams/g13-browser-mlx-sequence.png)
+![Sequence between the game loop, the pilot in the page, the local server and the model; the game keeps running while a request is pending](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/g13-browser-mlx-sequence.png)
 
-Editable source: [`docs/diagrams/g13-browser-mlx-sequence.drawio`](../../diagrams/g13-browser-mlx-sequence.drawio).
+Editable source: [`docs/diagrams/g13-browser-mlx-sequence.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/g13-browser-mlx-sequence.drawio).
 
 The loop is:
 
@@ -91,17 +78,9 @@ So the ship always follows the latest answer, which is 5 to 8 ticks old. In a re
 
 The model never sees coordinates. A few lines of JavaScript compute the geometry and write one sentence in the ship's own frame. The shortest offset to each rock across the wrapping edges, its bearing relative to the nose, and its closing speed give a time to collision:
 
-```javascript
-// Snippet S8: wrap offset and time to collision (from layaFormatState, abridged)
-let dx = item.x - sh.x;  if (dx > 4096) dx -= 8192; else if (dx < -4096) dx += 8192;
-let dy = item.y - sh.y;  if (dy > 3072) dy -= 6144; else if (dy < -3072) dy += 6144;
-const dist = Math.hypot(dx, dy);
-const closing = -Math.round((dx * relVx + dy * relVy) / (dist || 1));
-if (closing > 0 && dist < 1200) {
-  const ttc = dist / closing;          // ticks to collision
-  // keep the threat with the smallest ttc
-}
-```
+![Shortest offset across the wrapping edges, closing speed and time to collision for one threat](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/snippet-time-to-collision.png)
+
+Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/snippets.json) (`time-to-collision`).
 
 There are three sentences the model can receive:
 
@@ -117,17 +96,13 @@ Note what this means. The geometry is still computed by code. The sentence is bu
 
 The split of responsibility is narrow:
 
-![What the model decides and what the code decides](../../diagrams/p3-responsibility-split.png)
+![What the model decides and what the code decides](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/p3-responsibility-split.png)
 
-Editable source: [`docs/diagrams/p3-responsibility-split.drawio`](../../diagrams/p3-responsibility-split.drawio).
+Editable source: [`docs/diagrams/p3-responsibility-split.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p3-responsibility-split.drawio).
 
-```javascript
-// Snippet S9: from the model's choice to the keys (abridged from layaPilot)
-if (choice === 'hyperspace')             { hyper = s.frame % 2 === 0; }
-else if (choice === 'turn_left_and_thrust')  { left = true;  thrust = true; fire = s.frame % 2 === 0; }
-else if (choice === 'turn_right_and_thrust') { right = true; thrust = true; fire = s.frame % 2 === 0; }
-else { /* stay_and_fire: aim with spPickTarget and fire when aligned */ }
-```
+![Mapping from the model's chosen action to the left, right, thrust, fire and hyper keys](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/snippet-choice-to-keys.png)
+
+Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/snippets.json) (`choice-to-keys`).
 
 One fact matters for reading the results. In `stay_and_fire`, the Laya pilot aims with the same target picker as `smartPilot` (`spPickTarget`). So when its score comes out close to `smartPilot`'s, part of the reason is shared code, not model quality. `simplePilot` has its own, similar interception calculation.
 
@@ -139,9 +114,9 @@ There is also no safety check between the model and the keys. Whatever the model
 
 If the server is not running, the pilot falls back to `smartPilot`, says so in the Decision panel, and retries every 3 seconds. When the server returns, control goes back to the model without a reload. It is a small piece of code, and it means the game is never left without a pilot because a local process is not running.
 
-![State machine: model in control, fallback to smartPilot when a request fails, return to the model when a retry succeeds](../../diagrams/g15-fallback-state-machine.png)
+![State machine: model in control, fallback to smartPilot when a request fails, return to the model when a retry succeeds](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/g15-fallback-state-machine.png)
 
-Editable source: [`docs/diagrams/g15-fallback-state-machine.drawio`](../../diagrams/g15-fallback-state-machine.drawio).
+Editable source: [`docs/diagrams/g15-fallback-state-machine.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/g15-fallback-state-machine.drawio).
 
 <!-- CLIP V9 (could): server stopped, fallback, recovery (8 s) -->
 
@@ -159,9 +134,9 @@ The Laya run is short because it is slow. At about 90 ms per answer, the long ru
 
 Across the 12 starting points `layaPilot` ran with no fallback to `smartPilot` and no server error. Two further checks agree: a single seed (seed 0) at 3,000, 6,000 and 9,000 ticks, and the browser timing runs.
 
-![Short run results for simplePilot, smartPilot and layaPilot](../../diagrams/p3-short-run-results.png)
+![Short run results for simplePilot, smartPilot and layaPilot](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/p3-short-run-results.png)
 
-Editable source: [`docs/diagrams/p3-short-run-results.drawio`](../../diagrams/p3-short-run-results.drawio).
+Editable source: [`docs/diagrams/p3-short-run-results.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p3-short-run-results.drawio).
 
 On points, in the same 12 games: `layaPilot` is ahead of `simplePilot` in 11 of 12, by 4,192 points on average in 8,000 ticks (95% interval 2,710 to 5,673). It is behind `smartPilot` by 710 points on average, but the interval (-577 to +1,997) includes zero: on points I cannot tell the two apart. Why it beats `simplePilot` I did not test. It moves, `simplePilot` never does; it shares a target picker with `smartPilot`; and it may simply stay alive longer.
 
@@ -186,9 +161,9 @@ This part is from watching it play, and then checking the numbers.
 
 The behaviour counters (same 12 games) put numbers on that impression:
 
-![Behaviour counters for smartPilot and layaPilot over the same 12 games](../../diagrams/p3-behaviour.png)
+![Behaviour counters for smartPilot and layaPilot over the same 12 games](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/p3-behaviour.png)
 
-Editable source: [`docs/diagrams/p3-behaviour.drawio`](../../diagrams/p3-behaviour.drawio).
+Editable source: [`docs/diagrams/p3-behaviour.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p3-behaviour.drawio).
 
 <!-- CHARTS C2 and C4 to generate from docs/articles/data/pilots-2026-11-10-all3-12x8000-lag6.json -->
 
@@ -217,9 +192,9 @@ The 7.4 ms figure was not reached (best case 26 ms), so a factor of about 3 is e
 
 Each of these is a hypothesis. None has a result.
 
-![Open questions and what would answer each](../../diagrams/p3-not-tried.png)
+![Open questions and what would answer each](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/p3-not-tried.png)
 
-Editable source: [`docs/diagrams/p3-not-tried.drawio`](../../diagrams/p3-not-tried.drawio).
+Editable source: [`docs/diagrams/p3-not-tried.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p3-not-tried.drawio).
 
 Two improvement ideas also came from watching: a rule to brake or stop thrusting after a dodge for `layaPilot`, and a return to the centre after moving for `smartPilot`.
 
@@ -264,6 +239,6 @@ node scripts/dev/measure_pilots.js asteroids.html 8000 simplePilot,smartPilot,la
 node scripts/dev/browser_check.js 60 simple,smart,laya --json=out.json
 ```
 
-Raw output and definitions: [`docs/articles/data/`](../data/README.md). Run: 2026-11-10 and 2026-11-11, Apple MacBook Air M1 (16 GB), Node v26.3.1, `laya-mlx` 0.6.0 with `aac6fef/laya-mlx`. The Laya run is short (22 losses) and the rates are imprecise.
+Raw output and definitions: [`docs/articles/data/`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/data/README.md). Run: 2026-11-10 and 2026-11-11, Apple MacBook Air M1 (16 GB), Node v26.3.1, `laya-mlx` 0.6.0 with `aac6fef/laya-mlx`. The Laya run is short (22 losses) and the rates are imprecise.
 
-*Previous: [Part 2: Once the code is modern, a game becomes something a program can play](part-2-building-on-a-modern-base.md)*
+*Previous: [Part 2: Once the code is modern, a game becomes something a program can play](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-2-building-on-a-modern-base.md)*

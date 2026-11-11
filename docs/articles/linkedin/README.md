@@ -11,3 +11,5 @@ Final texts for the series live here, one file per part:
 Workflow per article: draft, technical review against the repo, humanizer pass (`linkedin-humanizer`), audit, final formatting. See [section 6 of the plan](../WRITEUP_PLAN.md#6-work-breakdown).
 
 Plan: [WRITEUP_PLAN.md](../WRITEUP_PLAN.md). Outlines: [OUTLINES.md](../OUTLINES.md).
+
+Images: tables are built from [`tables.json`](tables.json) and code snippets from [`snippets.json`](snippets.json) (Carbon Gray 100 theme, rendered by [`make_snippet_images.js`](../../../scripts/dev/make_snippet_images.js)). Edit the JSON and re-export; do not edit the PNGs.

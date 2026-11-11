@@ -1,0 +1,80 @@
+[
+  {
+    "id": "rand-lfsr",
+    "title": "RAND: bit-exact 16-bit LFSR",
+    "lang": "javascript",
+    "alt": "JavaScript rand() function: a 16-bit linear feedback shift register matching the 6502 RAND routine",
+    "code": "function rand() {\n  let bit = ((randSeed >> 15) ^ (randSeed >> 13) ^ (randSeed >> 12) ^ (randSeed >> 10)) & 1;\n  randSeed = ((randSeed << 1) | bit) & 0xFFFF;\n  return randSeed;\n}"
+  },
+  {
+    "id": "radix",
+    "title": "Radix misinterpretation (EFIRE)",
+    "lang": "javascript",
+    "alt": "The 6502 line LDA I,10. under .RADIX 16 means decimal 10; version 1 generated 18, version 2 corrects it to 10",
+    "code": "// Original 6502 Assembly (A35131.1A, under .RADIX 16):\n//   EFIRE:  LDA I,10.       ; Trailing dot indicates DECIMAL 10\n//           STA EDELAY\n\n// Generated in Version 1 (Wrong):\nedelay = 18;                 // Reused 18 from SEDLAY initialization\n\n// Fixed in Version 2 (Correct):\nedelay = 10;                 // Exactly 10 frames between saucer weapon checks"
+  },
+  {
+    "id": "bcd-threshold",
+    "title": "BCD score threshold (ENEMY)",
+    "lang": "javascript",
+    "alt": "The 6502 compare CMP I,30 on the BCD high byte means 30,000 points; version 1 used 3000, version 2 uses 30000",
+    "code": "// Original 6502 Assembly (ENEMY routine):\n//   LDA SCORE+1,X   ; Load high byte (thousands and ten-thousands)\n//   CMP I,30        ; BCD 30 in high byte = 30,000 points\n//   BCC 20$         ; If score < 30,000, spawn large saucer\n\n// Generated in Version 1 (Wrong):\nif (scores[curPlayer] >= 3000) {   // 10x too sensitive\n  saucer.small = true;\n}\n\n// Fixed in Version 2 (Correct):\nif (scores[curPlayer] >= 30000) {  // Original arcade threshold\n  saucer.small = true;\n}"
+  },
+  {
+    "id": "asl-cadence",
+    "title": "Bitmask cadence (EFIRE)",
+    "lang": "assembly",
+    "alt": "6502 code loading FRAME, shifting left with ASL and branching if not zero, which fires every 128 frames",
+    "code": "; EFIRE routine:\nLDA FRAME\nASL\nBNE 10$"
+  },
+  {
+    "id": "two-player-switch",
+    "title": "Two-player turn switch fix (checkWave)",
+    "lang": "javascript",
+    "alt": "checkWave() turn transition that sets ship.sdelay to 0x10 so the next player's ship appears after 16 ticks",
+    "code": "if (twoPlayers) {\n  curPlayer = 1 - curPlayer;\n  if (lives[curPlayer] > 0) {\n    ship.sdelay = 0x10;   // CHKST1: LDA I,10 / STA SDELAY (crucial 16-tick spawn delay)\n  }\n}"
+  },
+  {
+    "id": "snapshot",
+    "title": "snapshot() output (abridged)",
+    "lang": "javascript",
+    "alt": "Shape of the object returned by snapshot(): frame, game state, scores, ship, asteroids, torpedoes and saucer",
+    "code": "{ frame, gameState, curPlayer, scores, lives,\n  ship:      { x, y, vx, vy, angle, vxf, vyf, alive, visible, exploding },\n  asteroids: [{ x, y, vx, vy, size, exploding }],\n  torpedoes: [ ... ],  saucTorps: [ ... ],\n  saucer:    { x, y, vx, vy, small, exploding }  // or null\n}"
+  },
+  {
+    "id": "controller-contract",
+    "title": "The controller contract: five booleans",
+    "lang": "javascript",
+    "alt": "applyAutopilot() writes the pilot's five booleans into the same keys table the keyboard uses",
+    "code": "// snapshot -> { left, right, thrust, fire, hyper }   (booleans)\na = AUTOPILOT(snapshot()) || {};\nkeys['ArrowLeft']  = !!a.left;\nkeys['ArrowRight'] = !!a.right;\nkeys['ArrowUp']    = !!a.thrust;\nkeys[' ']          = !!a.fire;\nkeys['Shift']      = !!a.hyper;"
+  },
+  {
+    "id": "interception",
+    "title": "Interception time (from simplePilot)",
+    "lang": "javascript",
+    "alt": "Quadratic solution for the time at which a torpedo of speed TORP_SPEED meets a moving target",
+    "code": "// |d + v*t| = TORP_SPEED * t   (d = offset to target, v = relative velocity)\nconst A = vx * vx + vy * vy - TORP_SPEED * TORP_SPEED;\nconst B = dx * vx + dy * vy;\nconst C = dx * dx + dy * dy;\nlet time = Math.sqrt(C) / TORP_SPEED;          // fallback: target standing still\nconst disc = B * B - A * C;\nif (A < 0 && disc >= 0) time = (-B - Math.sqrt(disc)) / A;\n// aim at where the target will be: (dx + vx * time, dy + vy * time)"
+  },
+  {
+    "id": "systemone-request",
+    "title": "POST /v1/systemone: request and response (abridged)",
+    "lang": "javascript",
+    "alt": "A typed request with a state sentence and four action criteria, and the response with the chosen action and its confidence",
+    "code": "POST /v1/systemone\n{ \"state\": \"Situation: Danger. large rock is incoming from the right on a\n             collision path in 21 ticks. Pilot needs to turn left and thrust\n             to dodge.\",\n  \"questions\": { \"action\": {\n    \"type\": \"choice\",\n    \"instructions\": \"Determine the required flight action for the spaceship.\",\n    \"criteria\": {\n      \"stay_and_fire\":\n        \"Safe situation. Aim weapons towards target rock and fire.\",\n      \"turn_left_and_thrust\":\n        \"Asteroid on right side. Turn left and thrust away to dodge.\",\n      \"turn_right_and_thrust\":\n        \"Asteroid on left side. Turn right and thrust away to dodge.\",\n      \"hyperspace\":\n        \"Fatal emergency when collision is unavoidable. Hyperspace escape jump.\" } } } }\n\n->  { \"answers\": { \"action\": { \"choice\": \"turn_left_and_thrust\",\n                               \"probabilities\": { ... }, \"confidence\": 0.97 } } }",
+    "label": "HTTP and JSON"
+  },
+  {
+    "id": "time-to-collision",
+    "title": "Wrap offset and time to collision (from layaFormatState)",
+    "lang": "javascript",
+    "alt": "Shortest offset across the wrapping edges, closing speed and time to collision for one threat",
+    "code": "let dx = item.x - sh.x;  if (dx > 4096) dx -= 8192; else if (dx < -4096) dx += 8192;\nlet dy = item.y - sh.y;  if (dy > 3072) dy -= 6144; else if (dy < -3072) dy += 6144;\nconst dist = Math.hypot(dx, dy);\nconst closing = -Math.round((dx * relVx + dy * relVy) / (dist || 1));\nif (closing > 0 && dist < 1200) {\n  const ttc = dist / closing;          // ticks to collision\n  // keep the threat with the smallest ttc\n}"
+  },
+  {
+    "id": "choice-to-keys",
+    "title": "From the model's choice to the keys (abridged from layaPilot)",
+    "lang": "javascript",
+    "alt": "Mapping from the model's chosen action to the left, right, thrust, fire and hyper keys",
+    "code": "if (choice === 'hyperspace') {\n  hyper = s.frame % 2 === 0;\n} else if (choice === 'turn_left_and_thrust') {\n  left = true;   thrust = true;  fire = s.frame % 2 === 0;\n} else if (choice === 'turn_right_and_thrust') {\n  right = true;  thrust = true;  fire = s.frame % 2 === 0;\n} else { /* stay_and_fire: aim with spPickTarget and fire when aligned */ }"
+  }
+]

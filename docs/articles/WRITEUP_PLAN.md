@@ -159,6 +159,8 @@ Generated from the files in `docs/articles/data/` after N3. For Part 3 use only 
 
 Short, each under about 12 lines, taken from the real files so line references can be checked.
 
+LinkedIn articles have no code blocks, so every snippet is exported as a PNG in the Carbon Gray 100 theme (IBM Plex Mono). Specs are in [`linkedin/snippets.json`](linkedin/snippets.json); [`make_snippet_images.js`](../../scripts/dev/make_snippet_images.js) renders them with a local Google Chrome (`node scripts/dev/make_snippet_images.js docs/articles/linkedin/snippets.json docs/diagrams`), producing `docs/diagrams/snippet-<id>.png`. All 11 are Done and referenced from the articles. Any edit to a snippet must be made in `snippets.json` and re-exported. The `bash` blocks under "Commands to Reproduce" stay as text.
+
 | Part | Snippet |
 |------|---------|
 | 1 | `.RADIX 16` and `LDA I,10.` next to the wrong and right JavaScript constant |
