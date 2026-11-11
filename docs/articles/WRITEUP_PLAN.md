@@ -112,6 +112,7 @@ Sources go in [`../diagrams/`](../diagrams/) as `.drawio` with a `.png` export. 
 | G5 | v1 architecture | 1 | Exists: `v1-architecture` |
 | G6 | v1 game states | 1 | Exists: `v1-game-states` |
 | G7 | State to decision loop | 2 | Exists: `v2-state-decision-loop` |
+| G7b | Three pilots behind one selector, Laya round trip and fallback | 3 | Exists: `v3-pilots` |
 | G8 | Lead-aim geometry for `simplePilot` | 2 | New |
 | G9 | `smartPilot` decision flow | 2 | New |
 | G10 | Candidate manoeuvres (16 headings x 5 thrust lengths) | 2 | New |

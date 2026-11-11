@@ -9,6 +9,10 @@ Both have the same interface as `simplePilot`: a snapshot in, five booleans (`le
 
 The root [`asteroids.html`](../asteroids.html) was identical to the frozen file at the moment of freezing and is now the working copy for later work. See [`versions/v3/README.md`](../versions/v3/README.md) for the checksum and verification commands. Autopilots based on other decision models (Kev, Jev, CLM) are planned for later steps and are not part of this document. The decision model landscape, Apple Silicon M1 feasibility, and autopilot design decisions are in [DECISION_MODELS.md](DECISION_MODELS.md), with dedicated plans in [LAYA.md](LAYA.md) and [CLM.md](CLM.md).
 
+![The selector routes the snapshot to simplePilot, smartPilot or layaPilot; layaPilot sends a situation sentence to the local Laya server and falls back to smartPilot when it is offline; every decision ends in the same keys table](diagrams/v3-pilots.png)
+
+Source file: [`diagrams/v3-pilots.drawio`](diagrams/v3-pilots.drawio).
+
 ## 1. What changed
 
 | Area | Version 2 | Version 3 |

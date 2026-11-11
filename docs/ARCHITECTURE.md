@@ -102,6 +102,10 @@ Source file: [`diagrams/v2-state-decision-loop.drawio`](diagrams/v2-state-decisi
 
 ## Version 3 additions
 
+![Controller selector routing the snapshot to simplePilot, smartPilot or layaPilot, with the Laya server round trip and the offline fallback](diagrams/v3-pilots.png)
+
+Source file: [`diagrams/v3-pilots.drawio`](diagrams/v3-pilots.drawio).
+
 The line numbers in the layout table above describe version 2. Version 3 inserts about 240 lines for `smartPilot` and its helpers (after `simplePilot`), plus the `layaPilot` client and its helpers, and replaces the Autopilot switch in the HTML shell and the demo panels section.
 
 - **Controller table.** `CONTROLLERS = { manual: null, simple: simplePilot, smart: smartPilot, laya: layaPilot }` maps the four selector buttons to the value of `AUTOPILOT`. `setController(name)` is the single write path from the UI. A new controller is one entry in the table and one button.

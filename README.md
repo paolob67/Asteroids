@@ -59,6 +59,20 @@ node scripts/dev/compare_versions.js                           # v1 against v2
 node scripts/dev/compare_versions.js versions/v2/asteroids.html asteroids.html   # v2 against the working copy (also v3 once the working copy diverges)
 ```
 
+### Pilot measurements for the articles
+
+These scripts produce and analyse the numbers in [`docs/articles/data/`](docs/articles/data/README.md). The Laya ones need the server from [Run the Laya server](#run-the-laya-server-optional).
+
+```bash
+node scripts/dev/measure_pilots.js asteroids.html 8000 simplePilot,smartPilot,layaPilot 12 --lag=6 --json=out.json   # all three pilots
+python3 scripts/dev/analyze_pilots.py docs/articles/data          # 95% intervals and paired comparisons from the JSON files
+node scripts/dev/browser_check.js 60 smart,laya --json=out.json   # real Chrome: ticks per second, Laya latency in ticks
+.venv/bin/python scripts/dev/bench_laya_latency.py                # laya-mlx latency by device, precision and text length
+node scripts/dev/death_causes.js asteroids.html 1000000 smartPilot   # classify every ship loss
+node scripts/dev/export_pilot_log.js asteroids.html 600000 smartPilot 0 /tmp/smart_0.jsonl   # pilot log for offline model tests
+node scripts/dev/eval_laya_offline.js /tmp/smart_0.jsonl 100      # Laya against a recorded pilot log
+```
+
 ## Repository layout
 
 ```
@@ -66,8 +80,12 @@ asteroids.html        working copy of the game (identical to version 3 at the fr
 versions/v1/          frozen version 1 + SHA256SUMS
 versions/v2/          frozen version 2 + SHA256SUMS
 versions/v3/          frozen version 3 + SHA256SUMS
-docs/                 documentation and diagrams
-scripts/              validation and measurement scripts (run_all.sh, check_syntax.js, dev/)
+docs/                 documentation (VERSION_*.md, ARCHITECTURE.md, LAYA*.md, ...)
+docs/diagrams/        .drawio sources and .png exports (v1 and v2 diagrams, v3-pilots)
+docs/articles/        article series material: plan, outlines, findings, test log
+docs/articles/data/   raw measurement files (JSON) behind every quoted number
+scripts/              validation scripts (run_all.sh, check_syntax.js)
+scripts/dev/          measurement, analysis and tuning scripts (JavaScript and Python), laya_server.py
 ```
 
 ## Original source

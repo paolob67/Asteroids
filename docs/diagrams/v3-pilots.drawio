@@ -1,0 +1,134 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="v3-pilots" name="v3 pilots: rules and decision model">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="760" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="game" value="Game logic&#xa;update(), 60 Hz&#xa;ship, rocks, saucer, torpedoes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="150" width="220" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="snap" value="snapshot()&#xa;the state as plain data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="290" y="150" width="170" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="statep" value="State panel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="290" y="40" width="170" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="sel" value="Controller selector&#xa;Manual, Simple, Smart, Laya" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="150" width="210" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="simple" value="simplePilot (v2)&#xa;intercept time per target, turn, fire" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="40" width="250" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="smart" value="smartPilot (rules in the code)&#xa;predict 90 ticks, replay the ship physics,&#xa;try 16 headings x 5 thrust lengths,&#xa;hyperspace as the last resort" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="130" width="250" height="100" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sit" value="layaPilot (decision model)&#xa;1. situation sentence in the ship frame&#xa;Safe, Danger, or Fatal emergency" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="290" width="250" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="async" value="2. asynchronous fetch()&#xa;POST /v1/systemone&#xa;the 60 Hz loop never waits;&#xa;the last answer is reused (5 to 8 ticks old)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="780" y="410" width="250" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="server" value="laya_server.py&#xa;127.0.0.1:8700, Apple Silicon (MLX)&#xa;laya-mlx scores 4 actions:&#xa;choice, probability, confidence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="480" y="410" width="230" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="map" value="3. answer to keys&#xa;stay_and_fire aims with spPickTarget;&#xa;dodges hold turn and thrust;&#xa;hyperspace presses the key" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="780" y="550" width="250" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="dec" value="Decision&#xa;left, right, thrust, fire, hyper&#xa;plus a plain-English reason" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="120" width="230" height="140" as="geometry"/>
+        </mxCell>
+        <mxCell id="decp" value="Decision panel&#xa;(adds the model choice, probability,&#xa;confidence and latency for Laya)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="20" width="230" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="keys" value="keys[]&#xa;same input path as the keyboard" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="500" width="220" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="kb" value="Keyboard (human)&#xa;Manual mode" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="220" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="note" value="No pilot writes to the ship. The only way to change its speed is the THRUST key, which the game turns into a push along the nose." style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="330" y="690" width="640" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e1" value="read" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="game" target="snap">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e2" value="shown" style="endArrow=classic;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="snap" target="statep">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" value="every tick" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="snap" target="sel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e4" value="Simple" style="endArrow=classic;html=1;exitX=1;exitY=0.25;entryX=0;entryY=0.5;" edge="1" parent="1" source="sel" target="simple">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e5" value="Smart" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="sel" target="smart">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e6" value="Laya" style="endArrow=classic;html=1;exitX=1;exitY=0.75;entryX=0;entryY=0.5;" edge="1" parent="1" source="sel" target="sit">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e7" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="sit" target="async">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e8" value="state + questions" style="endArrow=classic;html=1;labelBackgroundColor=#ffffff;verticalAlign=bottom;exitX=0;exitY=0.3;entryX=1;entryY=0.3;" edge="1" parent="1" source="async" target="server">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e9" value="choice" style="endArrow=classic;html=1;labelBackgroundColor=#ffffff;verticalAlign=top;exitX=1;exitY=0.7;entryX=0;entryY=0.7;" edge="1" parent="1" source="server" target="async">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e10" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="async" target="map">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e11" value="" style="endArrow=classic;html=1;dashed=1;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=1;entryY=0.8;" edge="1" parent="1" source="async" target="smart">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1070" y="460"/>
+              <mxPoint x="1070" y="210"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.2;" edge="1" parent="1" source="simple" target="dec">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e13" value="" style="endArrow=classic;html=1;exitX=1;exitY=0.25;entryX=0;entryY=0.6;" edge="1" parent="1" source="smart" target="dec">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e14" value="" style="endArrow=classic;html=1;edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="map" target="dec">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1380" y="590"/>
+              <mxPoint x="1380" y="190"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" value="shown" style="endArrow=classic;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="dec" target="decp">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e11label" value="server offline: falls back to smartPilot, retries every 3 s" style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1078" y="300" width="125" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="e16" value="applyAutopilot() sets" style="endArrow=classic;html=1;edgeStyle=orthogonalEdgeStyle;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;entryX=1;entryY=0.5;" edge="1" parent="1" source="dec" target="keys">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1215" y="660"/>
+              <mxPoint x="300" y="660"/>
+              <mxPoint x="300" y="530"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" value="next update()" style="endArrow=classic;html=1;exitX=0.25;exitY=0;entryX=0.25;entryY=1;" edge="1" parent="1" source="keys" target="game">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e18" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="kb" target="keys">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
