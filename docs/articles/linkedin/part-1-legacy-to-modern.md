@@ -109,7 +109,7 @@ Rather than loading recorded WAV samples, Bob implemented sound effects entirely
 - **Heartbeat Thump**: Alternating 115 Hz and 98 Hz tones accelerating as the rock count decreases.
 - **Explosions**: Three distinct band-pass and low-pass noise envelopes tailored to large, medium, and small targets.
 
-![G2: Hardware to browser architecture mapping](.././diagrams/g2-hardware-to-browser.png)
+![G2: Hardware to browser architecture mapping](../../diagrams/g2-hardware-to-browser.png)
 
 Editable source: [`docs/diagrams/g2-hardware-to-browser.drawio`](../../diagrams/g2-hardware-to-browser.drawio).
 
