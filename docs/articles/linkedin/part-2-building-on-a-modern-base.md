@@ -105,11 +105,9 @@ What it does not do matters as much. Its output has only `left`, `right` and `fi
 
 A claim like "scored 600 times a random player" needs a floor. [`measure_autopilot.js`](../../../scripts/dev/measure_autopilot.js) gives three controllers the same budget on the frozen Version 2: 3,000,000 ticks (about 13.9 hours of play at 60 Hz), restarting a one-player game each time one ends.
 
-| Controller | Games | Mean score | Median | Best | Mean survival | Longest survival |
-|------------|-------|-----------|--------|------|---------------|------------------|
-| Presses nothing | 914 | 0 | 0 | 0 | 55 s | 147 s |
-| Random keys | 1,368 | 183 | 140 | 1,390 | 36 s | 174 s |
-| `simplePilot` | 67 | 111,999 | 76,940 | 557,260 | 745 s | 3,488 s (58 minutes) |
+![Baseline controllers over 3,000,000 ticks: idle, random keys and simplePilot](../../diagrams/p2-baselines.png)
+
+Editable source: [`docs/diagrams/p2-baselines.drawio`](../../diagrams/p2-baselines.drawio).
 
 Two floors, because they answer different questions. The idle row shows how long the game takes to kill a player who does nothing. The random row shows what noise alone achieves.
 
@@ -132,11 +130,15 @@ Every tick, `smartPilot` asks one question: *if I press nothing special, does an
 
 Hyperspace is a gamble in the original game. The arcade code marks the ship for destruction when a random value passes a threshold that depends on the rock count, and the ship re-enters 48 ticks later at a random spot that may be in the path of something. The pilot estimates both parts. The "last resort" window was tuned from 24 ticks down to 8, because 24 caused avoidable self-destructs.
 
-![The three pilots behind one selector; every decision ends in the same keys table](../../diagrams/v3-pilots.png)
+![smartPilot decision flow: predict 90 ticks, then stay and shoot, dodge, hyperspace or best effort, then aim and shoot](../../diagrams/g9-smartpilot-flow.png)
 
-Editable source: [`docs/diagrams/v3-pilots.drawio`](../../diagrams/v3-pilots.drawio). The diagram shows all three pilots; Part 3 covers the third.
+Editable source: [`docs/diagrams/g9-smartpilot-flow.drawio`](../../diagrams/g9-smartpilot-flow.drawio).
 
-<!-- DIAGRAMS TO DRAW: G9 smartPilot decision flow, G10 16 headings x 5 thrust lengths, G11 key to physics proof loop -->
+The search in step 3 is small enough to draw. Each dot below is one plan, a heading (spoke) combined with a thrust length (ring), and each is replayed over the same 90 ticks:
+
+![80 candidate manoeuvres: 16 headings as spokes, 5 thrust lengths as rings, one dot per plan](../../diagrams/g10-candidate-manoeuvres.png)
+
+Editable source: [`docs/diagrams/g10-candidate-manoeuvres.drawio`](../../diagrams/g10-candidate-manoeuvres.drawio).
 
 Watching it play, it brakes by turning the ship round and thrusting, which keeps movement to a minimum. Measured over 8 x 100,000 ticks: thrust is held for 1.6% of flying ticks, in bursts of about 3 ticks, and the ship drifts (speed of 1.5 units per tick or more) 7% of the time. One gap I saw by eye is confirmed by the code: nothing in its cost refers to the centre of the field, so it does not return to the centre after it has moved away.
 
@@ -150,7 +152,11 @@ A pilot that can see every rock and predict the future invites a fair question: 
 
 The pilot has no way to set the ship's velocity. It can only hold five keys, and the game's `updateShip()` does the rest. [`check_thrust_physics.js`](../../../scripts/dev/check_thrust_physics.js) proves this for a run. Each tick it replays the game's movement rules (rotate, thrust along the nose, friction) from the held keys alone and compares the result with the real ship.
 
-For `smartPilot`: 184,025 ticks checked, 0 mismatches. Position, velocity (including the fractional part) and angle matched the replay on every tick, so every speed gain happened on a tick where THRUST was held, in the direction the nose pointed. The check also fails if the pilot's private copy of the movement rules drifts from `updateShip()`. The same check passes for `simplePilot`.
+![Loop of the physics check: keys are set, the ship is copied, one tick is replayed from the keys alone, the real game runs, and the two are compared](../../diagrams/g11-physics-proof.png)
+
+Editable source: [`docs/diagrams/g11-physics-proof.drawio`](../../diagrams/g11-physics-proof.drawio).
+
+For `smartPilot` over a 300,000 tick run: 277,149 ticks checked, 0 mismatches. (The remaining ticks are skipped: the ship was exploding, waiting to return, or had been taken away by hyperspace, which the replay does not model.) Position, velocity (including the fractional part) and angle matched the replay on every checked tick, so every speed gain happened on a tick where THRUST was held, in the direction the nose pointed. The check also fails if the pilot's private copy of the movement rules drifts from `updateShip()`. The same check passes for `simplePilot` (17,934 ticks, 0 mismatches), which proves less: it never thrusts, so only rotation and friction were exercised.
 
 This also explained a puzzle from Version 2. Because `smartPilot` thrusts in short taps (median burst of 2 ticks), the ship spends most of its time coasting, and it looked as if it moved by itself. The Decision panel now keeps a recently pressed key dimly lit for 0.4 s and says whether the ship is thrusting or coasting.
 
@@ -162,19 +168,17 @@ This also explained a puzzle from Version 2. Because `smartPilot` thrusts in sho
 
 Long run, 8 starting points of 1,200,000 ticks each (about 42 flying hours per pilot):
 
-| Pilot | Losses / hour (95% interval) | Points / minute | Thrust | Hyperspace / hour | Games ended |
-|-------|------------------------------|-----------------|--------|-------------------|-------------|
-| `simplePilot` | 69.1 (66.6 to 71.7) | 9,527 | 0.0% | 0.0 | 217 |
-| `smartPilot` | 5.7 (5.0 to 6.5) | 13,992 | 1.7% | 29.1 | 0 |
+![Long run comparison of simplePilot and smartPilot: losses per hour, points per minute, thrust, hyperspace](../../diagrams/p2-long-run.png)
+
+Editable source: [`docs/diagrams/p2-long-run.drawio`](../../diagrams/p2-long-run.drawio).
 
 `smartPilot` loses a ship about 12 times less often and scores 47% more points per minute. It also never ended a game, while `simplePilot` ended 217. The two intervals are far apart: 2,900 and 239 losses are enough events to trust this gap.
 
 What kills them, from the same run:
 
-| Pilot | Rocks | Saucer torpedoes | Saucer body | Own hyperspace |
-|-------|-------|------------------|-------------|----------------|
-| `simplePilot` | 1,763 | 1,092 | 45 | 0 |
-| `smartPilot` | 109 | 0 | 7 | 123 |
+![What killed each pilot: rocks, saucer torpedoes, saucer body, own hyperspace](../../diagrams/p2-loss-causes.png)
+
+Editable source: [`docs/diagrams/p2-loss-causes.drawio`](../../diagrams/p2-loss-causes.drawio).
 
 Two readings, each with its limit.
 

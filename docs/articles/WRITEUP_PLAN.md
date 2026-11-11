@@ -105,6 +105,7 @@ Sources go in [`../diagrams/`](../diagrams/) as `.drawio` with a `.png` export. 
 
 | ID | Diagram | Part | Status |
 |----|---------|------|--------|
+| G0 | 1979 cabinet to 2026 browser (replaces the ASCII box in Part 1) | 1 | Done |
 | G1 | 6502 source set mapped to the single JavaScript file | 1 | Done |
 | G2 | Hardware to browser mapping (vector beam to canvas, analog sound to Web Audio, 6502 clock to a fixed 60 Hz step) | 1 | Done |
 | G3 | Where the errors came from: translation, convention, and verification gaps | 1 | Done |
@@ -114,14 +115,33 @@ Sources go in [`../diagrams/`](../diagrams/) as `.drawio` with a `.png` export. 
 | G7 | State to decision loop | 2 | Exists: `v2-state-decision-loop` |
 | G7b | Three pilots behind one selector, Laya round trip and fallback | 3 | Exists: `v3-pilots` |
 | G8 | Lead-aim geometry for `simplePilot` | 2 | New |
-| G9 | `smartPilot` decision flow | 2 | New |
-| G10 | Candidate manoeuvres (16 headings x 5 thrust lengths) | 2 | New |
-| G11 | Key to physics proof loop (`check_thrust_physics`) | 2 | New |
-| G12 | System One against System Two | 3 | New |
-| G13 | End-to-end sequence, browser and MLX server | 3 | New |
-| G14 | Responsibility split between model and code | 3 | New |
-| G15 | Fallback state machine (server offline to `smartPilot`) | 3 | New |
+| G9 | `smartPilot` decision flow | 2 | Done |
+| G10 | Candidate manoeuvres (16 headings x 5 thrust lengths) | 2 | Done |
+| G11 | Key to physics proof loop (`check_thrust_physics`) | 2 | Done |
+| G12 | System One against System Two | 3 | Done |
+| G13 | End-to-end sequence, browser and MLX server | 3 | Done |
+| G14 | Responsibility split between model and code | 3 | Done (as table image `p3-responsibility-split`) |
+| G15 | Fallback state machine (server offline to `smartPilot`) | 3 | Done |
 | G16 | Where rules and models each win (decision matrix) | 3 | New |
+
+#### Table images
+
+LinkedIn articles have no table support, so every markdown table in the articles is exported as a PNG. Specs are in [`linkedin/tables.json`](linkedin/tables.json); [`make_article_tables.js`](../../scripts/dev/make_article_tables.js) builds one `.drawio` per table (`node scripts/dev/make_article_tables.js docs/articles/linkedin/tables.json docs/diagrams`), then each is exported to PNG with the draw.io CLI. All are Done and referenced from the articles.
+
+| ID | Table | Part |
+|----|-------|------|
+| `p1-error-catalogue` | Eight v1 fidelity errors | 1 |
+| `p1-bug-vs-enhancement` | Bugs against intentional enhancements | 1 |
+| `p2-baselines` | Idle, random and `simplePilot` baselines | 2 |
+| `p2-long-run` | `simplePilot` against `smartPilot`, long run | 2 |
+| `p2-loss-causes` | What killed each pilot | 2 |
+| `p3-model-candidates` | Candidate decision models | 3 |
+| `p3-responsibility-split` | Model decides, code decides | 3 |
+| `p3-short-run-results` | Three pilots, 12 short games | 3 |
+| `p3-behaviour` | Behaviour counters, `smartPilot` against `layaPilot` | 3 |
+| `p3-not-tried` | Open questions | 3 |
+
+Any edit to a table in an article must be made in `tables.json` and re-exported.
 
 ### 5.2 Charts
 

@@ -1,0 +1,115 @@
+[
+  {
+    "id": "p1-error-catalogue",
+    "width": 1100,
+    "header": ["Error", "Original source", "Generated in v1", "Measured impact"],
+    "rows": [
+      ["**Saucer firing delay**", "`EFIRE`: `LDA I,10.` under `.RADIX 16`", "`edelay = 18` (decimal)", "One shot every 72 frames instead of every 40; about 7 shots per saucer pass instead of 11.5"],
+      ["**Saucer vertical speed**", "`EFIRE`: `.BYTE -10,0,0,10` (hex 0x10)", "`dy = [-10, 0, 0, 10]`", "Drift of +/-10 units instead of +/-16; saucers crossed the screen too slowly"],
+      ["**Rock-hit timer**", "`SPLIT`: `LDA I,50` (hex 0x50 = 80)", "`rtimer = 50`", "Window of 50 frames instead of 80 for the saucer spawn check"],
+      ["**Small saucer score threshold**", "`ENEMY`: `CMP I,30` on `SCORE+1`", "`if (score >= 3000)`", "Small saucers at 3,000 points instead of 30,000 (10 times too early)"],
+      ["**Saucer turn cadence**", "`EFIRE`: `LDA FRAME / ASL / BNE`", "`(frame & 0xFF) === 0`", "Direction change every 256 frames instead of every 128"],
+      ["**Wave-clear delay**", "`RDELAY`: `0x7F` (127 frames)", "`waveClearTimer > 90`", "Pause between waves of 90 frames instead of 127"],
+      ["**Small saucer aim threshold**", "`EFIRE`: `CMP I,35` on `SCORE+1`", "`if (score >= 5300)`", "Accuracy table switched at 5,300 points instead of 35,000 (the same BCD error, repeated during the v2 fix)"],
+      ["**Two-player respawn delay**", "`CHKST1`: `LDA I,10 / STA SDELAY`", "`ship.sdelay` not set", "Player 2's ship never came back after the turn switch"]
+    ]
+  },
+  {
+    "id": "p1-bug-vs-enhancement",
+    "width": 1000,
+    "header": ["Category", "Item", "Rationale"],
+    "rows": [
+      ["**Bug**", "Radix 16 misinterpretation", "Altered enemy firing rates and rock timers"],
+      ["**Bug**", "BCD 30,000 score threshold", "Broke the original progression balance"],
+      ["**Bug**", "Frame 128 against 256 turn cadence", "Halved how often saucers change course"],
+      ["**Enhancement**", "HTML5 canvas vector strokes", "Modern replacement for analog CRT beam deflection"],
+      ["**Enhancement**", "Web Audio tone synthesis", "Programmatic audio recreating the analog RC circuit envelopes"],
+      ["**Enhancement**", "Explosion particle debris", "Mild visual addition: 20 small decaying sparks on impact"],
+      ["**Enhancement**", "Ship spawn fade-in", "30-frame opacity ramp that shows where the ship enters"]
+    ]
+  },
+  {
+    "id": "p2-baselines",
+    "width": 1000,
+    "header": ["Controller", "Games", "Mean score", "Median", "Best", "Mean survival", "Longest survival"],
+    "rows": [
+      ["Presses nothing", "914", "0", "0", "0", "55 s", "147 s"],
+      ["Random keys", "1,368", "183", "140", "1,390", "36 s", "174 s"],
+      ["`simplePilot`", "67", "111,999", "76,940", "557,260", "745 s", "3,488 s (58 min)"]
+    ]
+  },
+  {
+    "id": "p2-long-run",
+    "width": 1000,
+    "header": ["Pilot", "Losses per hour (95% interval)", "Points per minute", "Thrust", "Hyperspace per hour", "Games ended"],
+    "rows": [
+      ["`simplePilot`", "69.1 (66.6 to 71.7)", "9,527", "0.0%", "0.0", "217"],
+      ["`smartPilot`", "5.7 (5.0 to 6.5)", "13,992", "1.7%", "29.1", "0"]
+    ]
+  },
+  {
+    "id": "p2-loss-causes",
+    "width": 900,
+    "header": ["Pilot", "Rocks", "Saucer torpedoes", "Saucer body", "Own hyperspace"],
+    "rows": [
+      ["`simplePilot`", "1,763", "1,092", "45", "0"],
+      ["`smartPilot`", "109", "0", "7", "123"]
+    ]
+  },
+  {
+    "id": "p3-model-candidates",
+    "width": 1100,
+    "header": ["Model", "Where it runs", "Latency (documentation, not measured here)", "Why or why not"],
+    "rows": [
+      ["Laya (`laya-mlx`, 421M)", "Local, MLX on the M1 GPU", "7 to 14 ms claimed", "Under 2 GB; runs natively on Apple Silicon. **Chosen first**"],
+      ["Kev (0.8B / 4B)", "Local", "25 to 60 ms", "Candidate for later"],
+      ["d1 (Liquid AI)", "Local", "20 to 50 ms", "Candidate for later"],
+      ["Jev", "Hosted API", "70 to 150 ms", "Needs a network round trip and a key"],
+      ["CLM-8B", "Remote Linux GPU", "28 to 50 ms", "**Out**: needs vLLM, which has no stable Apple Silicon support, and 16-bit 8B weights alone need about 16 GB"]
+    ]
+  },
+  {
+    "id": "p3-responsibility-split",
+    "width": 1000,
+    "header": ["The model decides", "The code decides"],
+    "rows": [
+      ["One of four tactics:\n`stay_and_fire`\n`turn_left_and_thrust`\n`turn_right_and_thrust`\n`hyperspace`", "Which target to aim at and when to fire (lead aiming)\nKey timing: fire and hyper are pulsed on even frames\nThe geometry and the wording of the state sentence"]
+    ]
+  },
+  {
+    "id": "p3-short-run-results",
+    "width": 1050,
+    "header": ["Pilot", "Losses", "Losses per hour (95% interval)", "Points per minute", "Thrust", "Hyperspace per hour"],
+    "rows": [
+      ["`simplePilot`", "14", "33.6 (18.4 to 56.3)", "7,991", "0.0%", "0.0"],
+      ["`smartPilot`", "2", "4.9 (0.6 to 17.6)", "10,493", "1.4%", "14.6"],
+      ["`layaPilot`", "22", "53.3 (33.4 to 80.6)", "10,096", "3.8%", "19.4"]
+    ]
+  },
+  {
+    "id": "p3-behaviour",
+    "width": 1000,
+    "header": ["Measure (per flying tick unless stated)", "`smartPilot`", "`layaPilot`"],
+    "rows": [
+      ["Ticks at speed 1.5 units or more", "6.6%", "41.4%"],
+      ["Mean speed (units per tick)", "0.50", "3.05"],
+      ["Mean distance from the field centre (units)", "936", "1,959"],
+      ["Mean length of a thrust burst (ticks)", "3.0", "18.5"],
+      ["Decisions per second", "60 (every tick)", "10.05 (one per answer)"],
+      ["Losses with 2 or more closing threats", "0 of 2", "8 of 22"]
+    ]
+  },
+  {
+    "id": "p3-not-tried",
+    "width": 1100,
+    "header": ["Question", "What would answer it"],
+    "rows": [
+      ["Does a 3 times faster answer change survival?", "Same 12 games with the 322M checkpoint"],
+      ["Does the wording of the question or the state matter?", "Same games with a shorter question text; with a state sentence that mentions more than one threat"],
+      ["Do more actions help?", "Add `turn_left_only`, `turn_right_only`, `thrust_only`; add an action that stops thrust"],
+      ["Is the loss rate stable?", "About 10 times more Laya flying time (roughly 4.3 hours of wall time)"],
+      ["Are the rock losses a model problem or an execution problem?", "A safety veto between the model and the keys that blocks actions leading to a collision within 8 ticks"],
+      ["Do other models do better?", "Kev, d1, Jev on the same protocol"]
+    ]
+  }
+]

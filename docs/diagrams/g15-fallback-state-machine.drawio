@@ -1,0 +1,41 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="g15-fallback" name="G15: Fallback state machine">
+    <mxGraphModel dx="1200" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="640" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="layaPilot and the local server: the game always has a pilot" style="text;html=1;align=left;verticalAlign=middle;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="15" width="900" height="30" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="start" value="Pilot selected" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="140" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="online" value="MODEL IN CONTROL&#xa;Keys follow the latest answer.&#xa;Before the first answer arrives,&#xa;the default is stay_and_fire." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="300" y="170" width="300" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="offline" value="FALLBACK: smartPilot FLIES&#xa;Decision panel says the server is offline&#xa;and how to start it.&#xa;The Laya selector button is disabled.&#xa;Warning printed once in the console." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="860" y="170" width="340" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e0" value="first request" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;strokeWidth=2;strokeColor=#3b82d4;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="start" target="online"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e1" value="request fails (connection refused, HTTP error)" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;strokeWidth=2;strokeColor=#b85450;exitX=1;exitY=0.25;entryX=0;entryY=0.25;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="online" target="offline"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="e2" value="a retry succeeds: resume the model,&#xa;re-enable the button, log it" style="edgeStyle=orthogonalEdgeStyle;html=1;endArrow=classic;strokeWidth=2;strokeColor=#82b366;exitX=0;exitY=0.75;entryX=1;entryY=0.75;labelBackgroundColor=#ffffff;fontSize=11;" edge="1" parent="1" source="offline" target="online"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="retry" value="While offline, one retry every 3 seconds&#xa;(a request is sent only if none is pending)" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#f7f8fa;strokeColor=#9aa0a6;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="860" y="340" width="340" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="e3" style="html=1;endArrow=none;dashed=1;strokeColor=#9aa0a6;" edge="1" parent="1" source="retry" target="offline"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="notes" value="What it is for: the game keeps being played if the local server is not running or stops.&#xa;What it is not: any smartPilot decision is made by the same rules as when smartPilot is selected, so results from a run with fallback are not Laya results. The measurement script counts fallbacks; the 12-game run in Part 3 had none." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f8fa;strokeColor=#e5e7eb;align=left;spacing=10;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="460" width="1160" height="90" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

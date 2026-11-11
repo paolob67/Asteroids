@@ -14,7 +14,9 @@ A generative language model (the "System Two" kind) writes its answer token by t
 
 A decision model (the "System One" kind) takes a text description and a typed question, and scores the candidate answers in a single forward pass. There is no generation step. The output is a discrete choice with a probability for each option, so there is nothing to parse and nothing to hallucinate in the format. Latency is fixed by the size of the model and the length of the text.
 
-<!-- DIAGRAM G12 to draw: generative model (tokens, slow, free text) against decision model (one pass, typed choice, probabilities) -->
+![Generative model writing free text token by token, against a decision model scoring a closed set of options in one pass](../../diagrams/g12-system-one-two.png)
+
+Editable source: [`docs/diagrams/g12-system-one-two.drawio`](../../diagrams/g12-system-one-two.drawio).
 
 For the game, that is the right shape: a small closed set of tactics in, one tactic out.
 
@@ -24,13 +26,9 @@ For the game, that is the right shape: a small closed set of tactics in, one tac
 
 The development machine is an Apple MacBook Air M1 with 16 GB of memory and about 16 GB of free disk. That rules some candidates out before any test.
 
-| Model | Where it runs | Latency (from its documentation, not measured here) | Why / why not |
-|-------|---------------|------------------------------------------------------|---------------|
-| Laya (`laya-mlx`, 421M) | Local, MLX on the M1 GPU | 7 to 14 ms claimed | Under 2 GB; runs natively on Apple Silicon. **Chosen first** |
-| Kev (0.8B / 4B) | Local | 25 to 60 ms | Candidate for later |
-| d1 (Liquid AI) | Local | 20 to 50 ms | Candidate for later |
-| Jev | Hosted API | 70 to 150 ms | Needs a network round trip and a key |
-| CLM-8B | Remote Linux GPU | 28 to 50 ms | **Out**: needs vLLM, which has no stable Apple Silicon support, and 16-bit 8B weights alone need about 16 GB |
+![Candidate decision models: where they run, claimed latency, and why or why not](../../diagrams/p3-model-candidates.png)
+
+Editable source: [`docs/diagrams/p3-model-candidates.drawio`](../../diagrams/p3-model-candidates.drawio).
 
 The only latency I measured is Laya's, and it did not match its documentation. I come back to that in section 8.
 
@@ -73,7 +71,11 @@ The game runs at a fixed 60 Hz. A model call takes several frames, so the pilot 
 
 Editable source: [`docs/diagrams/v3-pilots.drawio`](../../diagrams/v3-pilots.drawio).
 
-<!-- DIAGRAM G13 to draw: end-to-end sequence, browser and MLX server -->
+The same flow as a sequence between the four parts involved:
+
+![Sequence between the game loop, the pilot in the page, the local server and the model; the game keeps running while a request is pending](../../diagrams/g13-browser-mlx-sequence.png)
+
+Editable source: [`docs/diagrams/g13-browser-mlx-sequence.drawio`](../../diagrams/g13-browser-mlx-sequence.drawio).
 
 The loop is:
 
@@ -115,11 +117,9 @@ Note what this means. The geometry is still computed by code. The sentence is bu
 
 The split of responsibility is narrow:
 
-| The model decides | The code decides |
-|-------------------|------------------|
-| One of four tactics: `stay_and_fire`, `turn_left_and_thrust`, `turn_right_and_thrust`, `hyperspace` | Which target to aim at and when to fire (lead aiming) |
-| | Key timing: fire and hyper are pulsed on even frames |
-| | The geometry and the wording of the state sentence |
+![What the model decides and what the code decides](../../diagrams/p3-responsibility-split.png)
+
+Editable source: [`docs/diagrams/p3-responsibility-split.drawio`](../../diagrams/p3-responsibility-split.drawio).
 
 ```javascript
 // Snippet S9: from the model's choice to the keys (abridged from layaPilot)
@@ -139,7 +139,11 @@ There is also no safety check between the model and the keys. Whatever the model
 
 If the server is not running, the pilot falls back to `smartPilot`, says so in the Decision panel, and retries every 3 seconds. When the server returns, control goes back to the model without a reload. It is a small piece of code, and it means the game is never left without a pilot because a local process is not running.
 
-<!-- DIAGRAM G15 to draw: fallback state machine. CLIP V9 (could): server stopped, fallback, recovery (8 s) -->
+![State machine: model in control, fallback to smartPilot when a request fails, return to the model when a retry succeeds](../../diagrams/g15-fallback-state-machine.png)
+
+Editable source: [`docs/diagrams/g15-fallback-state-machine.drawio`](../../diagrams/g15-fallback-state-machine.drawio).
+
+<!-- CLIP V9 (could): server stopped, fallback, recovery (8 s) -->
 
 ---
 
@@ -155,11 +159,9 @@ The Laya run is short because it is slow. At about 90 ms per answer, the long ru
 
 Across the 12 starting points `layaPilot` ran with no fallback to `smartPilot` and no server error. Two further checks agree: a single seed (seed 0) at 3,000, 6,000 and 9,000 ticks, and the browser timing runs.
 
-| Pilot | Losses | Losses / hour (95% interval) | Points / minute | Thrust | Hyperspace / hour |
-|-------|--------|------------------------------|-----------------|--------|-------------------|
-| `simplePilot` | 14 | 33.6 (18.4 to 56.3) | 7,991 | 0.0% | 0.0 |
-| `smartPilot` | 2 | 4.9 (0.6 to 17.6) | 10,493 | 1.4% | 14.6 |
-| `layaPilot` | 22 | 53.3 (33.4 to 80.6) | 10,096 | 3.8% | 19.4 |
+![Short run results for simplePilot, smartPilot and layaPilot](../../diagrams/p3-short-run-results.png)
+
+Editable source: [`docs/diagrams/p3-short-run-results.drawio`](../../diagrams/p3-short-run-results.drawio).
 
 On points, in the same 12 games: `layaPilot` is ahead of `simplePilot` in 11 of 12, by 4,192 points on average in 8,000 ticks (95% interval 2,710 to 5,673). It is behind `smartPilot` by 710 points on average, but the interval (-577 to +1,997) includes zero: on points I cannot tell the two apart. Why it beats `simplePilot` I did not test. It moves, `simplePilot` never does; it shares a target picker with `smartPilot`; and it may simply stay alive longer.
 
@@ -184,14 +186,9 @@ This part is from watching it play, and then checking the numbers.
 
 The behaviour counters (same 12 games) put numbers on that impression:
 
-| Measure (per flying tick unless stated) | `smartPilot` | `layaPilot` |
-|-----------------------------------------|--------------|-------------|
-| Ticks at speed 1.5 units or more | 6.6% | 41.4% |
-| Mean speed (units per tick) | 0.50 | 3.05 |
-| Mean distance from the field centre (units) | 936 | 1,959 |
-| Mean length of a thrust burst (ticks) | 3.0 | 18.5 |
-| Decisions per second | 60 (every tick) | 10.05 (one per answer) |
-| Losses with 2 or more closing threats | 0 of 2 | 8 of 22 |
+![Behaviour counters for smartPilot and layaPilot over the same 12 games](../../diagrams/p3-behaviour.png)
+
+Editable source: [`docs/diagrams/p3-behaviour.drawio`](../../diagrams/p3-behaviour.drawio).
 
 <!-- CHARTS C2 and C4 to generate from docs/articles/data/pilots-2026-11-10-all3-12x8000-lag6.json -->
 
@@ -220,14 +217,9 @@ The 7.4 ms figure was not reached (best case 26 ms), so a factor of about 3 is e
 
 Each of these is a hypothesis. None has a result.
 
-| Question | What would answer it |
-|----------|----------------------|
-| Does a 3 times faster answer change survival? | Same 12 games with the 322M checkpoint |
-| Does the wording of the question or the state matter? | Same games with a shorter question text; with a state sentence that mentions more than one threat |
-| Do more actions help? | Add `turn_left_only`, `turn_right_only`, `thrust_only`; add an action that stops thrust |
-| Is the loss rate stable? | About 10 times more Laya flying time (roughly 4.3 hours of wall time) |
-| Are the rock losses a model problem or an execution problem? | A safety veto between the model and the keys that blocks actions leading to a collision within 8 ticks |
-| Do other models do better? | Kev, d1, Jev on the same protocol |
+![Open questions and what would answer each](../../diagrams/p3-not-tried.png)
+
+Editable source: [`docs/diagrams/p3-not-tried.drawio`](../../diagrams/p3-not-tried.drawio).
 
 Two improvement ideas also came from watching: a rule to brake or stop thrusting after a dodge for `layaPilot`, and a return to the centre after moving for `smartPilot`.
 
