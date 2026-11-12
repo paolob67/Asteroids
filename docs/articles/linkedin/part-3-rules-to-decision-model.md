@@ -158,7 +158,7 @@ This part is from watching it play, and then checking the numbers.
 
 **Clip 3 (about 42 s):** the game is played by `smartPilot` first, then after a while switched to `layaPilot`.
 
-*Video file: `docs/articles/linkedin/clip-part3-gameplay.mov`. Upload it in the LinkedIn editor here.*
+*Video file: `docs/articles/linkedin/clip-part3-gameplay.mp4`. Upload it in the LinkedIn editor here.*
 
 `smartPilot` moves in short taps and stays put. `layaPilot` is capable of moving out of the way of a rock it cannot destroy. Its movements look less controlled, and the ship drifts around the field for longer. Sometimes it flies into approaching rocks and has no time to react.
 

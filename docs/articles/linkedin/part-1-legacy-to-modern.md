@@ -10,7 +10,7 @@ This article examines what happens when an AI assistant (IBM Bob) is tasked with
 
 **Clip 1 (about 20 s):** manual play of the first port (version 1) in a browser. It looks right and plays right, which is exactly why the errors went unnoticed.
 
-*Video file: `docs/articles/linkedin/clip-part1-gameplay.mov`. Upload it in the LinkedIn editor here.*
+*Video file: `docs/articles/linkedin/clip-part1-gameplay.mp4`. Upload it in the LinkedIn editor here.*
 
 ---
 

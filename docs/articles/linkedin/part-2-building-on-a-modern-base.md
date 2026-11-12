@@ -78,7 +78,7 @@ What it does not do matters as much. Its output has only `left`, `right` and `fi
 
 **Clip 2 (about 11 s):** `simplePilot` playing the game on its own, with no keyboard input from me.
 
-*Video file: `docs/articles/linkedin/clip-part2-gameplay.mov`. Upload it in the LinkedIn editor here.*
+*Video file: `docs/articles/linkedin/clip-part2-gameplay.mp4`. Upload it in the LinkedIn editor here.*
 
 
 ---
