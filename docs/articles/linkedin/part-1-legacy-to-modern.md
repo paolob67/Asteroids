@@ -275,4 +275,6 @@ node scripts/dev/compare_versions.js versions/v1/asteroids.html versions/v2/aste
 node scripts/dev/simulate.js asteroids.html
 ```
 
+The game, the frozen versions 1 to 3, the measurement scripts and the raw data are all in the repository: [github.com/paolob67/Asteroids](https://github.com/paolob67/Asteroids).
+
 *Next: [Part 2: Once the code is modern, a game becomes something a program can play](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-2-building-on-a-modern-base.md)*

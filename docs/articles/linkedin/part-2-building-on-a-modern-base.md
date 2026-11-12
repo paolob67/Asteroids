@@ -208,4 +208,6 @@ node scripts/dev/check_thrust_physics.js asteroids.html 300000 smartPilot
 
 Raw output and definitions: [`docs/articles/data/`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/data/README.md). Long run of section 9: 2026-11-10, Apple MacBook Air M1, Node v26.3.1.
 
+The game, the frozen versions 1 to 3, the measurement scripts and the raw data are all in the repository: [github.com/paolob67/Asteroids](https://github.com/paolob67/Asteroids).
+
 *Next: [Part 3: From rules to a decision model](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-3-rules-to-decision-model.md)*
