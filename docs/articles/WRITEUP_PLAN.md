@@ -114,7 +114,7 @@ Sources go in [`../diagrams/`](../diagrams/) as `.drawio` with a `.png` export. 
 | G6 | v1 game states | 1 | Exists: `v1-game-states` |
 | G7 | State to decision loop | 2 | Exists: `v2-state-decision-loop` |
 | G7b | Three pilots behind one selector, Laya round trip and fallback | 3 | Exists: `v3-pilots` |
-| G8 | Lead-aim geometry for `simplePilot` | 2 | New |
+| G8 | Lead-aim geometry for `simplePilot` | 2 | Dropped |
 | G9 | `smartPilot` decision flow | 2 | Done |
 | G10 | Candidate manoeuvres (16 headings x 5 thrust lengths) | 2 | Done |
 | G11 | Key to physics proof loop (`check_thrust_physics`) | 2 | Done |
@@ -122,7 +122,7 @@ Sources go in [`../diagrams/`](../diagrams/) as `.drawio` with a `.png` export. 
 | G13 | End-to-end sequence, browser and MLX server | 3 | Done |
 | G14 | Responsibility split between model and code | 3 | Done (as table image `p3-responsibility-split`) |
 | G15 | Fallback state machine (server offline to `smartPilot`) | 3 | Done |
-| G16 | Where rules and models each win (decision matrix) | 3 | New |
+| G16 | Where rules and models each win (decision matrix) | 3 | Dropped |
 
 #### Table images
 
@@ -145,15 +145,7 @@ Any edit to a table in an article must be made in `tables.json` and re-exported.
 
 ### 5.2 Charts
 
-Generated from the files in `docs/articles/data/` after N3. For Part 3 use only what supports the feasibility claim (C2 and C3 with the short-run caveat, C5 for latency); C4 is optional.
-
-| ID | Chart | Part |
-|----|-------|------|
-| C1 | Mean score: idle, random, `simplePilot` | 2 |
-| C2 | Losses per hour by pilot | 2 and 3 |
-| C3 | Cause of ship loss by pilot | 2 and 3 |
-| C4 | Points per minute against losses per hour (scatter, one dot per pilot) | 3 |
-| C5 | Model latency against the 16.6 ms frame budget | 3 |
+Dropped 2026-11-11. The table images already carry the numbers; none of the charts were referenced in the article drafts.
 
 ### 5.3 Code snippets
 
@@ -177,35 +169,17 @@ LinkedIn articles have no code blocks, so every snippet is exported as a PNG in 
 
 The game is deterministic (bit-exact `RAND`, fixed seeds), so every clip can be regenerated from a pilot name, a seed and a tick range.
 
-| ID | Clip | Shows (source) | Part | Length | Priority |
-|----|------|----------------|------|--------|----------|
-| V1 | v1 against v2, same seed, saucer behaviour side by side | Part 1 regression found by running the code | 1 | 8 s | Must |
-| V2 | Idle, random keys, `simplePilot`, side by side | A pilot is a function from state to five keys | 2 | 10 s | Should |
-| V3 | `simplePilot` aims precisely, then is hit by something it cannot dodge | Author: precise aim, no escape. Measured: 0% thrust, 0 hyperspace; 87% of long-run losses with 0 or 1 closing threats | 2 | 8 s | Must |
-| V4 | `smartPilot` brakes: turns the nose against its velocity, thrusts, stops | Author: brakes by turning round and thrusting. Measured: bursts of 3 ticks, drifts 7% of the time | 2 | 6 s | Must |
-| V4b | `smartPilot` hyperspace as the last resort | Measured: hyperspace only when no manoeuvre is safe | 2 | 6 s | Could |
-| V5 | `smartPilot` and `layaPilot` on the same start, side by side, with a fading trail of the ship's path | Author: Laya drifts for longer. Measured: drifting 41% against 7%, mean speed 3.05 against 0.50 | 3 | 10 s | Must |
-| V6 | Laya dodges out of the way of a rock it cannot shoot | Author: capable of moving out of rocks | 3 | 6 s | Must |
-| V7 | Laya dodges one rock into the path of another | Author: runs into approaching rocks. Measured: 8 of 22 losses with 2 or more rocks closing | 3 | 8 s | Must |
-| V8 | Laya with the State and Decision panels visible: the choice, probability and latency, changing about 10 times a second | How the system works; 6 to 7 ticks between request and answer | 3 | 8 s | Should |
-| V9 | Laya server stopped: visible fallback to `smartPilot`, then recovery | The fallback and the 3 s retry | 3 | 8 s | Could |
+One clip per article, all recorded with QuickTime screen capture from a browser window. LinkedIn supports native video upload (75 KB to 5 GB, 3 s to 15 min, 256x144 to 4096x2304, 10 to 60 fps).
 
-Constraint on "same moment": pilots that act differently consume `RAND` differently (a shot rock splits differently), so two pilots on the same seed show the same game only for the first seconds. For V3, V5 and V7 either (a) use the first seconds of a start point, or (b) record the moment in one run and start the other pilot from that saved state. The game has a player state save (`savePlayerState`); whether it can be restored mid-game for this purpose has not been checked.
+| ID | Clip | What to show | Part | Length | How | Filename |
+|----|------|-------------|------|--------|-----|----------|
+| C-A | Author plays v1 | A human game on `versions/v1/asteroids.html`: the game looks right, plays correctly | 1 | ~15 s | Author plays, QuickTime records the browser window | `docs/articles/linkedin/clip-part1-gameplay.mov` |
+| C-B | `simplePilot` in action | `simplePilot` running in v2 or the working copy: rotates, fires, never moves, eventually gets hit | 2 | ~15 s | Open the page, switch to Simple, QuickTime records | `docs/articles/linkedin/clip-part2-gameplay.mov` |
+| C-C | `smartPilot`, then `layaPilot` | One game played by `smartPilot`, then after a while switched to `layaPilot` with the selector | 3 | ~42 s | Open the page, start with Smart, switch to Laya with the Laya server running, QuickTime records | `docs/articles/linkedin/clip-part3-gameplay.mov` |
 
-Candidate source: start point 0, which has data for all three pilots (single-seed runs of 3,000, 6,000 and 9,000 ticks). In that game Laya lost its three ships between ticks 3,000 and 6,000, `simplePilot` lost two ships by tick 9,000 (one torpedo, one rock), and `smartPilot` lost none. The exact ticks of those losses have not been extracted yet.
+Filenames use `.mov` (QuickTime native). If converted to MP4 for upload, keep both with the same base name. Both extensions are in `.gitignore`: clips are too large for git; keep locally and upload to LinkedIn directly.
 
-Tooling found on this machine: ffmpeg, Node, Chrome and Firefox are installed. No browser automation library is installed (Playwright is not available in the Python environment). Two options, to be chosen when we reach this step:
-
-- **A. Real browser capture.** Install a browser automation package and drive Chrome to record the page. It shows the actual UI (State and Decision panels) that the articles discuss. The 60 Hz step is fixed, but capture timing needs checking.
-- **B. Headless frame render.** Run the existing Node harness and draw frames from `snapshot()` into PNGs, then assemble with ffmpeg. Fully deterministic and no browser needed, but it shows only the playfield, not the panels.
-
-Finding the moments: a small script that reports, for a seed, the tick of every loss and every thrust burst with the nearest threats at that tick, so clips do not depend on luck. Not written yet.
-
-Trail overlay (V5): the browser page has no ship trail. Option B (frame render) can draw one from the snapshots; option A would need a small change to the game page, which is not planned. Decide with the tooling choice.
-
-Sound: the page plays the game's sounds. Decide whether clips are silent or keep the thrust and fire sounds. Not decided.
-
-Open question for LinkedIn: how video is embedded in an article (upload or link), and file limits. To check before producing final files, not assumed here.
+Old clips V1 to V9 dropped 2026-11-11 in favour of one clip per article.
 
 ## 6. Work breakdown
 
@@ -213,16 +187,15 @@ Order matters: numbers first, because Parts 2 and 3 quote them.
 
 | # | Task | Depends on | Part |
 |---|------|------------|------|
-| D1 | Reword "by hand" and "manual port" in the repo docs to match how v1 was made | E1 | 1 |
+| D1 | Reword "by hand" and "manual port" in the repo docs to match how v1 was made | E1 | 1 | Done 2026-11-11. The old phrases were already gone; `versions/v1/README.md` updated to name Bob explicitly. |
 | N1 to N5 | Number integrity (section 3.3) | none | 2, 3 |
 | E1 to E6 | Collect Part 1 evidence from the author | none | 1 |
 | G1 to G16 | Diagrams | outlines | all |
-| C1 to C5 | Charts | N3 | 2, 3 |
-| V1 to V6 | Clips | tooling choice | all |
+| C-A, C-B, C-C | Clips (one per article) | none | all |
 | W1 | Draft Part 1 | E1 to E6, G1 to G6 | 1 |
-| W2 | Draft Part 2 | N3, G7 to G11, C1 to C3 | 2 |
-| W3 | Draft Part 3 | N3, G12 to G16, C2 to C5 | 3 |
-| T1 | Technical review: every number, snippet and link checked against the repo | W1 to W3 | all |
+| W2 | Draft Part 2 | G7 to G11 | 2 |
+| W3 | Draft Part 3 | G12 to G16 | 3 |
+| T1 | Technical review: every number, snippet and link checked against the repo | W1 to W3 | all | Done 2026-11-12. Fixed: source set size (15 files, 5,511 lines), BCD digit description and `CMP`/`BCS` snippet, `CPY I,35`, `simplePilot` physics check tick count (257,464), latency arithmetic in Part 3. Not checked: author-supplied facts (session times, prompts) and the claim that small saucers appeared after two waves. |
 | H1 | Humanizer pass (`linkedin-humanizer`, default forensic plus strict mode), then audit mode | T1 | all |
 | P1 | Final formatting for LinkedIn (cover image, snippet images, clip upload) | H1 | all |
 | P2 | Adapt for IBM Developer | P1 | all |

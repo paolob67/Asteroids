@@ -33,7 +33,7 @@
           <mxGeometry x="520" y="280" width="360" height="64" as="geometry"/>
         </mxCell>
 
-        <mxCell id="l4" value="16 assembly source files" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="l4" value="15 assembly source files" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="20" y="370" width="360" height="64" as="geometry"/>
         </mxCell>
         <mxCell id="r4" value="One asteroids.html file&#xa;no dependencies, no build step" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">

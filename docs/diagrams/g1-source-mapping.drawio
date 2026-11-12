@@ -6,7 +6,7 @@
         <mxCell id="1" parent="0"/>
 
         <!-- Left container: Original 6502 Source Set -->
-        <mxCell id="c_orig" value="Original 6502 Source Set (asteroids-main/)&#xa;16 files, 7,722 total lines" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;verticalAlign=top;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="c_orig" value="Original 6502 Source Set (asteroids-main/)&#xa;15 files, 5,511 total lines" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;verticalAlign=top;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="40" y="40" width="340" height="540" as="geometry"/>
         </mxCell>
 

@@ -18,7 +18,7 @@
     "title": "BCD score threshold (ENEMY)",
     "lang": "javascript",
     "alt": "The 6502 compare CMP I,30 on the BCD high byte means 30,000 points; version 1 used 3000, version 2 uses 30000",
-    "code": "// Original 6502 Assembly (ENEMY routine):\n//   LDA SCORE+1,X   ; Load high byte (thousands and ten-thousands)\n//   CMP I,30        ; BCD 30 in high byte = 30,000 points\n//   BCC 20$         ; If score < 30,000, spawn large saucer\n\n// Generated in Version 1 (Wrong):\nif (scores[curPlayer] >= 3000) {   // 10x too sensitive\n  saucer.small = true;\n}\n\n// Fixed in Version 2 (Correct):\nif (scores[curPlayer] >= 30000) {  // Original arcade threshold\n  saucer.small = true;\n}"
+    "code": "// Original 6502 Assembly (ENEMY routine):\n//   LDY PLAYR2\n//   LDA Y,SCORE+1   ; Load high byte (thousands and ten-thousands)\n//   CMP I,30        ; BCD 30 in high byte = 30,000 points\n//   BCS 38$         ; If score is larger, keep the small saucer\n\n// Generated in Version 1 (Wrong):\nif (scores[curPlayer] >= 3000) {   // 10x too sensitive\n  saucer.small = true;\n}\n\n// Fixed in Version 2 (Correct):\nif (scores[curPlayer] >= 30000) {  // Original arcade threshold\n  saucer.small = true;\n}"
   },
   {
     "id": "asl-cadence",

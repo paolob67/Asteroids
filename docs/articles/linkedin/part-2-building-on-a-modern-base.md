@@ -76,7 +76,10 @@ Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/d
 
 What it does not do matters as much. Its output has only `left`, `right` and `fire`. It never returns `thrust` or `hyper`, so it cannot move and cannot jump. It sits in the centre and shoots. It also ignores saucer torpedoes.
 
-<!-- CLIP V2: idle, random keys and simplePilot side by side (10 s) -->
+**Clip 2 (about 11 s):** `simplePilot` playing the game on its own, with no keyboard input from me.
+
+*Video file: `docs/articles/linkedin/clip-part2-gameplay.mov`. Upload it in the LinkedIn editor here.*
+
 
 ---
 
@@ -121,7 +124,6 @@ Editable source: [`docs/diagrams/g10-candidate-manoeuvres.drawio`](https://githu
 
 Watching it play, it brakes by turning the ship round and thrusting, which keeps movement to a minimum. Measured over 8 x 100,000 ticks: thrust is held for 1.6% of flying ticks, in bursts of about 3 ticks, and the ship drifts (speed of 1.5 units per tick or more) 7% of the time. One gap I saw by eye is confirmed by the code: nothing in its cost refers to the centre of the field, so it does not return to the centre after it has moved away.
 
-<!-- CLIP V4: smartPilot brakes (6 s). CLIP V4b: hyperspace as the last resort (6 s) -->
 
 ---
 
@@ -135,7 +137,7 @@ The pilot has no way to set the ship's velocity. It can only hold five keys, and
 
 Editable source: [`docs/diagrams/g11-physics-proof.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/g11-physics-proof.drawio).
 
-For `smartPilot` over a 300,000 tick run: 277,149 ticks checked, 0 mismatches. (The remaining ticks are skipped: the ship was exploding, waiting to return, or had been taken away by hyperspace, which the replay does not model.) Position, velocity (including the fractional part) and angle matched the replay on every checked tick, so every speed gain happened on a tick where THRUST was held, in the direction the nose pointed. The check also fails if the pilot's private copy of the movement rules drifts from `updateShip()`. The same check passes for `simplePilot` (17,934 ticks, 0 mismatches), which proves less: it never thrusts, so only rotation and friction were exercised.
+For `smartPilot` over a 300,000 tick run: 277,149 ticks checked, 0 mismatches. (The remaining ticks are skipped: the ship was exploding, waiting to return, or had been taken away by hyperspace, which the replay does not model.) Position, velocity (including the fractional part) and angle matched the replay on every checked tick, so every speed gain happened on a tick where THRUST was held, in the direction the nose pointed. The check also fails if the pilot's private copy of the movement rules drifts from `updateShip()`. The same check passes for `simplePilot` (257,464 ticks, 0 mismatches), which proves less: it never thrusts, so only rotation and friction were exercised.
 
 This also explained a puzzle from Version 2. Because `smartPilot` thrusts in short taps (median burst of 2 ticks), the ship spends most of its time coasting, and it looked as if it moved by itself. The Decision panel now keeps a recently pressed key dimly lit for 0.4 s and says whether the ship is thrusting or coasting.
 

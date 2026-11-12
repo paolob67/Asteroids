@@ -8,6 +8,10 @@ Yet, despite looking and playing like Asteroids, the initial port was quietly wr
 
 This article examines what happens when an AI assistant (IBM Bob) is tasked with porting legacy assembly code to modern JavaScript: what an LLM handles with ease, where it reliably fails, why unstated legacy conventions trip up machines and humans alike, and how automated headless verification caught what code reading missed.
 
+**Clip 1 (about 20 s):** manual play of the first port (version 1) in a browser. It looks right and plays right, which is exactly why the errors went unnoticed.
+
+*Video file: `docs/articles/linkedin/clip-part1-gameplay.mov`. Upload it in the LinkedIn editor here.*
+
 ---
 
 ## 1. Why Asteroids?
@@ -33,7 +37,7 @@ Editable source: [`docs/diagrams/g0-cabinet-to-browser.drawio`](https://github.c
 
 ## 2. The Task and Source Code Set
 
-The original Atari Asteroids codebase (`asteroids-main/`) comprises 16 assembly and macro files totaling 7,722 lines. Of those, 3,653 lines across five primary files (`A35131.1A` through `A35131.1E`) contain the active gameplay logic:
+The original Atari Asteroids codebase (`asteroids-main/`) comprises 15 assembly, macro and documentation files totaling 5,511 lines. Of those, 3,653 lines across five primary files (`A35131.1A` through `A35131.1E`) contain the active gameplay logic:
 
 - `A35131.1A`: Core game engine (`MOTION`, `MOVE`, `COLIDE`, `NEWAST`, `ENEMY`, `HYPER`, `POINTS`, `GETINT`).
 - `A35131.1B` to `A35131.1E`: Game control flow, state machine, and self-test ROM.
@@ -129,7 +133,7 @@ None of these mistakes were caused by a failure of JavaScript logic. Every line 
 The failures stemmed from two fundamental obstacles in AI-driven legacy modernization: **the holistic lifecycle gap**, and **implicit assembler conventions**.
 
 ### 1. The Holistic Lifecycle Gap (Local Logic vs System Flow)
-In legacy codebases, systems are heavily fragmented. The Asteroids source spans 16 separate files, with state transitions triggered by hardware interrupt flags, jump tables, and memory-mapped I/O registers.
+In legacy codebases, systems are heavily fragmented. The Asteroids source spans 15 separate files, with state transitions triggered by hardware interrupt flags, jump tables, and memory-mapped I/O registers.
 
 An LLM excels at local comprehension: translating a 40-line assembly subroutine into a clean JavaScript math function is straightforward. However, an LLM initially struggles to construct a **holistic view of the overall application lifecycle**. It translates the parts without automatically orchestrating the global state machine:
 
@@ -156,8 +160,8 @@ Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/d
 
 ### 2. Binary Coded Decimal (BCD) Packing
 Arcade hardware stores player scores in Binary Coded Decimal (BCD) to simplify driving seven-segment LED displays and vector character drawing. In Asteroids, `SCORE` is a 2-byte array:
-- `SCORE+0`: Low byte containing ones and tens digits.
-- `SCORE+1`: High byte containing hundreds, thousands, and ten-thousands digits.
+- `SCORE+0`: Low byte containing the tens and hundreds digits (the display code appends a fixed zero, so the ones digit is never stored).
+- `SCORE+1`: High byte containing the thousands and ten-thousands digits.
 
 When `ENEMY` executes `CMP I,30` against `SCORE+1`, it compares the byte containing the thousands digits against hex `0x30`, representing **30,000 points**. 
 

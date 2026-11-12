@@ -118,7 +118,6 @@ If the server is not running, the pilot falls back to `smartPilot`, says so in t
 
 Editable source: [`docs/diagrams/g15-fallback-state-machine.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/g15-fallback-state-machine.drawio).
 
-<!-- CLIP V9 (could): server stopped, fallback, recovery (8 s) -->
 
 ---
 
@@ -157,6 +156,10 @@ A caution on the word "loss": no pilot ran out of ships in the short run. The ga
 
 This part is from watching it play, and then checking the numbers.
 
+**Clip 3 (about 42 s):** the game is played by `smartPilot` first, then after a while switched to `layaPilot`.
+
+*Video file: `docs/articles/linkedin/clip-part3-gameplay.mov`. Upload it in the LinkedIn editor here.*
+
 `smartPilot` moves in short taps and stays put. `layaPilot` is capable of moving out of the way of a rock it cannot destroy. Its movements look less controlled, and the ship drifts around the field for longer. Sometimes it flies into approaching rocks and has no time to react.
 
 The behaviour counters (same 12 games) put numbers on that impression:
@@ -165,13 +168,10 @@ The behaviour counters (same 12 games) put numbers on that impression:
 
 Editable source: [`docs/diagrams/p3-behaviour.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p3-behaviour.drawio).
 
-<!-- CHARTS C2 and C4 to generate from docs/articles/data/pilots-2026-11-10-all3-12x8000-lag6.json -->
-
 The code explains why it drifts. `turn_left_and_thrust` holds turn and thrust for as long as the choice stays the same. There is no brake and no rule that stops thrust when the heading is right, so a dodge keeps pushing the ship after the danger has passed. It also explains why the dodge can point into a second rock: the state sentence describes only the nearest threat, and 8 of its 22 losses (36%) happened with two or more rocks closing.
 
 Latency is not in that explanation, on purpose. I suspect the late decisions play a part, but the one experiment that would isolate it, a run with an answer within one tick (`--lag=1`), took 669 seconds for one starting point and was abandoned. One thing speaks against latency as the main cause: even an instant answer would not give the pilot an action that brakes. Whether the cause is latency, the one-threat sentence or the model itself is not known.
 
-<!-- CLIPS: V5 smartPilot and layaPilot side by side with a ship trail (10 s); V6 Laya dodges a rock it cannot shoot (6 s); V7 Laya dodges one rock into the path of another (8 s); V8 Decision panel with choice, probability and latency (8 s) -->
 
 ### (d) The decision arrives late, and not as fast as documented
 
@@ -184,7 +184,7 @@ Where the time goes is partly known:
 - Time grows with text length: a shorter question text brought the call from about 88 to about 66 ms.
 - The smaller 322M checkpoint of the same model family answers in 27 to 35 ms, about 3 times faster.
 
-The 7.4 ms figure was not reached (best case 26 ms), so a factor of about 3 is explained and a factor of about 12 is not. I do not know why the documentation is faster. Different checkpoint, batch setting or machine state are guesses.
+The 7.4 ms figure was not reached (best case 26 ms). Of the gap of about 12 times between 88 ms and 7.4 ms, the smaller checkpoint explains about 3 times and about 3.5 times remains unexplained. I do not know why the documentation is faster. Different checkpoint, batch setting or machine state are guesses.
 
 ---
 

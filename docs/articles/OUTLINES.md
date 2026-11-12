@@ -23,7 +23,7 @@ Target length: 1,500 to 2,500 words each, plus diagrams, short clips and short c
 | # | Section | Content | Assets |
 |---|---------|---------|--------|
 | 1 | Why Asteroids | Small, famous, the source is public, the rules are fixed, and correctness can be measured | Screenshot of the original and the port |
-| 2 | The task | 16 files, 7,722 lines in total, 3,653 lines of game logic in `A35131.1A` to `A35131.1E`. Goal: a faithful port that runs anywhere | G1 (source set to single file) |
+| 2 | The task | 15 files, 5,511 lines in total, 3,653 lines of game logic in `A35131.1A` to `A35131.1E`. Goal: a faithful port that runs anywhere | G1 (source set to single file) |
 | 3 | How Bob was used | Mode, model, prompts, number of sessions **[author]** | A sample prompt, as text |
 | 4 | What worked | Routine-by-routine mapping with opcode comments; vector tables (4 rock shapes, 17 ship frames, saucer, font); bit-exact `RAND`; fixed 60 Hz step; Web Audio replacing the analog sound circuits; the surrounding game flow | G2 (hardware to browser), G5, G6, code: a 6502 routine next to its JavaScript |
 | 5 | What did not work | The error catalogue below. For each: the line of source, what was produced, what it did in play | Snippets S1 to S3, table of deviations |

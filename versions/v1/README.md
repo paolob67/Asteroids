@@ -1,6 +1,6 @@
 # Version 1 (frozen baseline)
 
-This directory holds the frozen first version of the JavaScript port of Atari Asteroids. It is the reference point for the article that compares this first-pass port with a code modernization approach.
+This directory holds the frozen first version of the JavaScript port of Atari Asteroids, produced with Bob (IBM Bob, Agent mode) in a single session. It is the reference point for the article that compares this first-pass port with a code modernization approach.
 
 | Item | Value |
 |------|-------|

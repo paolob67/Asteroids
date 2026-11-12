@@ -68,7 +68,7 @@ These are soak and behaviour checks. They do not compare the port against the or
 | Metric | Original (`asteroids-main/`) | Version 1 |
 |--------|-----------------------------|-----------|
 | Language | 6502 assembly (MACRO-11 style) | JavaScript, HTML, no dependencies |
-| Size of the source set | 3,653 lines in `A35131.1A` to `A35131.1E`; 7,722 lines across all files in `asteroids-main/` | 1,880 lines in one file, 65,686 bytes |
+| Size of the source set | 3,653 lines in `A35131.1A` to `A35131.1E`; 5,511 lines across all 15 files in `asteroids-main/` | 1,880 lines in one file, 65,686 bytes |
 | Files | 16 | 1 (plus 7 validation scripts) |
 | Runs on | Atari vector arcade hardware | Any modern browser |
 | Build step | Cross-assembly and PROM burn | None |
