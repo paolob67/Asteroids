@@ -88,7 +88,7 @@ There are three sentences the model can receive:
 - **Danger** (collision in 60 ticks or less): which rock or saucer, from which side, in how many ticks, and which way to turn.
 - **Fatal collision emergency** (8 ticks or less): ask for hyperspace.
 
-Note what this means. The geometry is still computed by code. The sentence is built from the single threat with the lowest time to collision and says nothing about any other rock. That limit comes back in section 8.
+The geometry is still computed by code. The sentence is built from the single threat with the lowest time to collision and says nothing about any other rock. That limit comes back in section 8.
 
 ---
 

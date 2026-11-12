@@ -2,9 +2,9 @@
 
 *Part 1 of the series "A journey in code modernization with Bob: from 6502 assembly to an AI autopilot"*
 
-About 3,650 lines of 1979 MOS 6502 assembly language became a single JavaScript file running in a modern web browser with zero dependencies and no build step. The resulting game ran immediately, rendered vector ships and rocks on an HTML5 canvas, synthesized analog cabinet sounds with the Web Audio API, and felt convincingly playable.
+About 3,650 lines of 1979 MOS 6502 assembly language became a single JavaScript file running in a modern web browser with zero dependencies and no build step. The resulting game ran immediately, rendered vector ships and rocks on an HTML5 canvas, synthesized analog cabinet sounds with the Web Audio API, and looked finished.
 
-Yet, despite looking and playing like Asteroids, the initial port was quietly wrong in half a dozen subtle ways. No syntax error, type check, or basic smoke test detected the flaws. The bugs remained invisible until the game was systematically measured and run against the original 1979 assembly source code.
+It also played like Asteroids, and it was wrong in several places. No syntax error, type check or smoke test caught them. They showed up only when I measured the game and compared it with the original 1979 assembly.
 
 This article examines what happens when an AI assistant (IBM Bob) is tasked with porting legacy assembly code to modern JavaScript: what an LLM handles with ease, where it reliably fails, why unstated legacy conventions trip up machines and humans alike, and how automated headless verification caught what code reading missed.
 
@@ -16,18 +16,18 @@ This article examines what happens when an AI assistant (IBM Bob) is tasked with
 
 ## 1. Why Asteroids?
 
-There is also a personal reason for choosing Asteroids. I remember playing this game as a kid on real Atari hardware. Even though the premise seemed deceptively simple, I always found it significantly more challenging than other arcade titles. The physics of inertia and momentum were unforgiving: the moment you engaged thrust, the ship drifted across the screen, making aiming difficult and precise ship control exhausting.
+There is also a personal reason for choosing Asteroids. I remember playing this game as a kid on real Atari hardware. The premise looked simple, but I always found it harder than other arcade games. The physics of inertia and momentum were unforgiving: the moment you engaged thrust, the ship drifted across the screen, making aiming difficult and precise ship control exhausting.
 
 The survival strategy I developed as a kid was simple: stay in the middle of the screen, rotate in place, fire continuously, and move as little as humanly possible.
 
-Deciding to tackle Asteroids for this modernization series felt like a second chance at mastering a game that had humbled me decades ago. This time, however, the goal was not just to play it, but to modernize its code and eventually build autonomous AI pilots capable of mastering the very drifting physics that challenged me as a kid.
+Deciding to tackle Asteroids for this modernization series felt like a second chance at a game that had humbled me decades ago. This time I would modernize its code and eventually build autonomous AI pilots to handle the drifting physics that beat me as a kid.
 
-Beyond nostalgia, Asteroids provides an exceptional engineering benchmark for code modernization:
+Beyond nostalgia, Asteroids makes a good engineering benchmark for code modernization:
 
 1. **Fixed, deterministic rules**: Unlike enterprise business applications where requirements shift continuously, arcade game logic is frozen in ROM.
 2. **Accessible source code**: The original 1979 source by Ed Logg and Lyle Rains is publicly documented.
-3. **Rigorous measure of correctness**: Timing intervals, collision boxes, rock drift speeds, and enemy fire cadences can be quantified precisely down to individual clock ticks and frames.
-4. **Self-contained scope**: The core game logic fits into a few thousand lines of assembly, making complete end-to-end modernization feasible within a short timeframe.
+3. **Measurable correctness**: Timing intervals, collision boxes, rock drift speeds, and enemy fire cadences can be quantified precisely down to individual clock ticks and frames.
+4. **Self-contained scope**: The core game logic fits into a few thousand lines of assembly, so a complete port fits in a short project.
 
 ![1979 Atari cabinet components mapped to their 2026 browser equivalents](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/g0-cabinet-to-browser.png)
 
@@ -60,11 +60,11 @@ The port was conducted using IBM Bob in its built-in Agent mode.
 ### The Workflow
 1. **Source ingestion**: The complete 6502 assembly files were downloaded into the local workspace folder (`asteroids-main/`) for Bob to index and review.
 2. **Initial prompt**: The opening prompt directed Bob to analyze the assembly files, extract the coordinate system, and translate the routines into a single JavaScript file rendering to an HTML5 canvas.
-3. **The first-pass prototype**: The very first generation produced a running canvas with ship movement and rock shooting, but lacked the holistic lifecycle of the game: wave progression was missing (clearing rocks left an empty void), 1-player and 2-player turn switching was absent, audio was not yet synthesized, and the high-score initials table was omitted.
+3. **The first-pass prototype**: The very first generation produced a running canvas with ship movement and rock shooting, but lacked the game's full lifecycle: wave progression was missing (clearing rocks left an empty void), 1-player and 2-player turn switching was absent, audio was not yet synthesized, and the high-score initials table was omitted.
 4. **Iterative orchestration**: Over a two-hour session, follow-up prompts directed Bob to connect the fragmented legacy routines into a complete state machine: hooking up wave transitions, synthesizing Web Audio circuits, adding turn switching, and implementing vector font initials entry.
 5. **Time investment**:
    - Approximately **2 hours of wall-clock time** produced Version 1 (`versions/v1/asteroids.html`), a 1,880-line fully playable baseline with all screens and sound.
-   - Another **2 hours of wall-clock time** was spent investigating subtle mathematical discrepancies, fixing unstated convention bugs, and establishing behavioral fidelity for Version 2 (`versions/v2/asteroids.html`).
+   - Another **2 hours of wall-clock time** was spent finding mathematical discrepancies, fixing unstated convention bugs and restoring behavioral fidelity for Version 2 (`versions/v2/asteroids.html`).
 
 ---
 
@@ -107,7 +107,7 @@ Editable source: [`docs/diagrams/g2-hardware-to-browser.drawio`](https://github.
 
 ## 5. What Did Not Work: The Error Catalogue
 
-The challenges encountered fell into two distinct phases: **holistic gaps in the initial translation pass**, and **deep mathematical convention bugs in the Version 1 baseline**.
+The challenges encountered fell into two distinct phases: **lifecycle gaps in the initial translation pass**, and **deep mathematical convention bugs in the Version 1 baseline**.
 
 ### Initial Pass Shortcomings
 In the very first output generated by Bob, several entire subsystems were omitted or disconnected:
@@ -118,7 +118,7 @@ In the very first output generated by Bob, several entire subsystems were omitte
 - **Geometry and visual artifacts**: Ship weapon firing angles were miscalculated, canvas scaling required recalibration, and a persistent visual glitch offset the thrust flame behind the ship.
 
 ### Version 1 Behavioral & Mathematical Bugs
-Once the missing systems were integrated to create Version 1, the game looked complete. However, dynamic verification and line-by-line comparison against the assembly revealed subtle fidelity bugs:
+Once the missing systems were integrated to create Version 1, the game looked complete. Running it and comparing it line by line with the assembly then turned up these fidelity bugs:
 
 ![Eight fidelity errors in v1: the original source, what was generated, and the measured impact](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/p1-error-catalogue.png)
 
@@ -130,12 +130,12 @@ Editable source: [`docs/diagrams/p1-error-catalogue.drawio`](https://github.com/
 
 None of these mistakes were caused by a failure of JavaScript logic. Every line of code generated by Bob was syntactically valid and followed sensible programming practices.
 
-The failures stemmed from two fundamental obstacles in AI-driven legacy modernization: **the holistic lifecycle gap**, and **implicit assembler conventions**.
+The failures came from two causes: **the lifecycle gap** and **implicit assembler conventions**.
 
-### 1. The Holistic Lifecycle Gap (Local Logic vs System Flow)
-In legacy codebases, systems are heavily fragmented. The Asteroids source spans 15 separate files, with state transitions triggered by hardware interrupt flags, jump tables, and memory-mapped I/O registers.
+### 1. The Lifecycle Gap (Local Logic vs System Flow)
+Legacy systems are fragmented. The Asteroids source spans 15 separate files, with state transitions triggered by hardware interrupt flags, jump tables, and memory-mapped I/O registers.
 
-An LLM excels at local comprehension: translating a 40-line assembly subroutine into a clean JavaScript math function is straightforward. However, an LLM initially struggles to construct a **holistic view of the overall application lifecycle**. It translates the parts without automatically orchestrating the global state machine:
+An LLM excels at local comprehension: translating a 40-line assembly subroutine into a clean JavaScript math function is straightforward. An LLM initially struggles to see the **whole application lifecycle**. It translates the parts without automatically orchestrating the global state machine:
 
 ![v1 Game States: Attract, Playing, WaveClear, GameOver, HiScore](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/v1-game-states.png)
 
@@ -230,17 +230,17 @@ When modernizing a classic codebase, one must distinguish between unintended bug
 
 Editable source: [`docs/diagrams/p1-bug-vs-enhancement.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p1-bug-vs-enhancement.drawio).
 
-Preserving fidelity does not mean cloning hardware limitations; it means ensuring that game mechanics, physics, and mathematical constraints behave identically to the original specification.
+Fidelity is about behavior: game mechanics, physics and mathematical constraints must match the original specification, while hardware limitations can be replaced.
 
 ---
 
 ## 9. Key Takeaways for LLM Legacy Modernization
 
-Porting legacy code with an AI assistant provides tremendous leverage, reducing days of tedious boilerplate transcription to hours. However, treating the initial output as finished code is dangerous.
+Porting legacy code with an AI assistant cut days of boilerplate transcription to hours, but treating the first output as finished code is dangerous.
 
 ### The Modernization Checklist
 
-1. **Map the global lifecycle before translating subroutines**: Legacy systems scatter state transitions across disjoint files. Provide the LLM with an explicit state transition diagram (Attract -> Playing -> Round Clear -> GameOver -> HiScore) so it connects local routines into a holistic lifecycle from the start.
+1. **Map the global lifecycle before translating subroutines**: Legacy systems scatter state transitions across disjoint files. Provide the LLM with an explicit state transition diagram (Attract -> Playing -> Round Clear -> GameOver -> HiScore) so it connects local routines into the full lifecycle from the start.
 2. **Explicitly extract assembler directives first**: Always inspect files for `.RADIX`, `.BYTE`, `.WORD`, and endianness directives before feeding code to an LLM. Instruct the model specifically on numeric base conventions.
 3. **Beware of packed binary representations**: Legacy architectures frequently pack numbers into BCD, bitfields, or high/low byte registers. Ensure the prompt explicitly explains score and math representations.
 4. **Preserve internal units**: Do not convert legacy unit scales to modern conventions mid-translation. Keep the original integer coordinate grids and scale only at rendering boundaries.
@@ -251,11 +251,11 @@ Porting legacy code with an AI assistant provides tremendous leverage, reducing 
 
 ## Summary and What Comes Next
 
-In roughly two hours, Bob translated 3,653 lines of 6502 assembly into a functional, self-contained JavaScript game. In another two hours of telemetry and headless testing, every convention-related discrepancy was isolated and resolved, yielding the frozen, verified **Version 2** baseline.
+In roughly two hours, Bob translated 3,653 lines of 6502 assembly into a functional, self-contained JavaScript game. In another two hours of telemetry and headless testing, the convention-related discrepancies I found were isolated and resolved, yielding the frozen, verified **Version 2** baseline.
 
-With the game physics, state loop, and mathematical models fully modernized, the code became something new: an open, inspectable environment ready for automated control.
+With the physics, state loop and math modernized, the code was an open, inspectable environment ready for automated control.
 
-In **Part 2**, we explore what happens when we expose the game state as pure data: building an autonomous rule-based pilot in 40 lines of code, looking ahead 90 ticks with physics simulation, and proving the pilot never cheats.
+In **Part 2**, I show what happens when the game state is exposed as plain data: building an autonomous rule-based pilot in 40 lines of code, looking ahead 90 ticks with physics simulation, and proving the pilot never cheats.
 
 ---
 

@@ -172,7 +172,7 @@ These are the numbers after a correction. An earlier table in the repo showed 43
 
 ## 10. Takeaways: Making Software Agent-Ready
 
-None of this was agent technology. It was ordinary engineering that happened to be the right shape:
+This was ordinary engineering that happened to be the right shape for agents:
 
 1. **Make the state explicit.** One function that returns the whole world as plain data, as a copy.
 2. **Keep the action interface narrow.** Five booleans into the same table a person uses. The less an agent can do, the easier it is to reason about and to check.

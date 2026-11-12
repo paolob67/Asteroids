@@ -196,7 +196,7 @@ Order matters: numbers first, because Parts 2 and 3 quote them.
 | W2 | Draft Part 2 | G7 to G11 | 2 |
 | W3 | Draft Part 3 | G12 to G16 | 3 |
 | T1 | Technical review: every number, snippet and link checked against the repo | W1 to W3 | all | Done 2026-11-12. Fixed: source set size (15 files, 5,511 lines), BCD digit description and `CMP`/`BCS` snippet, `CPY I,35`, `simplePilot` physics check tick count (257,464), latency arithmetic in Part 3. Not checked: author-supplied facts (session times, prompts) and the claim that small saucers appeared after two waves. |
-| H1 | Humanizer pass (`linkedin-humanizer`, default forensic plus strict mode), then audit mode | T1 | all |
+| H1 | Humanizer pass (`linkedin-humanizer`, default forensic plus strict mode), then audit mode | T1 | all | Done 2026-11-12. Scanner: `scripts/dev/audit_ai_tells.py`. Only Part 1 needed edits (promotional wording and the word "holistic"); Parts 2 and 3 had one touch each. |
 | P1 | Final formatting for LinkedIn (cover image, snippet images, clip upload) | H1 | all |
 | P2 | Adapt for IBM Developer | P1 | all |
 
