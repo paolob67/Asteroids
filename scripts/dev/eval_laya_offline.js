@@ -1,186 +1,129 @@
 #!/usr/bin/env node
-// Evaluates Laya-MLX offline on pilot log records (JSONL).
-// Usage: node scripts/dev/eval_laya_offline.js [log.jsonl] [limit] [format] [endpoint]
-//   e.g. node scripts/dev/eval_laya_offline.js /tmp/smart_test.jsonl 100 egocentric http://127.0.0.1:8700/v1/systemone
+// Evaluates Laya-MLX offline on pilot log records (JSONL from export_pilot_log.js).
+// Usage: node scripts/dev/eval_laya_offline.js [log.jsonl] [limit] [level] [endpoint] [game.html]
+//   e.g. node scripts/dev/eval_laya_offline.js /tmp/smart_0.jsonl 400 facts
+//
+// The state text is built from the recorded snapshot ONLY, by the game's own layaFormatState
+// (loaded from the game file), at the chosen prompt level (verdict, facts or raw, see
+// measure_pilots.js). The recorded decision and the situation label are used only to score the
+// answer, never to write the prompt. An earlier version of this script chose its sentence from
+// the situation label (hyper, dodge, brake), which handed the model the answer; any figure from
+// that version should be discarded.
+//
+// Label: smartPilot's keys mapped onto the four actions of the prompt:
+//   hyper -> hyperspace; left+thrust -> turn_left_and_thrust; right+thrust -> turn_right_and_thrust;
+//   anything else (aim, turn only, brake) -> stay_and_fire.
+// The mapping is coarse (a brake is thrust without a turn, and has no option), so the per-situation
+// rows matter more than the total. The majority-class rate is printed as the baseline to beat.
 
 const fs = require('fs');
+const path = require('path');
+const { loadGame } = require('./lib/load_game');
 
-const logFile = process.argv[2] || '/tmp/smart_test.jsonl';
-const limit = Number(process.argv[3] || 100);
-const format = process.argv[4] || 'egocentric'; // 'egocentric', 'why_summary', 'keyvalue'
+const logFile = process.argv[2] || '/tmp/smartPilot_0.jsonl';
+const limit = Number(process.argv[3] || 400);
+const level = process.argv[4] || 'facts';
 const endpoint = process.argv[5] || 'http://127.0.0.1:8700/v1/systemone';
+const gameFile = process.argv[6] || path.join(__dirname, '../../asteroids.html');
+const onlySituations = process.argv[7] && process.argv[7] !== 'all' ? process.argv[7].split(',') : null;   // e.g. dodge,hyper to enrich the rare cases
+// Option wording: by default the one that goes with the level (verdict text for verdict, neutral for the others).
+// Setting it separately crosses state text and option text (the 2x2 that tells which of the two matters).
+const options = process.argv[8] || (level === 'verdict' ? 'verdict' : 'neutral');
+if (!['verdict', 'neutral'].includes(options)) { console.error('options must be verdict or neutral'); process.exit(2); }
+if (!['verdict', 'facts', 'raw'].includes(level)) { console.error('level must be verdict, facts or raw'); process.exit(2); }
+
+const game = loadGame(gameFile)(`
+  return {
+    text: snap => { layaPromptLevel = '${level}'; return layaFormatState(snap); },
+    // What the original verdict sentence for the same snapshot tells the model to do (the code's rule).
+    verdictText: snap => { layaPromptLevel = 'verdict'; return layaFormatState(snap); },
+    questions: ${options === 'verdict' ? 'LAYA_QUESTIONS' : 'LAYA_QUESTIONS_NEUTRAL'},
+  };
+`);
+
+// The action a verdict sentence spells out: Fatal -> hyperspace, "turn left/right and thrust" -> that, Safe -> stay_and_fire.
+function impliedAction(text) {
+  if (/Fatal collision emergency/.test(text)) return 'hyperspace';
+  const m = /turn (left|right) and thrust/.exec(text);
+  return m ? `turn_${m[1]}_and_thrust` : 'stay_and_fire';
+}
 
 function mapExpertAction(rec) {
   const d = rec.decision;
-  const sit = rec.situation;
-  if (d.hyper || sit === 'hyper') return 'hyperspace';
+  if (d.hyper || rec.situation === 'hyper') return 'hyperspace';
   if (d.left && d.thrust) return 'turn_left_and_thrust';
   if (d.right && d.thrust) return 'turn_right_and_thrust';
-  if (d.thrust && !d.left && !d.right) return 'thrust_only';
-  if (d.left && !d.thrust) return 'turn_left_only';
-  if (d.right && !d.thrust) return 'turn_right_only';
   return 'stay_and_fire';
 }
-
-function formatEgocentricState(snap, why, sit) {
-  const ship = snap.ship || {};
-  const shipAngleDeg = ((ship.angle || 0) * 360) / 256;
-  const speed = Math.hypot(ship.vx || 0, ship.vy || 0);
-
-  let nearestDist = Infinity;
-  let nearestRelAngle = 0;
-  let nearestClosingSpeed = 0;
-  let nearestType = 'none';
-
-  const items = (snap.asteroids || []).filter(a => !a.exploding);
-  if (snap.saucer && !snap.saucer.exploding) items.push({ ...snap.saucer, isSaucer: true });
-
-  for (const item of items) {
-    let dx = item.x - ship.x;
-    let dy = item.y - ship.y;
-    if (dx > 4096) dx -= 8192; else if (dx < -4096) dx += 8192;
-    if (dy > 3072) dy -= 6144; else if (dy < -3072) dy += 6144;
-    const dist = Math.hypot(dx, dy);
-    if (dist < nearestDist) {
-      nearestDist = dist;
-      nearestType = item.isSaucer ? 'saucer' : (item.size === 2 ? 'large rock' : item.size === 1 ? 'medium rock' : 'small rock');
-      const itemBearingDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
-      let rel = itemBearingDeg - shipAngleDeg;
-      while (rel > 180) rel -= 360;
-      while (rel < -180) rel += 360;
-      nearestRelAngle = Math.round(rel);
-      const relVx = (item.vx || 0) - (ship.vx || 0);
-      const relVy = (item.vy || 0) - (ship.vy || 0);
-      nearestClosingSpeed = -Math.round((dx * relVx + dy * relVy) / (dist || 1));
-    }
-  }
-
-  if (sit === 'hyper') {
-    return `Critical collision emergency. An unavoidable impact is occurring in fewer than 8 ticks. Steering cannot clear the ship.`;
-  }
-  if (sit === 'dodge') {
-    const side = nearestRelAngle > 0 ? 'right' : 'left';
-    const dodgeDir = side === 'right' ? 'left' : 'right';
-    return `Warning: collision threat from ${nearestType} approaching from the ${side} at closing speed ${nearestClosingSpeed} px/tick. Pilot must turn ${dodgeDir} and thrust to clear flight path.`;
-  }
-  if (sit === 'brake') {
-    return `Drift warning: ship speed is ${speed.toFixed(1)} px/tick. Pilot needs to counter-steer and thrust to stabilize and brake.`;
-  }
-  return `Safe conditions: airspace clear of immediate collisions. Ship heading ${Math.round(shipAngleDeg)} deg, nearest rock at safe distance ${Math.round(nearestDist)} units. Aim nose at target and fire.`;
-}
-
-function formatWhySummary(snap, why, sit) {
-  return `Flight situation (${sit}): ${why}`;
-}
-
-function formatKeyValueState(snap) {
-  const ship = snap.ship || {};
-  return `Ship: pos=(${ship.x}, ${ship.y}), speed=${Math.hypot(ship.vx || 0, ship.vy || 0).toFixed(1)}, angle=${ship.angle}. ` +
-    `Asteroids count=${(snap.asteroids || []).length}. Saucer=${snap.saucer ? 'active' : 'none'}.`;
-}
-
-function getStateText(snap, why, sit, fmt) {
-  if (fmt === 'egocentric') return formatEgocentricState(snap, why, sit);
-  if (fmt === 'why_summary') return formatWhySummary(snap, why, sit);
-  return formatKeyValueState(snap);
-}
-
-const actionQuestions = {
-  action: {
-    type: 'choice',
-    instructions: 'Determine the best tactical flight maneuver for the ship.',
-    criteria: {
-      stay_and_fire: 'Safe airspace. Aim weapons and fire torpedoes at target rocks or saucer.',
-      turn_left_and_thrust: 'Threat approaching from right. Turn counter-clockwise and accelerate away to dodge.',
-      turn_right_and_thrust: 'Threat approaching from left. Turn clockwise and accelerate away to dodge.',
-      turn_left_only: 'Adjust heading left towards target without accelerating.',
-      turn_right_only: 'Adjust heading right towards target without accelerating.',
-      thrust_only: 'Accelerate forward or counter-thrust against drift.',
-      hyperspace: 'Unavoidable collision within 8 ticks. Emergency hyperspace escape jump.'
-    }
-  }
-};
 
 async function evaluate() {
   if (!fs.existsSync(logFile)) {
     console.error(`Log file not found: ${logFile}`);
     process.exit(1);
   }
-
   const lines = fs.readFileSync(logFile, 'utf8').trim().split('\n').filter(Boolean);
-  const sample = lines.slice(0, limit).map(l => JSON.parse(l));
+  const all = lines.map(l => JSON.parse(l)).filter(r => game.text(r.snapshot) && (!onlySituations || onlySituations.includes(r.situation)));
+  const stride = Math.max(1, Math.floor(all.length / limit));   // evenly spaced, not the first N (those are early-game "stay" ticks)
+  const sample = all.filter((_, i) => i % stride === 0).slice(0, limit);
 
-  console.log(`Evaluating ${sample.length} records using format='${format}' against ${endpoint}...`);
+  console.log(`Evaluating ${sample.length} records, level='${level}', options='${options}', against ${endpoint}...`);
 
+  const classes = {};
+  const rule = { total: 0, agree: 0, byAction: {} };   // agreement with the verdict sentence's own advice
   let correct = 0;
-  let top2Correct = 0;
   const sitStats = {};
+  const confusion = {};
   const latencies = [];
 
-  for (let i = 0; i < sample.length; i++) {
-    const rec = sample[i];
-    const expertAction = mapExpertAction(rec);
-    const stateText = getStateText(rec.snapshot, rec.why, rec.situation, format);
-
-    const payload = {
-      state: stateText,
-      questions: actionQuestions
-    };
-
+  for (const rec of sample) {
+    const expert = mapExpertAction(rec);
+    classes[expert] = (classes[expert] || 0) + 1;
     const t0 = performance.now();
-    let resData;
+    let data;
     try {
       const resp = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ state: game.text(rec.snapshot), questions: game.questions }),
       });
-      resData = await resp.json();
+      data = await resp.json();
     } catch (e) {
-      console.error(`Request ${i} failed:`, e.message);
+      console.error('request failed:', e.message);
       continue;
     }
-    const t1 = performance.now();
-    latencies.push(t1 - t0);
-
-    const ans = resData.answers?.action;
-    const predicted = ans?.choice;
-    const probs = ans?.probabilities || {};
-
-    const sortedOptions = Object.entries(probs).sort((a, b) => b[1] - a[1]).map(e => e[0]);
-    const isTop1 = predicted === expertAction;
-    const isTop2 = sortedOptions.slice(0, 2).includes(expertAction);
-
-    if (isTop1) correct++;
-    if (isTop2) top2Correct++;
-
+    latencies.push(performance.now() - t0);
+    const predicted = data.answers?.action?.choice;
+    const ok = predicted === expert;
+    if (ok) correct++;
     const sit = rec.situation || 'unknown';
-    if (!sitStats[sit]) sitStats[sit] = { total: 0, top1: 0, top2: 0 };
+    sitStats[sit] = sitStats[sit] || { total: 0, ok: 0 };
     sitStats[sit].total++;
-    if (isTop1) sitStats[sit].top1++;
-    if (isTop2) sitStats[sit].top2++;
-
-    if (i < 8 || (!isTop1 && i < 20)) {
-      console.log(`[#${i}] sit=${sit.padEnd(5)} expert=${expertAction.padEnd(20)} pred=${(predicted || '').padEnd(20)} top1=${isTop1 ? 'PASS' : 'FAIL'} conf=${(ans?.confidence || 0).toFixed(3)} lat=${(t1-t0).toFixed(1)}ms`);
-    }
+    if (ok) sitStats[sit].ok++;
+    const implied = impliedAction(game.verdictText(rec.snapshot));
+    rule.total++;
+    rule.byAction[implied] = rule.byAction[implied] || { total: 0, agree: 0 };
+    rule.byAction[implied].total++;
+    if (predicted === implied) { rule.agree++; rule.byAction[implied].agree++; }
+    const key = `${expert} -> ${predicted}`;
+    confusion[key] = (confusion[key] || 0) + 1;
   }
 
-  const avgLatency = latencies.length ? (latencies.reduce((a, b) => a + b, 0) / latencies.length).toFixed(1) : 0;
-  const p95Latency = latencies.length ? latencies.sort((a, b) => a - b)[Math.floor(latencies.length * 0.95)].toFixed(1) : 0;
-
+  const n = sample.length;
+  const majority = Math.max(...Object.values(classes));
+  latencies.sort((a, b) => a - b);
   console.log('\n================ OFFLINE EVALUATION RESULTS ================');
-  console.log(`Total records evaluated: ${sample.length}`);
-  console.log(`Top-1 Accuracy:          ${correct}/${sample.length} (${((correct / sample.length) * 100).toFixed(1)}%)`);
-  console.log(`Top-2 Accuracy:          ${top2Correct}/${sample.length} (${((top2Correct / sample.length) * 100).toFixed(1)}%)`);
-  console.log(`Mean Latency:            ${avgLatency} ms (p95: ${p95Latency} ms)`);
-  console.log('------------------------------------------------------------');
-  console.log('Breakdown by situation:');
-  for (const [sit, st] of Object.entries(sitStats)) {
-    const pct1 = ((st.top1 / st.total) * 100).toFixed(1);
-    const pct2 = ((st.top2 / st.total) * 100).toFixed(1);
-    console.log(`  ${sit.padEnd(8)}: Top-1 = ${st.top1}/${st.total} (${pct1}%), Top-2 = ${st.top2}/${st.total} (${pct2}%)`);
-  }
+  console.log(`Level: ${level}   options: ${options}   records: ${n}`);
+  console.log(`Accuracy:            ${correct}/${n} (${(100 * correct / n).toFixed(1)}%)`);
+  console.log(`Majority baseline:   ${majority}/${n} (${(100 * majority / n).toFixed(1)}%)   labels: ${JSON.stringify(classes)}`);
+  console.log(`Median latency:      ${latencies.length ? latencies[Math.floor(latencies.length / 2)].toFixed(1) : 'n/a'} ms`);
+  console.log('By situation (smartPilot):');
+  for (const [sit, st] of Object.entries(sitStats)) console.log(`  ${sit.padEnd(8)} ${st.ok}/${st.total} (${(100 * st.ok / st.total).toFixed(1)}%)`);
+  console.log(`Agreement with the action the verdict sentence implies (the code's rule): ${rule.agree}/${rule.total} (${(100 * rule.agree / rule.total).toFixed(1)}%)`);
+  for (const [a, v] of Object.entries(rule.byAction)) console.log(`  rule says ${a.padEnd(22)} ${v.agree}/${v.total} (${(100 * v.agree / v.total).toFixed(1)}%)`);
+  console.log('Confusion (expert -> model):');
+  for (const [k, v] of Object.entries(confusion).sort((a, b) => b[1] - a[1])) console.log(`  ${String(v).padStart(4)}  ${k}`);
   console.log('============================================================');
+  process.exit(0);   // the game script starts a health-check interval that would keep Node alive
 }
 
 evaluate();

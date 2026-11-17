@@ -2395,6 +2395,12 @@ let layaPending = false;
 let layaLastAction = { why: 'Laya initialized: waiting for first decision.' };
 let layaLastTick = 0;
 let layaLatencies = [];
+// What the state text tells the model (set by the measurement harness, default for play is 'verdict'):
+//   'verdict' : the code decides (Safe, Danger, Fatal), names the side and the manoeuvre; the model confirms it.
+//   'facts'   : the code reports the 3 nearest objects with bearing, distance, closing speed and ticks to impact;
+//               no verdict, no advice. The model must find the threat and choose the manoeuvre.
+//   'raw'     : the code reports only wrapped offsets and velocities in world axes; the model does all the geometry.
+let layaPromptLevel = 'verdict';
 
 function layaFormatState(s) {
   const sh = s.ship;
@@ -2402,6 +2408,7 @@ function layaFormatState(s) {
   const shipAngleDeg = ((sh.angle || 0) * 360) / 256;
   const speed = Math.hypot(sh.vx || 0, sh.vy || 0);
 
+  const objs = [];
   let nearestDist = Infinity;
   let nearestRelAngle = 0;
   let nearestClosingSpeed = 0;
@@ -2427,6 +2434,10 @@ function layaFormatState(s) {
     const relVx = (item.vx || 0) - (sh.vx || 0);
     const relVy = (item.vy || 0) - (sh.vy || 0);
     const closing = -Math.round((dx * relVx + dy * relVy) / (dist || 1));
+    objs.push({
+      dist, rel: Math.round(rel), closing, dx: Math.round(dx), dy: Math.round(dy), rvx: relVx, rvy: relVy,
+      type: item.isSaucer ? 'saucer' : (item.size === 2 ? 'large rock' : item.size === 1 ? 'medium rock' : 'small rock')
+    });
 
     if (dist < nearestDist) {
       nearestDist = dist;
@@ -2447,6 +2458,20 @@ function layaFormatState(s) {
     }
   }
 
+  if (layaPromptLevel === 'facts' || layaPromptLevel === 'raw') {
+    objs.sort((a, b) => a.dist - b.dist);
+    const near = objs.slice(0, 3);
+    if (layaPromptLevel === 'raw') {
+      const parts = near.map((o, i) => `${i + 1}) ${o.type}: dx=${o.dx} dy=${o.dy} rel_vx=${o.rvx.toFixed(1)} rel_vy=${o.rvy.toFixed(1)}`);
+      return `Ship heading ${Math.round(shipAngleDeg)} deg, vx=${(sh.vx || 0).toFixed(1)} vy=${(sh.vy || 0).toFixed(1)}. Objects: ${parts.join('; ') || 'none'}.`;
+    }
+    const parts = near.map((o, i) => {
+      const side = o.rel > 0 ? `${o.rel} deg right of the nose` : o.rel < 0 ? `${-o.rel} deg left of the nose` : 'dead ahead';
+      const motion = o.closing > 0 ? `closing at ${o.closing} px/tick, impact in ${Math.round(o.dist / o.closing)} ticks` : `moving away at ${-o.closing} px/tick`;
+      return `${i + 1}) ${o.type}, ${Math.round(o.dist)} units away, ${side}, ${motion}`;
+    });
+    return `Ship speed ${speed.toFixed(1)} px/tick. Nearest objects: ${parts.join('; ') || 'none'}.`;
+  }
   if (imminentThreat && minThreatTtc <= 8) {
     return `Situation: Fatal collision emergency. Unavoidable impact with ${imminentThreat.type} in ${Math.round(minThreatTtc)} ticks. Emergency hyperspace jump required.`;
   }
@@ -2471,6 +2496,20 @@ const LAYA_QUESTIONS = {
   }
 };
 
+// Same four actions, but the option text describes the action only, never the situation that calls for it.
+const LAYA_QUESTIONS_NEUTRAL = {
+  action: {
+    type: 'choice',
+    instructions: 'Choose the action that keeps the ship alive while it destroys rocks and saucers.',
+    criteria: {
+      stay_and_fire: 'Keep the current course and keep aiming and shooting at rocks.',
+      turn_left_and_thrust: 'Rotate left and accelerate.',
+      turn_right_and_thrust: 'Rotate right and accelerate.',
+      hyperspace: 'Jump to a random place on the screen. The jump can destroy the ship.'
+    }
+  }
+};
+
 let layaServerOnline = false;
 let layaLastFailTime = 0;
 let layaFallbackLogged = false;
@@ -2491,7 +2530,7 @@ function layaPilot(s) {
       fetch(LAYA_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: stateText, questions: LAYA_QUESTIONS })
+        body: JSON.stringify({ state: stateText, questions: layaPromptLevel === 'verdict' ? LAYA_QUESTIONS : LAYA_QUESTIONS_NEUTRAL })
       }).then(r => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();

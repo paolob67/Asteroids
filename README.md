@@ -4,7 +4,7 @@ JavaScript canvas port of the original Atari Asteroids 6502 source, published at
 
 Open [`asteroids.html`](asteroids.html) in a browser to play. No build step, no dependencies.
 
-The page shows the game on a 4:3 monitor on the left. On the right, the top panel shows the game state (`snapshot()`) and the bottom panel shows the decision (the keys pressed and why). The **Manual | Simple | Smart | Laya** selector in the Decision panel chooses who flies: you with the keyboard, the simple v2 pilot ([Version 2](docs/VERSION_2.md#5-how-well-the-autopilot-plays)), the v3 smart pilot built on rules implemented in the code (it predicts the next 90 ticks and dodges with thrust, [Version 3](docs/VERSION_3.md#3-how-well-it-plays)), or the v3 pilot built on a decision model, `Laya-MLX`, running locally on Apple Silicon ([Laya Plan](docs/LAYA.md)).
+The page shows the game on a 4:3 monitor on the left. On the right, the top panel shows the game state (`snapshot()`) and the bottom panel shows the decision (the keys pressed and why). The **Manual | Simple | Smart | Laya** selector in the Decision panel chooses who flies: you with the keyboard, the simple v2 pilot ([Version 2](docs/VERSION_2.md#5-how-well-the-autopilot-plays)), the v3 smart pilot built on rules implemented in the code (it predicts the next 90 ticks and dodges with thrust, [Version 3](docs/VERSION_3.md#3-how-well-it-plays)), or the v3 pilot with a decision model in the loop, `Laya-MLX`, running locally on Apple Silicon ([Laya Plan](docs/LAYA.md)). With the default prompt the code writes the verdict into the text the model reads; the prompt ablation in the Laya plan shows what the model does without it.
 
 ## Versions
 
@@ -33,7 +33,7 @@ The first start downloads the model weights from Hugging Face. Details, model op
 - [Article series](docs/articles/README.md): write-up plan, outlines and LinkedIn texts for the three-part series on code modernization with Bob.
 - [Version 3: two new autopilots, rules in the code and a decision model](docs/VERSION_3.md): how `smartPilot` (rule-based lookahead) and `layaPilot` (decision model) fly, proof that they move the ship only through the keys, and measurements of both against the v2 pilot.
 - [Decision models and autopilot design](docs/DECISION_MODELS.md): overview of decision models (System One models like Laya, Kev, Jev, CLM), local feasibility analysis for Apple Silicon M1, selection of `laya-mlx` and `Kev` as local candidates, the `/v1/systemone` protocol, and autopilot architecture.
-- [Laya-MLX local autopilot plan](docs/LAYA.md): serving specifications, sub-frame latency benchmarks on Apple Silicon M1, ModernBERT architecture, and phased implementation plan for `laya-mlx`.
+- [Laya-MLX local autopilot plan](docs/LAYA.md): serving specifications, measured latency on Apple Silicon M1, ModernBERT architecture, the phased plan for `laya-mlx` and the prompt ablation (verdict, facts, raw).
 - [Laya autopilot implementation guide](docs/LAYA_IMPLEMENTATION.md): end-to-end data flow, situation prompting, asynchronous browser loop, Python MLX server, low-level actuation, and offline fallback.
 - [CLM reference](docs/CLM.md): architecture facts, Qwen3-8B encoder with dual projection heads, serving stack, and remote GPU deployment notes for the Contrastive Language Model.
 - [Version 2: restored behavior, state, decisions, autopilot](docs/VERSION_2.md): what changed from v1 with measurements, how the state is represented, how the pilot decides, and how well it plays.
@@ -70,7 +70,9 @@ node scripts/dev/browser_check.js 60 smart,laya --json=out.json   # real Chrome:
 .venv/bin/python scripts/dev/bench_laya_latency.py                # laya-mlx latency by device, precision and text length
 node scripts/dev/death_causes.js asteroids.html 1000000 smartPilot   # classify every ship loss
 node scripts/dev/export_pilot_log.js asteroids.html 600000 smartPilot 0 /tmp/smart_0.jsonl   # pilot log for offline model tests
-node scripts/dev/eval_laya_offline.js /tmp/smart_0.jsonl 100      # Laya against a recorded pilot log
+node scripts/dev/eval_laya_offline.js /tmp/smart_0.jsonl 300 facts   # Laya against a recorded pilot log; args: log limit level(verdict|facts|raw) endpoint game situations|all options(verdict|neutral)
+node scripts/dev/measure_pilots.js asteroids.html 8000 layaPilot 12 --lag=6 --level=facts --json=out.json   # prompt ablation (levels: verdict, facts, raw)
+python3 scripts/dev/analyze_ablation.py docs/articles/data        # compare the three prompt levels
 ```
 
 ### Article images
@@ -85,7 +87,7 @@ node scripts/dev/make_article_tables.js docs/articles/linkedin/tables.json docs/
 ## Repository layout
 
 ```
-asteroids.html        working copy of the game (identical to version 3 at the freeze)
+asteroids.html        working copy of the game (identical to version 3 as re-frozen on 2026-11-17)
 versions/v1/          frozen version 1 + SHA256SUMS
 versions/v2/          frozen version 2 + SHA256SUMS
 versions/v3/          frozen version 3 + SHA256SUMS

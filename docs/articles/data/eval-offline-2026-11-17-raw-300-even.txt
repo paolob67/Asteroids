@@ -1,0 +1,23 @@
+Evaluating 300 records, level='raw', options='neutral', against http://127.0.0.1:8700/v1/systemone...
+
+================ OFFLINE EVALUATION RESULTS ================
+Level: raw   options: neutral   records: 300
+Accuracy:            125/300 (41.7%)
+Majority baseline:   284/300 (94.7%)   labels: {"stay_and_fire":284,"turn_right_and_thrust":8,"turn_left_and_thrust":8}
+Median latency:      122.5 ms
+By situation (smartPilot):
+  stay     105/234 (44.9%)
+  dodge    19/58 (32.8%)
+  brake    1/8 (12.5%)
+Agreement with the action the verdict sentence implies (the code's rule): 119/300 (39.7%)
+  rule says stay_and_fire          119/270 (44.1%)
+  rule says turn_left_and_thrust   0/20 (0.0%)
+  rule says turn_right_and_thrust  0/10 (0.0%)
+Confusion (expert -> model):
+   159  stay_and_fire -> hyperspace
+   125  stay_and_fire -> stay_and_fire
+     7  turn_right_and_thrust -> hyperspace
+     5  turn_left_and_thrust -> hyperspace
+     3  turn_left_and_thrust -> stay_and_fire
+     1  turn_right_and_thrust -> stay_and_fire
+============================================================

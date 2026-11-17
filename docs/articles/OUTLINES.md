@@ -83,13 +83,15 @@ Target length: 1,500 to 2,500 words each, plus diagrams, short clips and short c
 
 ---
 
-## Part 3: From rules to a decision model: a model can fly the ship
+## Part 3: From rules to a decision model: who actually decides?
 
-**Decision (2026-11-10):** Part 3 is limited to a feasibility claim plus honest observations. The measurements are not enough for a verdict on rules against models, and the Laya pilot has not been optimized (latency, prompts and questions are untouched). The rule-based pilots were tuned; Laya was not.
+**Decision (2026-11-10):** Part 3 is limited to a feasibility claim plus honest observations. The measurements are not enough for a verdict on rules against models, and the Laya pilot has not been optimized (latency and questions are untouched). The rule-based pilots were tuned; Laya was not.
 
-**Working hook:** a 421M parameter decision model, running locally and answering a typed question about the ship's situation, can fly an arcade game. It scores close to the rule-based pilot and survives play for minutes at a time. It also reacts about 100 ms late and loses ships to rocks. This article shows how it is wired, what it does on screen, and what is still to be tested.
+**Revision (2026-11-17):** a review found that the original prompt contained the decision (the code tested for a threat, graded urgency, picked the side and wrote "turn left and thrust" into the sentence). A prompt ablation (T10, T11 in the test log, F8 to F10 in the findings) was run. The article now reports both: the first result as a measurement of the code's rule plus a model matching phrases, and the ablation as the test of what the model does alone.
 
-**Claim (only this):** a pilot built on a decision model is possible and is capable of playing the game. No claim is made that it is better or worse than rules, beyond reporting the first numbers with their limits.
+**Working hook:** a 421M parameter decision model, running locally, can sit in the loop of an arcade game and score close to the rule-based pilot. But the code had written the answer into the sentence. With the verdict removed the model stopped dodging (97.5% `stay_and_fire`) and with raw numbers it could not fly (122 losses).
+
+**Claim (only this):** a decision model can be put in the control loop and the game plays; with the code's verdict in the prompt the pilot measures the code, and with only facts this checkpoint, prompted this way, did not dodge. No claim is made that a decision model cannot choose a tactic, and fine-tuning was not tested.
 
 | # | Section | Content | Assets |
 |---|---------|---------|--------|
@@ -97,16 +99,17 @@ Target length: 1,500 to 2,500 words each, plus diagrams, short clips and short c
 | 2 | Choosing a model for a laptop | Laya, Kev, d1, Jev, CLM, Clef on an M1 with 16 GB and about 16 GB of disk; why CLM-8B is out; why Laya runs first. Latency figures for the other models are from their documentation and were not measured here | Table from `DECISION_MODELS.md` |
 | 3 | The `/v1/systemone` contract | A request with a state sentence and a question with options; a response with a choice and probabilities | Snippet S7 |
 | 4 | Architecture | Browser at 60 Hz, a non-blocking `fetch`, and a Python MLX server on `127.0.0.1:8700`; the ship follows the latest answer | G13 |
-| 5 | Turning geometry into a sentence | Toroidal shortest path, bearing, closing speed, time to collision; Safe, Danger, Fatal emergency | Snippet S8 |
-| 6 | Who does what | The model picks a tactic among four (`stay_and_fire`, `turn_left_and_thrust`, `turn_right_and_thrust`, `hyperspace`); the code does the lead aiming and the key timing. Say plainly that Laya shares the target picker with `smartPilot` (`simplePilot` has its own), which is a likely reason the score is close to `smartPilot` | G14, snippet S9 |
+| 5 | Turning geometry into a sentence | Toroidal shortest path, bearing, closing speed, time to collision; Safe, Danger, Fatal emergency. State plainly that this sentence contains the verdict, and introduce the facts and raw prompt levels | Snippet S8 |
+| 6 | Who does what | With the verdict prompt the code decides threat, urgency and dodge side, and the model picks among four options that repeat the sentence's phrases; the code also does the lead aiming and the key timing. Laya shares the target picker with `smartPilot` (`simplePilot` has its own), which is a likely reason the score is close to `smartPilot` | G14, snippet S9 |
 | 7 | When the server is down | Fallback to `smartPilot`, retry every 3 s, resume without a reload | G15, V9 |
 | 8 | What we observed | (a) It plays: 12 starting points of 8,000 ticks ran with no fallback and no server error, 10,096 points per minute. (b) What it looks like: bursts of turn and thrust (3.8% of flying ticks) against short taps for `smartPilot` (1.4%). (c) How it dies: all 22 losses in the short run were rocks. (d) It uses hyperspace (19.4 per hour). (e) The decision arrives 90 to 140 ms (5 to 8 ticks) after the request. Each point is reported with its run and its limits. Gameplay observations beyond the measured ones must come from watching the clips, written by the author | C2 to C5 as needed, V5 to V8 |
-| 9 | What we have not tried yet | Latency breakdown and ways to cut it; other prompts and state sentences; other questions and action sets; a safety veto; other models; longer runs. Each is a hypothesis, not a result (see backlog in the plan, section 6b) | Roadmap diagram |
-| 10 | Rules, models, or both | Where each looks promising, stated as open: rules for geometry and aiming, a model for choosing a tactic. Closing: the next article would test the optimizations | G16 |
+| 9 | Who decides? A prompt ablation | Offline check on a recorded `smartPilot` game (150 of 150 answers follow the sentence); in play, verdict, facts and raw levels on the same 12 starting points. State the limits: one model, one wording, one run per level, no fine-tuning | `p3-ablation` table |
+| 10 | What we have not tried yet | Another facts wording or more objects; training on logged `smartPilot` decisions (upstream support unchecked); a hybrid where the simulation scores each candidate and the model chooses; latency breakdown; a safety veto; other models; longer runs. Each is a hypothesis, not a result (see backlog in the plan, section 6b) | Roadmap diagram |
+| 11 | Rules, models, or both | Where each looks promising, stated as open. A model in the loop is not a model deciding; the check is to remove the verdict and run again | G16 |
 
 **Caveats to state upfront:**
 - Only one model (`laya-mlx`) with one prompt design is tested. This is a first result, not a model comparison and not an optimized pilot.
-- There is no safety check between the model and the keys, so the numbers show the model's own behaviour.
+- There is no safety check between the model and the keys. With the verdict prompt the numbers show the code's rule, the prompt and the model together, not the model's judgement.
 - The headless Laya run is a simulation: the game waits for the real HTTP answer, then applies it 6 ticks after the request (`--lag=6`), which matches the measured latency. The browser applies answers when they arrive in real time. The article must describe this.
 - The Laya row comes from a short run (12 x 8,000 ticks, 22 losses). The rates are imprecise. Do not use the numbers to rank Laya against `simplePilot` (not statistically distinguishable); the ordering against `smartPilot` is clear but is the ordering of an untuned model against a tuned rule set.
 - The measured latency (90 to 140 ms) differs from the figure in the model's documentation (7.4 to 13.9 ms). The cause is unknown (the documented figure belongs to the 322M multilingual checkpoint; this run used the 421M `laya-mlx`, which is one untested explanation). Say so.
@@ -131,6 +134,7 @@ Target length: 1,500 to 2,500 words each, plus diagrams, short clips and short c
 | S7 | 3 | `/v1/systemone` request and response | `DECISION_MODELS.md`, `laya_server.py` |
 | S8 | 3 | Wrap offset and time to collision | `layaFormatState` |
 | S9 | 3 | Choice to keys mapping | `layaPilot` |
+| S10 | 3 | Same request at prompt level `facts` (no verdict, neutral options), id `facts-request` | `layaFormatState`, `LAYA_QUESTIONS_NEUTRAL` |
 
 ## Clip list
 

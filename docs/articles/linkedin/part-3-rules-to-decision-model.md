@@ -1,10 +1,12 @@
-# From Rules to a Decision Model: A Model Can Fly the Ship
+# From Rules to a Decision Model: Who Actually Decides?
 
 *Part 3 of the series "A journey in code modernization with Bob: from 6502 assembly to an AI autopilot"*
 
-A 421M parameter decision model, running locally on a laptop and answering a typed question about the ship's situation, can fly an arcade game. In about 25 minutes of measured play per pilot it scored close to the tuned rule-based pilot from [Part 2](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-2-building-on-a-modern-base.md). It also reacted about 100 ms late, drifted around the field, and lost ships to rocks.
+A 421M parameter decision model, running locally on a laptop and answering a typed question about the ship's situation, can sit in the loop of an arcade game. In about 25 minutes of measured play per pilot it scored close to the tuned rule-based pilot from [Part 2](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-2-building-on-a-modern-base.md). It also reacted about 100 ms late, drifted around the field, and lost ships to rocks.
 
-That is the whole claim. This article is not a verdict on rules against models. The model pilot is a first version: one model, one prompt, one question, no tuning. The rule-based pilots were tuned. What follows is how the pilot is wired, what it looks like on screen, the first numbers with their limits, and a list of what I have not tried.
+That is not the same as the model flying the ship, and a reviewer of this work pointed out why. In my first version the code decided which manoeuvre was needed and wrote it into the sentence the model read, so the model only had to match phrases. I then removed the verdict from the text and measured again. Sections 5, 6 and 9 show the result: without the verdict this model did not dodge.
+
+This article is not a verdict on rules against models. The model pilot is a first version: one model, three prompt wordings, one question, no tuning. What follows is how the pilot is wired, what it looks like on screen, the numbers with their limits, and what I have not tried.
 
 ---
 
@@ -44,7 +46,7 @@ The model sits behind a small local HTTP server (`scripts/dev/laya_server.py`, a
 
 Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/snippets.json) (`systemone-request`).
 
-(The sentence above is an example of the format. In a recorded test of the 421M model on a state like this, the probability of the chosen option was 0.97.)
+(The sentence above is an example of the format, including the verdict the code wrote into it. In a recorded test of the 421M model on a state like this, the probability of the chosen option was 0.97. With a sentence that spells out the manoeuvre, a high probability is not evidence of judgement: see section 9.)
 
 The client does not know which model is behind the endpoint, so another decision model with the same protocol could be swapped in without touching the pilot.
 
@@ -82,19 +84,25 @@ The model never sees coordinates. A few lines of JavaScript compute the geometry
 
 Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/snippets.json) (`time-to-collision`).
 
-There are three sentences the model can receive:
+In the version I first built, there are three sentences the model can receive:
 
 - **Safe** (nothing closing within 60 ticks): the ship's speed and the nearest target.
 - **Danger** (collision in 60 ticks or less): which rock or saucer, from which side, in how many ticks, and which way to turn.
 - **Fatal collision emergency** (8 ticks or less): ask for hyperspace.
 
-The geometry is still computed by code. The sentence is built from the single threat with the lowest time to collision and says nothing about any other rock. That limit comes back in section 8.
+Read that list again. The code tests whether a threat is closing, grades its urgency from the time to collision, picks the side to dodge and writes "turn left and thrust". The four options the model chooses from repeat those same phrases. That is the verdict prompt, and the decision was in the code before the model saw anything. The sentence is also built from the single threat with the lowest time to collision and says nothing about any other rock. That limit comes back in section 8.
+
+To see what the model does without that help, the page now has two more prompt levels. **Facts** lists the same objects and numbers (distance, bearing, closing speed, time to collision) with no verdict and with neutral option wording. **Raw** gives bare numbers and nothing else.
+
+![The same request at the facts level: objects with distance, bearing and time to impact, and options that describe only the action](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/snippet-facts-request.png)
+
+Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/snippets.json) (`facts-request`).
 
 ---
 
 ## 6. Who Does What
 
-The split of responsibility is narrow:
+The split of responsibility depends on the prompt level. With the verdict prompt it looks like this, and the model's part is small:
 
 ![What the model decides and what the code decides](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/p3-responsibility-split.png)
 
@@ -106,7 +114,7 @@ Code source: [`snippets.json`](https://github.com/paolob67/Asteroids/blob/main/d
 
 One fact matters for reading the results. In `stay_and_fire`, the Laya pilot aims with the same target picker as `smartPilot` (`spPickTarget`). So when its score comes out close to `smartPilot`'s, part of the reason is shared code, not model quality. `simplePilot` has its own, similar interception calculation.
 
-There is also no safety check between the model and the keys. Whatever the model picks is executed. The numbers below are therefore the model's own behaviour.
+There is also no safety check between the model and the keys. Whatever the model picks is executed. With the verdict prompt the numbers below are therefore the behaviour of the code's rule, the prompt and the model together, and the dodge direction in particular comes from the code. They are not a measure of the model's own judgement.
 
 ---
 
@@ -125,7 +133,7 @@ Editable source: [`docs/diagrams/g15-fallback-state-machine.drawio`](https://git
 
 ### How it was measured
 
-The measurement script is the one from Part 2, with the same definitions. For Laya there is one difference that must be stated. A headless run cannot let the game wait, so the script sends the real HTTP request, waits for the real answer, and applies it 6 ticks after the request (`--lag=6`). That matches what the browser does: I measured 6 to 7 ticks there.
+Everything in this section was measured with the verdict prompt, the first version. Section 9 repeats the run with the verdict removed. The measurement script is the one from Part 2, with the same definitions. For Laya there is one difference that must be stated. A headless run cannot let the game wait, so the script sends the real HTTP request, waits for the real answer, and applies it 6 ticks after the request (`--lag=6`). That matches what the browser does: I measured 6 to 7 ticks there.
 
 The Laya run is short because it is slow. At about 90 ms per answer, the long run used for the rule-based pilots would take days. So all three pilots were run together on the same short budget: **12 starting points of 8,000 ticks, about 0.41 flying hours (25 minutes) each**, the same games for every pilot. Do not compare these rows with the long-run rows in Part 2.
 
@@ -170,7 +178,7 @@ Editable source: [`docs/diagrams/p3-behaviour.drawio`](https://github.com/paolob
 
 The code explains why it drifts. `turn_left_and_thrust` holds turn and thrust for as long as the choice stays the same. There is no brake and no rule that stops thrust when the heading is right, so a dodge keeps pushing the ship after the danger has passed. It also explains why the dodge can point into a second rock: the state sentence describes only the nearest threat, and 8 of its 22 losses (36%) happened with two or more rocks closing.
 
-Latency is not in that explanation, on purpose. I suspect the late decisions play a part, but the one experiment that would isolate it, a run with an answer within one tick (`--lag=1`), took 669 seconds for one starting point and was abandoned. One thing speaks against latency as the main cause: even an instant answer would not give the pilot an action that brakes. Whether the cause is latency, the one-threat sentence or the model itself is not known.
+Latency is not in that explanation, on purpose. I suspect the late decisions play a part, but the one experiment that would isolate it, a run with an answer within one tick (`--lag=1`), took 669 seconds for one starting point and was abandoned. One thing speaks against latency as the main cause: even an instant answer would not give the pilot an action that brakes. Latency is still not isolated. The prompt ablation in section 9 adds that the dodge direction and urgency came from the code's rule, so the drift reflects that rule and the missing brake as much as the model.
 
 
 ### (d) The decision arrives late, and not as fast as documented
@@ -188,7 +196,30 @@ The 7.4 ms figure was not reached (best case 26 ms). Of the gap of about 12 time
 
 ---
 
-## 9. What I Have Not Tried Yet
+## 9. Who Decides? A Prompt Ablation
+
+The critique was simple: if the sentence says "turn left and thrust", the model has nothing to decide. I checked it two ways.
+
+**Offline, on a recorded `smartPilot` game.** I rebuilt the sentence from each recorded state, using only the snapshot (the earlier offline check had read the situation label, which leaks the answer). Of 150 records where `smartPilot` dodged or used hyperspace, the verdict prompt returned the action the sentence spells out in 150 of 150, with the original option texts and with neutral ones. Always answering "stay and fire" would score 78.0% on those records. The verdict prompt scored 61.3%, because the sentence's advice is not always what `smartPilot` did. The model followed the sentence, not the situation. With facts only and neutral options it scored 77.3% and answered "stay" for 31 of the 32 records where `smartPilot` turned and thrust. With the verdict removed from the text but the verdict wording kept in the options, it scored 11.3%: it answered "turn right" every time.
+
+**In play.** Same 12 starting points of 8,000 ticks, same server, answer applied 6 ticks late, three prompt levels:
+
+![Prompt ablation: verdict, facts and raw prompt levels compared on losses, points, thrust and hyperspace](https://raw.githubusercontent.com/paolob67/Asteroids/main/docs/diagrams/p3-ablation.png)
+
+Editable source: [`docs/diagrams/p3-ablation.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p3-ablation.drawio).
+
+What the table says:
+
+- **The verdict run reproduced the first run exactly** (22 losses, 10,096 points per minute, same losses per seed), so the comparison is fair.
+- **Facts only: the model stopped dodging.** It chose `stay_and_fire` 97.5% of the time, turned right and thrust 1.1%, never turned left, and pressed hyperspace 1.3%. Thrust fell from 3.8% to 0.8% of ticks. Points fell by about 5,000 per game (95% interval 3,509 to 6,644 lower, lower in 12 of 12). Losses were 17 against 22; the difference is not distinguishable (p = 0.73), but in 11 of the 17 losses no closing threat had been flagged. Hyperspace use rose to 1,303 per hour, and 2 games ended.
+- **Raw numbers: the model cannot fly.** 122 losses (284.9 per hour), 520 points per minute, 35 games ended, and 35.3% of flying time on hyperspace.
+- **The score advantage of the first version came from shared code.** Aiming uses `spPickTarget`, and the dodge rule was in the sentence.
+
+What this does not show. It is one model of 421M parameters, one wording of the facts, three objects in the sentence, one run per level and no tuning. It does not show that a decision model cannot choose a tactic. It shows that this checkpoint, prompted this way, did not, and that my first result was measuring the code. Whether fine-tuning would change that I have not tested. The upstream README of the `laya-mlx` port says training stays upstream, and I did not check whether the upstream project can fine-tune this checkpoint for this task. A realistic ceiling for training on logged `smartPilot` decisions is `smartPilot` itself delayed by the model's latency.
+
+---
+
+## 10. What I Have Not Tried Yet
 
 Each of these is a hypothesis. None has a result.
 
@@ -196,21 +227,21 @@ Each of these is a hypothesis. None has a result.
 
 Editable source: [`docs/diagrams/p3-not-tried.drawio`](https://github.com/paolob67/Asteroids/blob/main/docs/diagrams/p3-not-tried.drawio).
 
-Two improvement ideas also came from watching: a rule to brake or stop thrusting after a dodge for `layaPilot`, and a return to the centre after moving for `smartPilot`.
+Two improvement ideas also came from watching: a rule to brake or stop thrusting after a dodge for `layaPilot`, and a return to the centre after moving for `smartPilot`. The ablation adds three more: a different wording or more objects in the facts prompt, a model trained on logged (facts, `smartPilot` action) pairs, and a hybrid where the simulation scores each candidate manoeuvre and the model chooses among neutral outcomes such as "A: hit in 40 ticks, B: clear".
 
 ---
 
-## 10. Rules, Models, or Both
+## 11. Rules, Models, or Both
 
-I started this series to see what happens when old code becomes modern code. By Part 3 the question has moved to the boundary between rules and models, and I do not have an answer.
+I started this series to see what happens when old code becomes modern code. By Part 3 the question has moved to the boundary between rules and models, and the first answer I wrote down was wrong.
 
-What I can say from this one comparison:
+What I can say from this comparison:
 
-- **Geometry and aiming look like a job for code.** The model never sees coordinates, and the pilot that shares its target picker with the rules scores about the same as the rules.
-- **Choosing a tactic from a sentence looks like a job a model can do.** It did, with no fallback, over 25 minutes of play per pilot.
-- **The weak points of the model pilot are visible and fixable in principle.** No brake, a one-threat sentence, a late answer. None of them is a fundamental limit that I know of.
+- **Geometry, threat judgement and aiming looked like a job for code, and the data agrees.** With the verdict in the sentence the model returned the code's advice. With only facts it stopped dodging.
+- **A model in the loop is not a model deciding.** If the prompt contains the decision, the pilot measures the code that wrote it. The check is cheap: remove the verdict and run again.
+- **Whether a model can choose the tactic from facts is still open.** Not this checkpoint, with this wording and no training. A larger model, a trained one or a hybrid that gives the model neutral outcomes to choose from are the next experiments.
 
-Whether a model that chooses the tactic and code that executes it will beat a rule set that does both is the question for the next article, if the optimisations in section 9 produce results. For now, the result is the one in the title: a model can fly the ship.
+For now the result is the one in the title: the model did not decide, until I made it, and then it did not do well.
 
 ---
 
@@ -218,7 +249,7 @@ Whether a model that chooses the tactic and code that executes it will beat a ru
 
 1. **Porting** (Part 1): an LLM translates structure well and fails on conventions the source never states. Running the code against the source found what reading did not.
 2. **Building on a modern base** (Part 2): explicit state, a narrow action interface and determinism made autoplay cost lines instead of rewrites.
-3. **Rules and models** (Part 3): the same interface took a decision model as easily as a rule set, and showed where each stands today.
+3. **Rules and models** (Part 3): the same interface took a decision model as easily as a rule set, and a review plus an ablation showed that the first result measured the code that wrote the prompt, not the model.
 
 ---
 
@@ -231,6 +262,14 @@ curl -s http://127.0.0.1:8700/health
 
 # All three pilots, 12 starting points of 8,000 ticks, answer applied 6 ticks late (about 25 minutes)
 node scripts/dev/measure_pilots.js asteroids.html 8000 simplePilot,smartPilot,layaPilot 12 --lag=6 --json=out.json
+
+# Prompt ablation (verdict, facts, raw), about 25 minutes per level
+node scripts/dev/measure_pilots.js asteroids.html 8000 layaPilot 12 --lag=6 --level=facts --json=out.json
+python3 scripts/dev/analyze_ablation.py docs/articles/data
+
+# Offline check on a recorded smartPilot game
+node scripts/dev/export_pilot_log.js asteroids.html 100000 smartPilot 0 /tmp/smart_0.jsonl
+node scripts/dev/eval_laya_offline.js /tmp/smart_0.jsonl 150 facts
 
 # Latency anatomy of the model call
 .venv/bin/python scripts/dev/bench_laya_latency.py --calls 30 --json=out.json

@@ -21,7 +21,7 @@ Raw output of [`scripts/dev/measure_pilots.js`](../../../scripts/dev/measure_pil
 | Node | v26.3.1 |
 | Python | 3.12.10 |
 | Laya | `laya-mlx` 0.6.0, `mlx` 0.32.4, model `aac6fef/laya-mlx` |
-| Game file | `asteroids.html`, SHA-256 `9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6` (identical to `versions/v3/`) |
+| Game file | `asteroids.html`, SHA-256 `9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6` (the first freeze of `versions/v3/`) for the runs of 2026-11-10 and 2026-11-11. The runs of 2026-11-17 (prompt ablation) used the file with the `layaPromptLevel` option, SHA-256 `7d72375ed1f90bdf25e73870c09296abfe8a9c2b3d240c3902e54a2bae8d2355`, which is now the frozen `versions/v3/` (re-frozen on 2026-11-17); its default level (`verdict`) reproduces the run of 2026-11-10 exactly (see TEST_LOG T10) |
 | Base commit | `2a5e31f` (the measurement script itself is uncommitted at the time of the runs; `gitDirty` is `true` in the files) |
 
 ## Files
@@ -35,6 +35,10 @@ Raw output of [`scripts/dev/measure_pilots.js`](../../../scripts/dev/measure_pil
 | `pilots-2026-11-11-all3-12x8000-lag6-behaviour.json`, `pilots-2026-11-11-rules-8x100000-behaviour.json` | Same runs as T3 and T2 with the behaviour counters added (speed, drift, distance from centre, thrust bursts, threats at loss, Laya decisions per second). The headline numbers reproduce T3 exactly |
 | `laya-latency-2026-11-10.json` | In-process latency of `laya-mlx` and `laya-multilingual-mlx` by device, precision and text length (tests O1 and O2) |
 | `pilots-2026-11-10-all3-1x3000-lag6.json`, `1x6000`, `1x9000` | Single starting point (seed 0), three budgets, all three pilots, Laya with a 6 tick lag. Quick look, scored in points (see "Single seed, three budgets" below) |
+| `ablation-2026-11-17-verdict-12x8000-lag6.json`, `ablation-2026-11-17-facts-12x8000-lag6.json`, `ablation-2026-11-17-raw-12x8000-lag6.json` | Prompt ablation of `layaPilot` (TEST_LOG T10): the same 12 starting points, 8,000 ticks, `--lag=6`, with the state text at three levels (`--level=verdict`, `facts`, `raw`). `verdict` is the original prompt and reproduces T3 |
+| `analysis-ablation-2026-11-17.txt` | Output of `scripts/dev/analyze_ablation.py`: intervals and paired differences between the three levels and the other pilots |
+| `eval-offline-2026-11-17-<level>-300-even.txt`, `eval-offline-2026-11-17-<level>-dodge-hyper.txt` | Offline evaluation (TEST_LOG T11) of the model on the state of a recorded `smartPilot` game, 300 evenly spaced records and 150 dodge or hyperspace records |
+| `eval-offline-2026-11-17-facts-with-verdict-options-dodge-hyper.txt`, `eval-offline-2026-11-17-verdict-with-neutral-options-dodge-hyper.txt` | The two crossed cells: state text of one level with the option wording of the other |
 
 ## Why Laya runs are short
 
@@ -56,9 +60,25 @@ The model call itself accounts for the time (MLX reports the GPU as the default 
 
 At 60 Hz, 90 to 100 ms is 5 to 6 ticks, which is why the comparison uses `--lag=6`.
 
+## Prompt levels (`--level`)
+
+| Level | State text | Option text | What the code decides |
+|-------|-----------|-------------|-----------------------|
+| `verdict` | "Safe", "Danger" or "Fatal collision emergency", the side, the ticks to impact and which way to turn | Each option states the situation it is for ("Asteroid on right side. Turn left and thrust away") | Whether there is a threat, how urgent it is, which way to dodge |
+| `facts` | Ship speed and the 3 nearest objects: type, distance, bearing in degrees from the nose, closing speed, ticks to impact. No verdict, no advice | The action only ("Rotate left and accelerate") | The geometry only (wrap, bearing, closing speed) |
+| `raw` | Ship heading and velocity, and for the 3 nearest objects the wrapped offset and relative velocity in world axes | Same as `facts` | Only the wrap |
+
 ## Reproduce
 
 ```bash
+# prompt ablation (needs the Laya server; about 30 minutes per level, the facts level about 40)
+node scripts/dev/measure_pilots.js asteroids.html 8000 layaPilot 12 --lag=6 --level=facts --json=out.json
+python3 scripts/dev/analyze_ablation.py docs/articles/data 2026-11-17
+
+# offline evaluation on a recorded game
+node scripts/dev/export_pilot_log.js asteroids.html 100000 smartPilot 0 /tmp/smartPilot_0.jsonl
+node scripts/dev/eval_laya_offline.js /tmp/smartPilot_0.jsonl 300 facts
+
 # rule-based pilots, long run (about 3 minutes)
 node scripts/dev/measure_pilots.js asteroids.html 1200000 simplePilot,smartPilot 8 --json=out.json
 

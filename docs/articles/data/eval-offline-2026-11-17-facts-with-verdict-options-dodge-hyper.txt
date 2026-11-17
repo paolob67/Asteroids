@@ -1,0 +1,20 @@
+Evaluating 150 records, level='facts', options='verdict', against http://127.0.0.1:8700/v1/systemone...
+
+================ OFFLINE EVALUATION RESULTS ================
+Level: facts   options: verdict   records: 150
+Accuracy:            17/150 (11.3%)
+Majority baseline:   117/150 (78.0%)   labels: {"stay_and_fire":117,"turn_right_and_thrust":17,"turn_left_and_thrust":15,"hyperspace":1}
+Median latency:      120.4 ms
+By situation (smartPilot):
+  dodge    17/149 (11.4%)
+  hyper    0/1 (0.0%)
+Agreement with the action the verdict sentence implies (the code's rule): 23/150 (15.3%)
+  rule says stay_and_fire          0/114 (0.0%)
+  rule says turn_right_and_thrust  23/23 (100.0%)
+  rule says turn_left_and_thrust   0/13 (0.0%)
+Confusion (expert -> model):
+   117  stay_and_fire -> turn_right_and_thrust
+    17  turn_right_and_thrust -> turn_right_and_thrust
+    15  turn_left_and_thrust -> turn_right_and_thrust
+     1  hyperspace -> turn_right_and_thrust
+============================================================

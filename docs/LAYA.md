@@ -19,6 +19,8 @@ For detailed runtime implementation and data flow, see [LAYA_IMPLEMENTATION.md](
 
 ---
 
+> **Correction (2026-11-17): what the pilot measures.** In the default prompt the game code, not the model, decides what to do, and the model repeats it. [`layaFormatState`](../asteroids.html) tests for a threat, grades its urgency, picks the dodge side and writes "Pilot needs to turn left and thrust to dodge" into the state; the option texts below repeat the trigger ("Asteroid on right side. Turn left..."). On 150 of 150 recorded dodge and hyperspace states the model returned the action the sentence names ([TEST_LOG T11](articles/TEST_LOG.md)). Statements below such as "the model handles situation awareness" or "distinguish nuanced flight conditions" were written before this was checked and do not hold for the default prompt. With the decision withheld (`--level=facts`) this model, as prompted, mostly answers `stay_and_fire` and uses hyperspace (T10). The model remains a useful decision component for tasks where the state text is natural language that does not already contain the answer, such as the billing-versus-technical routing example in section 4 (phase 1).
+
 ## 2. What Laya-MLX Is (and What It Is Not)
 
 `laya-mlx` is a native Apple Silicon port of the Laya open-weight typed decision model:
@@ -59,7 +61,7 @@ While Laya can also be pulled through Ollama (or Ollaya), native `laya-mlx` was 
 
 1. **Latency**: `laya-mlx` executes directly on Apple Silicon Metal. The earlier claim of sub-frame latency (7.4 ms to 13.9 ms) was not reproduced; the measured figure is 90 to 140 ms (section 7). The 30 ms to 80 ms quoted for Ollama / GGUF was never measured in this project and is unverified.
 2. **True Probability Calibration**: `laya-mlx` retains the author's fitted temperature scaling and confidence calibration. Ollama outputs raw softmax scores without specialized calibration.
-3. **Structured Criteria Support**: `laya-mlx` accepts detailed `criteria` descriptions per candidate action, allowing the model to distinguish nuanced flight conditions.
+3. **Structured Criteria Support**: `laya-mlx` accepts a `criteria` description per candidate action. Describing the options works much better than bare labels (upstream README), but wording that states the situation an option is for can also dominate the state text: with the facts prompt and the original option texts the model answered "turn right and thrust" for all 150 records ([T11](articles/TEST_LOG.md)).
 
 ### 3.2 Setup and Serving Commands
 Requirements: a Mac with Apple Silicon. Python 3.12 was used for the measurements; a fresh install of `requirements-laya.txt` also imports cleanly on 3.14. The server uses only the Python standard library plus `laya-mlx`, so no web framework is needed.
@@ -139,13 +141,15 @@ You can verify that the local inference server is active and reachable using any
 3. Start the local HTTP daemon on `http://localhost:8700`.
 
 ### Phase 2: Offline Accuracy Benchmark on Pilot Logs
-1. Export 600,000 ticks of expert game data with [`scripts/dev/export_pilot_log.js`](../scripts/dev/export_pilot_log.js).
-2. Create an evaluation script (`scripts/dev/eval_laya_offline.js`) to score Laya against logged expert actions across situations (`dodge`, `brake`, `stay`, `hyper`).
-3. Evaluate prompt formulations:
-   * **Format A (Raw snapshot)**: Direct JSON summary of coordinates.
-   * **Format B (Key-value prose)**: Structured text listing ship state, nearest asteroid, and saucer.
-   * **Format C (Egocentric geometry)**: Bearings relative to nose, closing speeds, and predicted time to collision.
-   * **Option Criteria Descriptions**: Compare bare action labels versus detailed criteria definitions for each candidate choice.
+Done on 2026-11-17 (results in [TEST_LOG T10 and T11](articles/TEST_LOG.md)); the first plan below was not run as written.
+1. Export 100,000 ticks of `smartPilot` data with [`scripts/dev/export_pilot_log.js`](../scripts/dev/export_pilot_log.js) (3,862 records, sampled by situation).
+2. [`scripts/dev/eval_laya_offline.js`](../scripts/dev/eval_laya_offline.js) scores Laya against the logged `smartPilot` keys. It builds the state text from the recorded snapshot only, never from the situation label (the first version did, which gave the model the answer; it was rewritten).
+3. Prompt formulations that were tested, as `layaPromptLevel`:
+   * **`verdict`**: the code decides and writes the verdict (the original prompt).
+   * **`facts`**: egocentric geometry for the 3 nearest objects, no verdict.
+   * **`raw`**: wrapped offsets and relative velocities in world axes, no geometry.
+   * **Option wording**: the situation-specific texts against action-only texts, crossed with the state text.
+   Not tested: a raw JSON snapshot, other object counts, other wordings.
 
 ### Phase 3: Real-Time Game Integration in `asteroids.html`
 1. **Decision Client**: Implement an asynchronous `layaPilot(snapshot)` in JavaScript that dispatches a fetch request to `http://localhost:8700/v1/systemone`.
@@ -167,7 +171,7 @@ You can verify that the local inference server is active and reachable using any
 
 ## 5. Candidate Action Schema for Laya
 
-To maximize classification accuracy, candidate options should include explicit descriptions in their criteria:
+This schema is the first plan and was not used in the pilot (the pilot has four actions; see `LAYA_QUESTIONS` and `LAYA_QUESTIONS_NEUTRAL` in the game file). The `criteria` texts below state the situation each option is for, which is the wording that was later found to duplicate the verdict in the state text. Prefer descriptions of the action alone when the state text carries the facts:
 
 ```json
 {
@@ -226,13 +230,29 @@ With 14, 2 and 22 losses the rates are imprecise. An exact test on the counts se
 
 ### Qualitative Analysis of Gameplay Behavior
 
-Watching `layaPilot` in the browser game reveals distinctive characteristics of neural decision control:
+Watching `layaPilot` in the browser game shows how a pilot driven by a one-answer-at-a-time decision loop moves. Read it with the correction above: with the default prompt the dodge decisions come from the code's rule, so these are the characteristics of that rule applied late and held, not of a model's judgement.
 
 1. **Reactive vs Predictive Movement**:
-   `smartPilot` plans multi-second trajectories with exact inertia calculations, making smooth, calculated maneuvers. In contrast, `layaPilot` evaluates discrete tactical classifications from the neural model, each answer arriving about 90 to 140 ms after the request. When threats appear, it reacts with bursts of turning and thrust (3.8% thrust engagement vs 1.4% in `smartPilot`), leading to noticeable ship drift and reactive course corrections that look less polished in the UI.
+   `smartPilot` plans multi-second trajectories with exact inertia calculations, making smooth, calculated maneuvers. In contrast, `layaPilot` applies one of four discrete actions, each answer arriving about 90 to 140 ms after the request. When threats appear, it reacts with bursts of turning and thrust (3.8% thrust engagement vs 1.4% in `smartPilot`), leading to noticeable ship drift and reactive course corrections that look less polished in the UI.
 
 2. **High Scoring Velocity**:
    `layaPilot` achieves 10,096 points/min, approaching `smartPilot` (10,493 pts/min) and above `simplePilot` (7,991 pts/min), probably because it shares the target picker (`spPickTarget`) with `smartPilot`; `simplePilot` has its own intercept code.
 
-3. **Collision Limits of Semantic Reasoning**:
-   All 22 `layaPilot` losses in this run were asteroid impacts. Its loss rate (53.3 per hour) is not distinguishable from `simplePilot` (33.6) and far above `smartPilot` (4.9). The earlier claim that `layaPilot` dodges saucer torpedoes better than `simplePilot` is not supported: it had no torpedo losses here, but this run is too short to show a saucer effect (`simplePilot` had 2). A natural-language summary of the nearest threat is a plausible reason for the rock losses, but this has not been tested.
+3. **Where the losses come from**:
+   All 22 `layaPilot` losses in this run were asteroid impacts. Its loss rate (53.3 per hour) is not distinguishable from `simplePilot` (33.6) and far above `smartPilot` (4.9). The earlier claim that `layaPilot` dodges saucer torpedoes better than `simplePilot` is not supported: it had no torpedo losses here, but this run is too short to show a saucer effect (`simplePilot` had 2). 8 of the 22 losses happened with two or more rocks closing, and the sentence describes only the nearest one. Removing the verdict from the sentence did not lower the loss count (17 with the facts prompt) and made the pilot dodge less, so the one-sentence verdict was not what hid a good dodger ([T10](articles/TEST_LOG.md)).
+
+### Prompt ablation (2026-11-17)
+
+Same 12 x 8,000 ticks, same server, `--lag=6`, the state text at three levels ([`data/README.md`](articles/data/README.md#prompt-levels---level)):
+
+| Level | Losses | Losses per hour (95% interval) | Points per minute | Thrust | Hyperspace per hour |
+|---|---|---|---|---|---|
+| `verdict` (original) | 22 | 53.3 (33.4 to 80.6) | 10,096 | 3.8% | 19.4 |
+| `facts` (no verdict) | 17 | 40.6 (23.6 to 65.0) | 7,529 | 0.8% | 1,303 |
+| `raw` (no geometry) | 122 | 284.9 (236.6 to 340.2) | 520 | 0.0% | 2,996 |
+
+The original prompt was reproduced exactly. Offline, on a recorded `smartPilot` game, the original prompt gave the model's answer equal to the sentence's advice in 150 of 150 states; with facts and neutral option texts the model answered `stay_and_fire` for 31 of the 32 records where `smartPilot` turned and thrust. Limits: one model, one wording, one run per level; the facts prompt was not tuned.
+
+### What this means for model autonomy
+
+The question was whether the model needs fine-tuning to take the decision itself. This data supports: the model as shipped does not take it from facts with this prompt. It does not show that fine-tuning would fix that, because no fine-tuning was run. The `laya-mlx` port documents training and fine-tuning as out of scope ("RLCD training and fine-tuning stay upstream", upstream README, retrieved 2026-11-17); whether the upstream project supports fine-tuning this checkpoint for such a task was not checked. If it does, the realistic ceiling is imitation of a teacher such as `smartPilot` plus 5 to 8 ticks of delay, so the pilot would copy the rules, not exceed them. A route that keeps the model in a role it can do is to let the simulation score each candidate manoeuvre and have the model choose among neutral outcome descriptions ([FINDINGS section 5](articles/FINDINGS.md)).

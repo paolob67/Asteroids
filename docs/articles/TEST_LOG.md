@@ -27,6 +27,8 @@ A record of every test run while preparing the articles, in the order it was don
 | T7 | Latency anatomy (O1, O2) | Where does the time go, and can it be cut? | Model compute, grows with text length; the 322M model is 3 times faster |
 | T8 | Browser check | Does drawing slow the game and give the model more time? | No: 60 ticks/s in Chrome, answers arrive 6 to 7 ticks after the request, as in the headless runs |
 | T9 | Behaviour counters | How do the pilots move? | Laya drifts 41% of the time against 7% for `smartPilot`, with thrust bursts 6 times longer |
+| T10 | Prompt ablation (3 levels, 12 x 8,000 ticks) | Does the model decide anything, or does the sentence decide for it? | With facts only, survival is the same (17 losses against 22) but the score falls by 5,077 points per game and the model almost never dodges; with raw numbers it fails (122 losses). Original prompt reproduced exactly |
+| T11 | Offline evaluation, state text and option wording crossed | Where does the answer come from? | With the original prompt the model repeats the code's advice in 150 of 150 records. With facts it matches `smartPilot` no better than answering "stay" always |
 
 ## T1. Rule pilots, long run
 
@@ -174,10 +176,62 @@ Result: see the table in [OBSERVATIONS.md](OBSERVATIONS.md) section 4. In short,
 
 Reproducibility: this re-run reproduced T3 exactly (22, 14 and 2 losses, identical points and thrust shares). Its Laya median latency was 134.7 ms (T3: 137.1 ms). Before this run the Laya HTTP client in the script was changed from `fetch` to the `http` module with a new connection per request, because one earlier attempt crashed with `setTypeOfService EINVAL` inside Node's `fetch` (seen once, after three finished starting points; the attempt was discarded and no results from it are used). Connection retries in the re-run: 2.
 
+## T10. Prompt ablation: what the state text tells the model (2026-11-17)
+
+Prompted by a review of the code: `layaFormatState` did not describe the situation, it decided it. The code tested for a threat, graded the urgency, picked the side and wrote "Pilot needs to turn left and thrust to dodge", and the option texts repeated the same trigger ("Asteroid on right side. Turn left and thrust away"). The model matched two phrases. This test removes the code's decision in two steps and measures what the model does alone.
+
+`measure_pilots.js --level=verdict|facts|raw` and `layaPromptLevel` in the game file (definitions in [`data/README.md`](data/README.md#prompt-levels---level)). Same 12 starting points, 8,000 ticks, `--lag=6`, same server, the 3-object cap in `facts` and `raw`. Files: `ablation-2026-11-17-*-12x8000-lag6.json`, analysis in `analysis-ablation-2026-11-17.txt`.
+
+| Level | Losses | Losses per hour (95% interval) | Points per minute | Thrust | Hyperspace per hour | Drift | Games ended |
+|-------|--------|-------------------------------|-------------------|--------|---------------------|-------|-------------|
+| `verdict` (original) | 22 | 53.3 (33.4 to 80.6) | 10,096 | 3.8% | 19.4 | 41.4% | 0 |
+| `facts` | 17 | 40.6 (23.6 to 65.0) | 7,529 | 0.8% | 1,303 | 21.3% | 2 |
+| `raw` | 122 | 284.9 (236.6 to 340.2) | 520 | 0.0% | 2,996 | 0.0% | 35 |
+
+Reproducibility: `verdict` reproduced T3 and T9 exactly (22 losses, 10,096 points per minute, same losses per starting point, median latency 139.3 ms against 134.7 ms).
+
+Paired over the same 12 starting points (`facts` against `verdict`): points -5,077 per game (95% interval -6,644 to -3,509, lower in 12 of 12), losses -0.4 per game (-1.2 to +0.3, p = 0.73). `raw` against `verdict`: points -19,735 (-20,714 to -18,756), losses +8.3 (+6.3 to +10.3, higher in 12 of 12). `facts` against `smartPilot`: points -5,787, losses +1.2 (+0.4 to +2.1, p = 0.008). `facts` against `simplePilot`: points -885 (-2,625 to +855), losses +0.2 (-0.8 to +1.3): not distinguishable.
+
+What the numbers say:
+- **The loss count did not change; the behaviour did.** With facts the pilot has 17 losses against 22 (the difference is within the noise), but it spends 97.5% of its time on `stay_and_fire`, thrusts 0.8% of the time (3.8% before) and drifts 21% (41% before). Its turns are rare and one-sided: `turn_right_and_thrust` 1.1% of flying time and `turn_left_and_thrust` never, against 2.4% and 1.7% with `verdict`. In 11 of its 17 losses no object was closing within 60 ticks on the tick before (`threatsAtLoss`), so the model was not reacting to a threat it could see. In short, the model with facts only behaves close to a pilot that never dodges, as `simplePilot` does (14 losses). Facts did not make it a better dodger, and the loss figure hides that.
+- **The model reaches for hyperspace.** With facts it presses hyperspace 1,303 times per hour of flying (546 presses in 12 games, against 8 with `verdict`), with raw numbers 2,996 per hour. Why was not tested; a possible reason is that its option text is the only one that mentions a risk to the ship. Two of the 17 losses were hyperspace self-destructs. The score falls because each jump interrupts aiming and the ship re-enters at a random place: 7,529 points per minute against 10,096.
+- **Raw numbers fail.** With offsets and velocities in world axes the pilot spends 35.3% of its flying time on hyperspace and 63.7% on `stay_and_fire`, changes its choice 340 times per minute (19 with `verdict`), and loses a ship about every 13 seconds of flying (284.9 per hour). Whether a larger model could do this was not tested.
+- **The point score of the original prompt was most likely not model skill.** Under `verdict` the model returned the code's advice every time (T11), so the score came from the shared target picker plus the code's dodge rule. This was not separated by an experiment with the model removed.
+
+Limits: one model, one wording of the facts and of the neutral options, one cap of 3 objects, one run per level (12 starting points, 0.41 to 0.43 flying hours, 17 to 122 losses). The facts level is not an optimised prompt; a different wording may do better, and this test does not say how much. Latency during the `facts` run was 177 ms median (the machine was also running the offline evaluation, T11), which does not change the result because the lag is simulated at 6 ticks.
+
+## T11. Offline evaluation of the model on recorded states (2026-11-17)
+
+`eval_laya_offline.js` was rewritten. The old version built its sentence from the situation label of the recorded game (`hyper`, `dodge`, `brake`), which is the answer. No figure from it appears in the repository docs, and none should be quoted from it. The new version builds the text from the recorded snapshot only, with the game's own `layaFormatState`, and uses the recorded keys only to score the answer. The 100,000-tick `smartPilot` game of seed 0 was exported (3,862 records: 2,876 stay, 796 dodge, 177 brake, 13 hyper). The labels are `smartPilot`'s keys mapped to the four actions (a brake or an aim is `stay_and_fire`), so a mismatch is not always an error.
+
+Evenly spaced sample of 300 records (234 stay, 58 dodge, 8 brake): 284 of 300 labels are `stay_and_fire`, so always answering "stay" scores 94.7%.
+
+| Level | Accuracy | Dodge records matched |
+|-------|----------|-----------------------|
+| `verdict` | 86.0% | 28 of 58 |
+| `facts` | 89.3% | 42 of 58 |
+| `raw` | 41.7% | 19 of 58 |
+
+No level beats the 94.7% baseline. 150 dodge and hyper records only (117 stay, 17 right, 15 left, 1 hyperspace; always "stay" scores 78.0%):
+
+| State text | Option wording | Accuracy | Agreement with what the verdict sentence says to do |
+|------------|----------------|----------|---------------------------------------------------|
+| `verdict` | verdict | 61.3% | 150 of 150 |
+| `verdict` | neutral | 61.3% | 150 of 150 |
+| `facts` | neutral | 77.3% | 112 of 150 (only where the sentence says "stay") |
+| `facts` | verdict | 11.3% | 23 of 150 |
+| `raw` | neutral | 32.7% | 53 of 150 |
+
+How to read it:
+- **With the original sentence the answer is the sentence.** In 150 of 150 records the model chose exactly the action the sentence spells out, with either option wording. The state text carried the answer; the option text did not matter once the sentence said what to do.
+- **With facts and neutral options the model answered "stay" for 31 of the 32 records where `smartPilot` turned and thrust.** Its accuracy of 77.3% is the same as the 78.0% of always answering "stay". On these records it did not turn when `smartPilot` did.
+- **Option wording that states a situation can override the state text.** Facts with the original option texts gave "turn right and thrust" for all 150 records, whatever the facts said. This is consistent with the model matching the option text and ignoring the facts; the reason was not examined further.
+- The `smartPilot` label is not ground truth. Where the label says "stay" and the model dodges, the model may be right; the replay in T10 is the check that matters, and there the model does not dodge better.
+
 ## Open questions
 
-1. Why the model documentation states 7.4 to 13.9 ms. The 322M checkpoint explains a factor of 3, not a factor of 12.
-2. Whether Laya's rock losses come from latency, from the one-sentence state, or from the model. Not isolated.
+1. Why the model documentation states 7.4 to 13.9 ms. The 322M checkpoint explains a factor of 3, not a factor of 12. The upstream README quotes 13.4 ms and 7.4 ms on an M3 Max (40-core GPU, 128 GiB); this machine is an M1 Air, which is one candidate explanation. Not tested.
+2. Whether Laya's rock losses come from latency, from the one-sentence state, or from the model. Partly answered by T10: with the sentence removed the loss count is the same and the pilot dodges less, so the sentence was not hiding a competent dodger. Latency is still not isolated.
 3. ~~How the headless simulation compares to the browser.~~ Answered by T8: same tick rate, same 6 to 7 tick delay.
 
 ## How to reproduce

@@ -1,0 +1,21 @@
+Losses per flying hour (exact 95% interval), points per minute, behaviour
+  verdict                      losses   22 over  0.41 h  rate   53.3  interval   33.4 to   80.6  points/min  10096  thrust 3.8%  hyper/h 19.4  drift 41.4%  dist 1959  causes {'rock': 22}
+  facts                        losses   17 over  0.42 h  rate   40.6  interval   23.6 to   65.0  points/min   7529  thrust 0.8%  hyper/h 1303.2  drift 21.3%  dist 1884  causes {'rock': 15, 'hyperspace': 2}
+  raw                          losses  122 over  0.43 h  rate  284.9  interval  236.6 to  340.2  points/min    520  thrust 0%  hyper/h 2996.4  drift 0%  dist 2397  causes {'rock': 58, 'hyperspace': 64}
+  smartPilot                   losses    2 over  0.41 h  rate    4.9  interval    0.6 to   17.6  points/min  10493  thrust 1.4%  hyper/h 14.6  drift None%  dist None  causes {'hyperspace': 2}
+  simplePilot                  losses   14 over  0.42 h  rate   33.6  interval   18.4 to   56.3  points/min   7991  thrust 0%  hyper/h 0  drift None%  dist None  causes {'saucer-torpedo': 2, 'rock': 12}
+  layaPilot (T3, 2026-11-10)   losses   22 over  0.41 h  rate   53.3  interval   33.4 to   80.6  points/min  10096  thrust 3.8%  hyper/h 19.4  drift None%  dist None  causes {'rock': 22}
+
+Paired differences over the same 12 starting points
+  points facts minus verdict: mean  -5076.7  95% interval  -6643.9 to  -3509.4  higher in 0/12  sign test p = 0.000
+  losses facts minus verdict: mean     -0.4  95% interval     -1.2 to      0.3  higher in 3/12  sign test p = 0.727
+  points raw minus verdict: mean -19735.0  95% interval -20713.6 to -18756.4  higher in 0/12  sign test p = 0.000
+  losses raw minus verdict: mean      8.3  95% interval      6.3 to     10.3  higher in 12/12  sign test p = 0.000
+  points facts minus smartPilot: mean  -5786.7  95% interval  -7031.4 to  -4541.9  higher in 0/12  sign test p = 0.000
+  losses facts minus smartPilot: mean      1.2  95% interval      0.4 to      2.1  higher in 8/12  sign test p = 0.008
+  points facts minus simplePilot: mean   -885.0  95% interval  -2625.4 to    855.4  higher in 5/12  sign test p = 0.774
+  losses facts minus simplePilot: mean      0.2  95% interval     -0.8 to      1.3  higher in 5/12  sign test p = 1.000
+  points verdict minus smartPilot: mean   -710.0  95% interval  -1996.5 to    576.5  higher in 3/12  sign test p = 0.146
+  losses verdict minus smartPilot: mean      1.7  95% interval      0.9 to      2.4  higher in 9/12  sign test p = 0.004
+  points verdict minus simplePilot: mean   4191.7  95% interval   2710.4 to   5672.9  higher in 11/12  sign test p = 0.006
+  losses verdict minus simplePilot: mean      0.7  95% interval     -0.4 to      1.7  higher in 6/12  sign test p = 0.508

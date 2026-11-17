@@ -2,13 +2,15 @@
 
 This document details the software architecture, data flow, and runtime implementation of the Laya neural autopilot (`layaPilot`) for Asteroids on Apple Silicon.
 
-For model benchmarking and serving specifications, see [`docs/LAYA.md`](docs/LAYA.md). For decision model taxonomy, see [`docs/DECISION_MODELS.md`](docs/DECISION_MODELS.md).
+For model benchmarking and serving specifications, see [`docs/LAYA.md`](LAYA.md). For decision model taxonomy, see [`docs/DECISION_MODELS.md`](DECISION_MODELS.md).
 
 ---
 
 ## 1. System Architecture & End-to-End Flow
 
 The Laya autopilot combines a high-speed 60 Hz deterministic game loop running in the browser with an asynchronous local neural decision server running on Apple Silicon Metal via the MLX framework.
+
+> **Read this first (added 2026-11-17).** In the default prompt (`layaPromptLevel = 'verdict'`) the JavaScript below does not only describe the situation: it tests for a threat, grades the urgency, picks the dodge side and writes the manoeuvre into the sentence ("Pilot needs to turn left and thrust to dodge"), and the option texts repeat the same trigger. The model then returns the action the sentence spells out (150 of 150 recorded states; [TEST_LOG T11](articles/TEST_LOG.md)). So the default pilot measures the code's rule plus 5 to 8 ticks of delay, not a model's judgement. Sections 2 and 3 describe that default prompt; section 2.4 describes the two prompts that withhold the decision, and what the model does with them (it does not dodge: [T10](articles/TEST_LOG.md)).
 
 ```text
 +-----------------------------------------------------------------------------------------+
@@ -45,7 +47,7 @@ The Laya autopilot combines a high-speed 60 Hz deterministic game loop running i
 
 ## 2. State Extraction & Situation Prompting
 
-On every tick, [`layaFormatState(s)`](asteroids.html:2399) converts the raw simulation snapshot into structured natural language:
+On every tick, [`layaFormatState(s)`](../asteroids.html) converts the raw simulation snapshot into structured natural language:
 
 ### 2.1 Toroidal Coordinate Geometry
 The Asteroids coordinate space spans $8192 \times 6144$ units with wraparound boundaries. Offsets are calculated using shortest-path wrapping:
@@ -92,11 +94,25 @@ Objects approaching with $\text{closing} > 0$ within a proximity radius of 1200 
    Situation: Safe. No collision danger. Ship speed is <V> px/tick. Target <type> is <D> units away. Ready to aim and shoot.
    ```
 
+These three sentences are decisions made in code: the `closing > 0 && dist < 1200` test, the 8 and 60 tick thresholds, the choice of the dodge side and the instruction to hyperspace all happen before the model is called.
+
+### 2.4 Prompt levels that do not hand over the decision
+
+`layaPromptLevel` (set by `measure_pilots.js --level=` and `eval_laya_offline.js`) selects what the state text says:
+
+| Level | State text | Option texts |
+|-------|-----------|--------------|
+| `verdict` (default for play) | Safe, Danger or Fatal sentence as above | `LAYA_QUESTIONS`: each option states the situation it is for |
+| `facts` | Ship speed and the 3 nearest objects, each with type, distance, bearing from the nose, closing speed and ticks to impact. No verdict, no advice | `LAYA_QUESTIONS_NEUTRAL`: the action only ("Rotate left and accelerate") |
+| `raw` | Ship heading and velocity, and for the 3 nearest objects the wrapped offset and relative velocity in world axes | `LAYA_QUESTIONS_NEUTRAL` |
+
+Measured over the same 12 x 8,000 ticks ([TEST_LOG T10](articles/TEST_LOG.md)): `facts` has 17 losses (22 for `verdict`) but a lower score (7,529 against 10,096 points per minute), almost never dodges (thrust 0.8% against 3.8%) and uses hyperspace 1,303 times per hour; `raw` has 122 losses and 520 points per minute. The pilot code is the same in all three; only the text changes.
+
 ---
 
 ## 3. Structured Decision Schema
 
-The prompt is submitted alongside [`LAYA_QUESTIONS`](asteroids.html:2461), a structured typed schema defining discrete actions and behavioral criteria:
+The prompt is submitted alongside [`LAYA_QUESTIONS`](../asteroids.html) (default) or `LAYA_QUESTIONS_NEUTRAL` (levels `facts` and `raw`), a structured typed schema defining discrete actions and behavioral criteria. The default texts below each name the situation that calls for the action ("Asteroid on right side"), which repeats the trigger already written in the state sentence:
 
 ```javascript
 const LAYA_QUESTIONS = {
@@ -117,7 +133,7 @@ const LAYA_QUESTIONS = {
 
 ## 4. Asynchronous Non-Blocking HTTP Client
 
-In [`asteroids.html`](asteroids.html:2478), [`layaPilot(s)`](asteroids.html:2478) executes inside the browser's 60 Hz animation loop.
+In [`asteroids.html`](../asteroids.html), [`layaPilot(s)`](../asteroids.html) executes inside the browser's 60 Hz animation loop.
 
 ### 4.1 Non-Blocking Dispatch & State Reuse
 To avoid freezing the rendering frame, `fetch()` operations run asynchronously:
@@ -149,7 +165,7 @@ Execution latency is tracked via `performance.now()`. A 30-frame rolling window 
 
 ## 5. Local Python Server Backend
 
-The backend [`scripts/dev/laya_server.py`](scripts/dev/laya_server.py:1) hosts the MLX model:
+The backend [`scripts/dev/laya_server.py`](../scripts/dev/laya_server.py) hosts the MLX model:
 
 ### 5.1 Service Endpoints
 * `POST /v1/systemone` or `/systemone`: Receives JSON `{ state, questions }`, executes `agent.predict(state, questions)`, and returns the choice probabilities.
@@ -166,7 +182,7 @@ The server runs on port 8700 by default:
 
 ## 6. Low-Level Ship Actuation & Hybrid Targeting
 
-Once a discrete decision is received from the model, [`layaPilot(s)`](asteroids.html:2561) maps it to virtual keystrokes:
+Once a discrete decision is received from the model, [`layaPilot(s)`](../asteroids.html) maps it to virtual keystrokes:
 
 ### 6.1 Maneuver Mappings
 * **`hyperspace`**: Triggers `hyper = s.frame % 2 === 0` to activate the emergency jump.
@@ -174,7 +190,7 @@ Once a discrete decision is received from the model, [`layaPilot(s)`](asteroids.
 * **`turn_right_and_thrust`**: Sets `right = true`, `thrust = true`, and pulses `fire = s.frame % 2 === 0`.
 
 ### 6.2 Geometric Aiming for `stay_and_fire`
-When in `stay_and_fire`, low-level tactical gunnery is delegated to [`spPickTarget(s, null)`](asteroids.html:2580):
+When in `stay_and_fire`, low-level tactical gunnery is delegated to [`spPickTarget(s, null)`](../asteroids.html):
 
 ```javascript
 const target = spPickTarget(s, null);
@@ -188,15 +204,15 @@ if (target) {
 }
 ```
 
-This hybrid separation allows the neural model to handle high-level situation awareness (evasion vs attack) while the local math routines handle sub-pixel lead aiming.
+This hybrid separation lets the model pick among the four actions while the local math routines handle lead aiming. With the default prompt the choice between evasion and attack is already made by the code in section 2.3 and the model repeats it; with the `facts` prompt the model makes the choice itself and, as measured, mostly answers `stay_and_fire`.
 
 ---
 
 ## 7. Fault Tolerance, Offline Fallback & Auto-Recovery
 
-If the Python server is offline or encounters an error, [`layaPilot(s)`](asteroids.html:2528) provides automated recovery:
+If the Python server is offline or encounters an error, [`layaPilot(s)`](../asteroids.html) provides automated recovery:
 
 1. **Automatic Error Catching**: Catches connection failures, updates `layaServerOnline = false`, and sets `layaLastAction.isFallback = true`.
-2. **Seamless Fallback**: When `isFallback` is active, control is automatically delegated to [`smartPilot(s)`](asteroids.html:2550) (the deterministic 90-tick lookahead simulation).
+2. **Seamless Fallback**: When `isFallback` is active, control is automatically delegated to [`smartPilot(s)`](../asteroids.html) (the deterministic 90-tick lookahead simulation).
 3. **Throttled Reconnection**: Re-connection attempts are throttled to once every 3000 ms (`now - layaLastFailTime > 3000`) to avoid flooding the browser network stack.
-4. **Resumption**: Once the local server becomes reachable, neural decision control resumes without requiring a game reload.
+4. **Resumption**: Once the local server becomes reachable, model control resumes without requiring a game reload.

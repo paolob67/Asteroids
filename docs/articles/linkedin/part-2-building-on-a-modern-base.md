@@ -189,7 +189,7 @@ With this in place, Part 3 needs no changes to the game. The next pilot uses the
 
 The explicit state and the five-boolean interface turned a ported game into an environment for about 170 lines. A 40 line aiming rule made a strong player that cannot dodge; a 90 tick lookahead lost a ship about 12 times less often over 42 flying hours, and a replay of the game's own physics showed it never moved the ship by any route but the keys.
 
-In **Part 3**, the rules are replaced by a small decision model that runs locally on a laptop and picks the ship's tactic from a one-sentence description of the situation. The claim there is narrower than here: it is possible, it plays, and here is what it looks like.
+In **Part 3**, the rules are replaced by a small decision model that runs locally on a laptop and is asked to pick one of four actions from a one-sentence description of the situation. The claim there is narrower than here: a model can be put in the loop and it plays, and then a test of who actually decides, because in my first version the code wrote the decision into the sentence.
 
 ---
 

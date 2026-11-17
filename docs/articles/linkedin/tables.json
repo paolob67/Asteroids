@@ -71,9 +71,19 @@
   {
     "id": "p3-responsibility-split",
     "width": 1000,
-    "header": ["The model decides", "The code decides"],
+    "header": ["The model picks (verdict prompt)", "The code decides (verdict prompt)"],
     "rows": [
-      ["One of four tactics:\n`stay_and_fire`\n`turn_left_and_thrust`\n`turn_right_and_thrust`\n`hyperspace`", "Which target to aim at and when to fire (lead aiming)\nKey timing: fire and hyper are pulsed on even frames\nThe geometry and the wording of the state sentence"]
+      ["One of four options, each repeating a phrase the sentence already contains:\n`stay_and_fire`\n`turn_left_and_thrust`\n`turn_right_and_thrust`\n`hyperspace`", "Whether a threat is closing, how urgent it is, which side to dodge\nThe wording of the sentence and of the options\nWhich target to aim at and when to fire (lead aiming)\nKey timing: fire and hyper are pulsed on even frames"]
+    ]
+  },
+  {
+    "id": "p3-ablation",
+    "width": 1150,
+    "header": ["Prompt level", "Losses", "Losses per hour (95% interval)", "Points per minute", "Thrust", "`stay_and_fire`", "Hyperspace per hour", "Games ended"],
+    "rows": [
+      ["Verdict (code writes the advice)", "22", "53.3 (33.4 to 80.6)", "10,096", "3.8%", "95.9%", "19.4", "0"],
+      ["Facts only (no advice)", "17", "40.6 (23.6 to 65.0)", "7,529", "0.8%", "97.5%", "1,303", "2"],
+      ["Raw numbers", "122", "284.9 (236.6 to 340.2)", "520", "0.0%", "63.7%", "2,996", "35"]
     ]
   },
   {
@@ -104,6 +114,9 @@
     "width": 1100,
     "header": ["Question", "What would answer it"],
     "rows": [
+      ["Is the facts result a prompt effect?", "Same games with another wording, more objects, or a first-person description of the ship"],
+      ["Would training on logged `smartPilot` decisions help?", "Train on (facts, action) pairs, then the same 12 games. Upstream support for fine-tuning this checkpoint is unchecked"],
+      ["Can the model choose among neutral outcomes?", "A sentence such as \"A: hit in 40 ticks, B: clear\" computed by the simulation, the model choosing"],
       ["Does a 3 times faster answer change survival?", "Same 12 games with the 322M checkpoint"],
       ["Does the wording of the question or the state matter?", "Same games with a shorter question text; with a state sentence that mentions more than one threat"],
       ["Do more actions help?", "Add `turn_left_only`, `turn_right_only`, `thrust_only`; add an action that stops thrust"],

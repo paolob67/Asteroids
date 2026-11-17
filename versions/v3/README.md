@@ -1,13 +1,18 @@
 # Version 3 (frozen)
 
-This directory holds the frozen third version of the JavaScript port of Atari Asteroids: the version 2 game plus `smartPilot`, `layaPilot` and the Manual / Simple / Smart / Laya selector.
+This directory holds the frozen third version of the JavaScript port of Atari Asteroids: the version 2 game plus `smartPilot`, `layaPilot` and the Manual / Simple / Smart / Laya selector. `layaPilot` has a `layaPromptLevel` setting (`verdict` by default, `facts`, `raw`) used by the prompt ablation.
 
 | Item | Value |
 |------|-------|
 | File | [`asteroids.html`](asteroids.html) |
-| SHA-256 | `9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6` |
-| Size | 109,340 bytes, 2,754 lines |
+| SHA-256 | `7d72375ed1f90bdf25e73870c09296abfe8a9c2b3d240c3902e54a2bae8d2355` |
+| Size | 111,873 bytes, 2,793 lines |
 | Files are read-only | yes (`chmod a-w`) |
+
+## Revision history
+
+- 2026-11-10: first freeze, SHA-256 `9cef5640c11b7382514afdd65a535a01a4d722b77a8c691573f552e8ea06edb6` (109,340 bytes, 2,754 lines). The pilot runs of 2026-11-10 and 2026-11-11 used this file.
+- 2026-11-17: re-frozen at the owner's request to add the `layaPromptLevel` option and `LAYA_QUESTIONS_NEUTRAL` (about 39 added lines, all in the Laya client). With the default level (`verdict`) the behaviour is unchanged: the measurement of 2026-11-17 reproduced the 2026-11-10 run exactly (22 losses, 10,096 points per minute). The data files of the earlier runs keep the old checksum in `fileSha256`.
 
 ## Rules
 

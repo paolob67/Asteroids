@@ -20,7 +20,7 @@ Working plan for the series "A journey in code modernization with Bob". The outl
 |------|---------------|----------|------------|
 | 1 | Porting a 1979 arcade game with an LLM: what worked, what did not | original to v1, v1 to v2 | An LLM translates structure well and fails on conventions the source never states (radix, BCD, signs). Only running the code against the source found the errors |
 | 2 | Once the code is modern, a game becomes something a program can play | v2, v3 (`smartPilot`) | Exposing state as data and decisions as five booleans turned the port into an agent environment for about 170 lines. A tiny rule is strong; a lookahead is much stronger |
-| 3 | From rules to a decision model: a model can fly the ship | v3 (`layaPilot`) | A pilot built on a decision model is possible and can play the game. How it is wired, what it does on screen, first numbers, and what has not been tried yet. No verdict on rules against models |
+| 3 | From rules to a decision model: who actually decides? | v3 (`layaPilot`) | A decision model can be put in the loop and the game plays, but with the original prompt the code wrote the decision into the sentence. A prompt ablation (verdict, facts, raw) shows what the model does alone: with facts only it stopped dodging. No verdict on rules against models; fine-tuning not tested |
 
 ## 3. Number integrity (status: N1 to N5 done on 2026-11-10; the lag-1 Laya run is the only open item)
 
@@ -219,16 +219,18 @@ Backlog for a possible Part 4 (hypotheses, none tested yet):
 | O1 | Where do the 85 to 105 ms go? | **Done 2026-11-10** ([data/README.md](data/README.md#laya-latency-tests-o1-and-o2-2026-11-10)). It is the model forward pass (88 ms in-process, HTTP adds a few ms), it grows with text length, and the 322M checkpoint takes 27 to 35 ms. Still open: the documented 7.4 ms was not reached |
 | O2 | Is the GPU the right device for such a small model? | **Done.** Yes: CPU is 3 to 4 times slower. fp16 is the fastest precision; `compile` and `cache_prompts` do not help |
 | O2b | Does the faster checkpoint (322M) fly as well? | Not done. Run the single seed points test with `--model aac6fef/laya-multilingual-mlx` on the server, and with the shortened question |
-| O3 | Does the state wording change the answers or the speed? | Speed: partly answered (shorter question text 88 to 66 ms). Answers in play: not tested |
+| O3 | Does the state wording change the answers or the speed? | Speed: partly answered (shorter question text 88 to 66 ms). Answers in play: **partly done 2026-11-17** (prompt ablation, T10 and T11: verdict, facts and raw). One facts wording only; another wording or more objects is open |
 | O4 | Do different questions or actions help? | Add `turn_left_only`, `turn_right_only`, `thrust_only` (already described in `LAYA.md` section 5); change the criteria text |
 | O5 | Does a lower lag change results? | `--lag=1` with a faster model or smaller prompt; the 669 s per seed cost at 85 ms makes this impractical until O1 and O2 are done |
 | O6 | Is a safety veto worth it? | The shielded mode planned in `LAYA.md` Phase 4 |
+| O7 | Would training on logged (facts, `smartPilot` action) pairs lift the facts pilot? | Not done. Needs training code the `laya-mlx` port does not include; upstream support for this checkpoint is unchecked. The ceiling is `smartPilot` plus latency |
+| O8 | Can the model choose among neutral simulated outcomes? | Not done. The simulation writes "A: hit in N ticks, B: clear" per candidate; the model chooses. Tests the model's value as a chooser rather than a geometer |
 
 ## 7. Style rules for the articles
 
 - Technical reader first. Say what was measured, how, and what the limits are.
 - Every claim about performance carries its run: seeds, ticks, date.
-- State failures plainly. Part 3 reports that the decision model flies, and also that it loses ships to rocks and reacts late; it does not claim more than the data supports.
+- State failures plainly. Part 3 reports that the decision model plays with the verdict in the prompt, that the verdict came from the code, that without it the model stopped dodging, and that it loses ships to rocks and reacts late; it does not claim more than the data supports.
 - No em dashes anywhere (project rule). Use commas, colons, semicolons or parentheses.
 - Do not invent process details for Bob (prompts, timings, counts). Use only facts from the author or from the repo.
 - Keep the repo as the source of truth: each article ends with the commands to reproduce its numbers.

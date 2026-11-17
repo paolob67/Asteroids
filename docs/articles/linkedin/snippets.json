@@ -64,6 +64,14 @@
     "label": "HTTP and JSON"
   },
   {
+    "id": "facts-request",
+    "title": "Same request without the verdict (prompt level facts, abridged)",
+    "lang": "javascript",
+    "alt": "A request whose state sentence lists objects with distance, bearing and time to impact, and whose options describe only the action",
+    "code": "POST /v1/systemone\n{ \"state\": \"Ship speed 1.2 px/tick. Nearest objects:\n             1) large rock, 640 units away, 35 deg right of the nose,\n                closing at 18 px/tick, impact in 36 ticks;\n             2) medium rock, 910 units away, 120 deg left of the nose,\n                moving away at 4 px/tick.\",\n  \"questions\": { \"action\": {\n    \"type\": \"choice\",\n    \"instructions\": \"Choose the action that keeps the ship alive while it\n                     destroys rocks and saucers.\",\n    \"criteria\": {\n      \"stay_and_fire\":         \"Keep the current course and keep aiming and shooting at rocks.\",\n      \"turn_left_and_thrust\":  \"Rotate left and accelerate.\",\n      \"turn_right_and_thrust\": \"Rotate right and accelerate.\",\n      \"hyperspace\":            \"Jump to a random place on the screen. The jump can destroy the ship.\" } } } }",
+    "label": "HTTP and JSON"
+  },
+  {
     "id": "time-to-collision",
     "title": "Wrap offset and time to collision (from layaFormatState)",
     "lang": "javascript",

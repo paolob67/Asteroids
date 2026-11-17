@@ -117,10 +117,10 @@ For local experimentation on the M1, we select **`laya-mlx`** and **`Kev`** as t
 
 | Criteria | Laya (`laya-mlx`) | Kev (`Kev-0.8B` / `Kev-4B`) |
 |---|---|---|
-| **Primary Strength** | **Small and local.** Latency was expected to be 7 to 14 ms but measured 90 to 140 ms. | **Higher semantic capacity** and spatial inference quality from Qwen base. |
+| **Primary Strength** | **Small and local.** Latency was expected to be 7 to 14 ms but measured 90 to 140 ms. It scores fixed options well; as a standalone tactician from plain facts it did not work in our test (see [LAYA.md](LAYA.md)). | **Higher semantic capacity** and spatial inference quality from Qwen base. |
 | **Memory Footprint** | Extremely light (~1.7 GB total). | Light to moderate (1.5 GB for 0.8B, 4.0 GB for 4B). |
 | **Inference Lag ($L$)** | Measured 5 to 8 frames at 60 Hz (expected 0 to 1). | 2 to 4 frames lag at 60 Hz (expected, not measured here). |
-| **State Text Format** | Best suited for concise, structured key-value summaries. | Handles longer descriptions and raw snapshot summaries well. |
+| **State Text Format** | Concise, structured key-value summaries (the assumption); in our ablation, plain facts gave 97.5% `stay_and_fire` and raw numbers 35% hyperspace. | Handles longer descriptions and raw snapshot summaries well (not tested here). |
 | **Implementation Route** | Python `mlx` service exposing `/v1/systemone` on localhost:8700, or Node.js ONNX runtime (`receptron/laya`). | GGUF served via Ollama/`llama.cpp`, or Python MLX runner on localhost:8700. |
 
 ### Evaluation Plan
@@ -180,7 +180,7 @@ Laya latency during the run: median 137 ms, 95th percentile 156 ms.
    `laya-mlx` needs about 90 to 140 ms per decision on this machine, not the sub-frame figure first expected. The request is asynchronous, so the game never stalls, but the ship acts on an answer that is 5 to 8 ticks old.
 
 2. **Semantic Classification vs Continuous Trajectory Planning**:
-   While `smartPilot` simulates exact multi-body physics across a 90-tick lookahead horizon, `layaPilot` classifies high-level tactical states via natural language. In live play, this causes `layaPilot` to appear more reactive and jittery in the UI (engaging thrust 3.8% of ticks against 1.4%).
+   While `smartPilot` simulates exact multi-body physics across a 90-tick lookahead horizon, `layaPilot` picks one of four options from a sentence. With the default prompt the code has already judged the threat and written the manoeuvre into that sentence, so the model matches phrases rather than deciding. In live play `layaPilot` appears more reactive and jittery in the UI (engaging thrust 3.8% of ticks against 1.4%).
 
 3. **Result**:
-   `layaPilot` matches the others on points per minute (10,096), probably because it shares the target picker with `smartPilot`, but its loss rate (53.3 per hour) is not distinguishable from `simplePilot` and far above `smartPilot`. Rule-based solvers were clearly better at multi-body collision avoidance here. Why, whether latency, the one-sentence state or the model itself, has not been isolated.
+   `layaPilot` matches the others on points per minute (10,096), probably because it shares the target picker with `smartPilot`, but its loss rate (53.3 per hour) is not distinguishable from `simplePilot` and far above `smartPilot`. A prompt ablation (see [LAYA.md](LAYA.md)) shows that when the verdict is removed from the text, the model chooses `stay_and_fire` 97.5% of the time and scores about 5,000 fewer points per minute. Latency alone has still not been isolated.

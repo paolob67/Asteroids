@@ -186,7 +186,7 @@ ${text(1085, 825, 'laya-mlx 421M', 22, GREEN, { anchor: 'middle' })}${text(1085,
   net += `<path d="${q([1250, chosenY], [1330, 380], [S.x - 20, S.y - 40])}" stroke="${BLUE}" stroke-width="2.5" stroke-dasharray="3 9" stroke-linecap="round" fill="none" opacity="0.9"/>`;
   net += `<line x1="1085" y1="${ys(4)[3] + 20}" x2="1085" y2="760" stroke="${BLUE}" stroke-width="2" stroke-dasharray="3 9" opacity="0.5"/>`;
   const scene = [net, lap, paths, ghost, place(rock(0, 3.4), rk.x, rk.y), place(ship(1.5), S.x, S.y, shipDeg)].join('\n');
-  return frame(3, ['From rules to a', 'decision model'], 'A model can fly the ship', scene);
+  return frame(3, ['From rules to a', 'decision model'], 'Who actually decides?', scene);
 }
 
 // ---------- write ----------

@@ -6,6 +6,11 @@
 //   --json=path   write the full result (meta, per-seed rows, totals) as JSON
 //   --no-cache    layaPilot only: do not reuse answers for identical requests (slow, see below)
 //   --lag=N       layaPilot only: an answer takes effect N ticks after its request (default 1)
+//   --level=L     layaPilot only: what the state text tells the model (default verdict):
+//                   verdict  the code decides Safe/Danger/Fatal and names the manoeuvre (the original prompt)
+//                   facts    the 3 nearest objects with bearing, distance, closing speed, ticks to impact; no verdict
+//                   raw      the 3 nearest objects as wrapped offsets and relative velocities; no geometry done
+//                 facts and raw also use neutral option texts (the action only, never the situation).
 //
 // The game's RAND is a fixed-seed LFSR, so a "seed" here means: advance RAND by that many
 // calls after initGame(). The same seed gives the same game for the same pilot.
@@ -44,6 +49,8 @@ const budget = Number(pos[1] || 600000);
 const pilots = (pos[2] || 'simplePilot,smartPilot').split(',');
 const seeds = Number(pos[3] || 3);
 const lag = Number(flags.lag || 1);
+const level = String(flags.level || 'verdict');
+if (!['verdict', 'facts', 'raw'].includes(level)) { console.error('--level must be verdict, facts or raw'); process.exit(2); }
 
 const LAYA_URL = 'http://127.0.0.1:8700/v1/systemone';
 const LAYA_HEALTH = 'http://127.0.0.1:8700/health';
@@ -120,7 +127,7 @@ const run = loadGame(file, [
 //                  on the tick before each loss (same test as layaFormatState)
 //   Laya only: answers received, choice changes, ticks spent on each choice
 const body = (name, seed) => `
-  AUTOPILOT = ${name}; HYPERS = 0; LOSS_LOG.length = 0; DEATH = null;
+  AUTOPILOT = ${name}; HYPERS = 0; LOSS_LOG.length = 0; DEATH = null; layaPromptLevel = '${level}';
   initGame(1); for (let k = 0; k < ${seed} * 7; k++) rand();
   return (async () => {
     // The loop never yields to the event loop except to collect an answer that is due, so an
@@ -203,6 +210,7 @@ async function main() {
     node: process.version, os: `${os.type()} ${os.release()} ${os.arch()}`, cpu: os.cpus()[0].model,
     memoryGB: Math.round(os.totalmem() / 2 ** 30), layaModel: model,
     ticksPerSeed: budget, seeds, answerCache: needLaya ? !flags['no-cache'] : null,
+    layaPromptLevel: needLaya ? level : null, layaLag: needLaya ? lag : null,
   };
   console.log(`Measuring ${pilots.join(', ')} on ${file}: ${seeds} seeds x ${budget} ticks`);
 
