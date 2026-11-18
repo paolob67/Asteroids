@@ -1,0 +1,10 @@
+.work/data/val4.jsonl: 6330 frames, rule accuracy 1.000
+label                aim      escape       brake  hyperspace    recall
+aim                 3267           0           0           0     1.000
+escape                 0        2369           0           0     1.000
+brake                  0           0         658           0     1.000
+hyperspace             0           0           0          36     1.000
+precision aim         1.000
+precision escape      1.000
+precision brake       1.000
+precision hyperspace  1.000

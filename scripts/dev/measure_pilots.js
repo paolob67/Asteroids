@@ -44,7 +44,7 @@ const flags = Object.fromEntries(args.filter(a => a.startsWith('--')).map(a => {
   return [k, v.length ? v.join('=') : true];
 }));
 const pos = args.filter(a => !a.startsWith('--'));
-const file = pos[0] || path.join(__dirname, '../../asteroids.html');
+const file = pos[0] || path.join(__dirname, '../../versions/v3/asteroids.html');   // Part 3 harness: layaPilot lives in v3
 const budget = Number(pos[1] || 600000);
 const pilots = (pos[2] || 'simplePilot,smartPilot').split(',');
 const seeds = Number(pos[3] || 3);

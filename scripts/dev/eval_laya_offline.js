@@ -24,7 +24,7 @@ const logFile = process.argv[2] || '/tmp/smartPilot_0.jsonl';
 const limit = Number(process.argv[3] || 400);
 const level = process.argv[4] || 'facts';
 const endpoint = process.argv[5] || 'http://127.0.0.1:8700/v1/systemone';
-const gameFile = process.argv[6] || path.join(__dirname, '../../asteroids.html');
+const gameFile = process.argv[6] || path.join(__dirname, '../../versions/v3/asteroids.html');   // layaFormatState lives in v3
 const onlySituations = process.argv[7] && process.argv[7] !== 'all' ? process.argv[7].split(',') : null;   // e.g. dodge,hyper to enrich the rare cases
 // Option wording: by default the one that goes with the level (verdict text for verdict, neutral for the others).
 // Setting it separately crosses state text and option text (the 2x2 that tells which of the two matters).

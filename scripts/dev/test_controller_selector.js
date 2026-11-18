@@ -1,4 +1,4 @@
-// Checks the Manual | Simple | Smart selector with a small fake DOM: clicking a button must set
+// Checks the Manual | Simple | Smart | Student selector with a small fake DOM: clicking a button must set
 // AUTOPILOT to the right function (or null), mark only that button as pressed, and release held keys.
 const fs = require('fs');
 const path = require('path');
@@ -34,14 +34,14 @@ check('smart marks only smart', () => pressed().join() === 'smart');
 check('switching releases held keys', () => !keys['ArrowUp'] && !keys[' ']);
 press('simple'); check('simple sets simplePilot', () => AUTOPILOT === simplePilot);
 check('simple marks only simple', () => pressed().join() === 'simple');
-if (typeof layaPilot !== 'undefined') {
-  press('laya');   check('laya sets layaPilot', () => AUTOPILOT === layaPilot);
-  check('laya marks only laya', () => pressed().join() === 'laya');
+if (typeof strategyPilot !== 'undefined') {
+  press('student'); check('student sets strategyPilot', () => AUTOPILOT === strategyPilot);
+  check('student marks only student', () => pressed().join() === 'student');
 }
 press('manual'); check('manual clears the autopilot', () => AUTOPILOT === null);
 check('manual marks only manual', () => pressed().join() === 'manual');
 // each controller can really play a few thousand ticks through applyAutopilot()
-const list = typeof layaPilot !== 'undefined' ? ['simple', 'smart', 'laya', 'manual'] : ['simple', 'smart', 'manual'];
+const list = typeof strategyPilot !== 'undefined' ? ['simple', 'smart', 'student', 'manual'] : ['simple', 'smart', 'manual'];
 for (const n of list) {
   press(n); initGame(1);
   let ok = true;

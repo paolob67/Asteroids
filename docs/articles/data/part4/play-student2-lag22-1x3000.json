@@ -1,0 +1,95 @@
+{
+  "meta": {
+    "date": "2026-11-18T15:47:02.141Z",
+    "lag": 22,
+    "budget": 3000,
+    "firstSeed": 0,
+    "lastSeed": 0,
+    "model": ".work/ckpt/student2"
+  },
+  "results": [
+    {
+      "pilot": "smartPilot",
+      "seeds": 1,
+      "flyingMinutes": 0.8,
+      "losses": 0,
+      "lossesPerHour": 0,
+      "pointsPerMin": 9531,
+      "thrustPct": 0.9,
+      "turnPct": 39.6,
+      "firePct": 30.1,
+      "hyperPerHour": 0,
+      "causes": {},
+      "rows": [
+        {
+          "seed": 0,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 24,
+          "turnTicks": 1088,
+          "fireTicks": 826,
+          "play": 2746,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 7270,
+          "choiceTicks": {}
+        }
+      ]
+    },
+    {
+      "pilot": "studentPilot",
+      "seeds": 1,
+      "flyingMinutes": 0.8,
+      "losses": 1,
+      "lossesPerHour": 72,
+      "pointsPerMin": 444,
+      "thrustPct": 5.9,
+      "turnPct": 84.6,
+      "firePct": 4.8,
+      "hyperPerHour": 0,
+      "causes": {
+        "saucer-body": 1
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "games": 0,
+          "causes": {
+            "saucer-body": 1
+          },
+          "losses": 1,
+          "thrust": 176,
+          "turnTicks": 2537,
+          "fireTicks": 143,
+          "play": 3000,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 370,
+          "choiceTicks": {
+            "none": 23,
+            "left": 2229,
+            "fire": 242,
+            "left_thrust": 88,
+            "right": 286,
+            "thrust": 22,
+            "left_fire": 22,
+            "right_thrust": 66,
+            "right_fire": 22
+          }
+        }
+      ],
+      "choiceShare": {
+        "none": 0.8,
+        "left": 74.3,
+        "fire": 8.1,
+        "left_thrust": 2.9,
+        "right": 9.5,
+        "thrust": 0.7,
+        "left_fire": 0.7,
+        "right_thrust": 2.2,
+        "right_fire": 0.7
+      }
+    }
+  ]
+}

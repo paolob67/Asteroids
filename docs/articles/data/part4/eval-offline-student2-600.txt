@@ -1,0 +1,23 @@
+600 held-out frames, 0.37 s per answer
+13-way accuracy 0.772   (majority class 0.308)
+predicted mix: {'fire': 222, 'left': 182, 'right': 82, 'right_thrust': 24, 'right_fire': 21, 'left_thrust': 20, 'left_fire': 20, 'thrust': 19, 'none': 5, 'hyperspace': 4, 'right_thrust_fire': 1}
+teacher mix:   {'fire': 185, 'right': 164, 'left': 154, 'right_thrust': 26, 'left_thrust': 22, 'thrust': 19, 'left_fire': 13, 'right_fire': 9, 'none': 5, 'hyperspace': 3}
+
+per key (held / pressed on this frame):
+  left    teacher 0.315  student 0.370  precision 0.725  recall 0.852
+  right   teacher 0.332  student 0.213  precision 0.938  recall 0.603
+  thrust  teacher 0.112  student 0.107  precision 0.984  recall 0.940
+  fire    teacher 0.345  student 0.440  precision 0.754  recall 0.961
+
+turn (none/left/right) accuracy 0.807
+confusion (rows teacher none/left/right, cols student):
+[[203   6   3]
+ [ 23 161   5]
+ [ 24  55 120]]
+when the teacher turns (388 frames): right side 0.724, wrong side 0.155, no turn 0.121
+
+by teacher situation:
+  stay   frames  329  13-way 0.693  turn 0.693
+  dodge  frames  211  13-way 0.853  turn 0.929
+  brake  frames   57  13-way 0.912  turn 1.000
+  hyper  frames    3  13-way 1.000  turn 1.000

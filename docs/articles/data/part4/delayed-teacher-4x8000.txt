@@ -1,0 +1,7 @@
+smartPilot with decisions delayed and held, seeds 0..3 x 8000 ticks (lag 0 = the normal pilot)
+lag  ticks_s  flying_min  losses  losses/hour  points/min  turning%  fire%  thrust%  causes
+  0     0.00         8.2       0            0       10621      45.9   26.2      1.4  {}
+  1     0.02         8.2       0            0       10010      48.3   24.6      2.2  {}
+  6     0.10         7.9       6           46         680      84.9    4.0      2.2  {"rock":4,"hyperspace":1,"saucer-torpedo":1}
+ 12     0.20         7.4       7           57         284      92.8    2.8      4.4  {"rock":5,"saucer-torpedo":1,"hyperspace":1}
+ 22     0.37         4.5      12          160          16      85.9    1.2      6.6  {"saucer-body":1,"rock":10,"hyperspace":1}

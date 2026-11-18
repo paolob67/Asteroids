@@ -21,7 +21,7 @@ const flags = Object.fromEntries(args.filter(a => a.startsWith('--')).map(a => {
 const pos = args.filter(a => !a.startsWith('--'));
 const secs = Number(pos[0] || 60);
 const pilots = (pos[1] || 'smart,laya').split(',');
-const file = path.resolve(__dirname, '../../asteroids.html');
+const file = path.resolve(__dirname, '../../versions/v3/asteroids.html');   // Part 3 harness: layaPilot lives in v3
 const PORT = 9333;
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 

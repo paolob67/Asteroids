@@ -4,7 +4,7 @@ JavaScript canvas port of the original Atari Asteroids 6502 source, published at
 
 Open [`asteroids.html`](asteroids.html) in a browser to play. No build step, no dependencies.
 
-The page shows the game on a 4:3 monitor on the left. On the right, the top panel shows the game state (`snapshot()`) and the bottom panel shows the decision (the keys pressed and why). The **Manual | Simple | Smart | Laya** selector in the Decision panel chooses who flies: you with the keyboard, the simple v2 pilot ([Version 2](docs/VERSION_2.md#5-how-well-the-autopilot-plays)), the v3 smart pilot built on rules implemented in the code (it predicts the next 90 ticks and dodges with thrust, [Version 3](docs/VERSION_3.md#3-how-well-it-plays)), or the v3 pilot with a decision model in the loop, `Laya-MLX`, running locally on Apple Silicon ([Laya Plan](docs/LAYA.md)). With the default prompt the code writes the verdict into the text the model reads; the prompt ablation in the Laya plan shows what the model does without it.
+The page shows the game on a 4:3 monitor on the left. On the right, the top panel shows the game state (`snapshot()`) and the bottom panel shows the decision (the keys pressed and why). The **Manual | Simple | Smart | Student** selector in the Decision panel chooses who flies: you with the keyboard, the simple v2 pilot ([Version 2](docs/VERSION_2.md#5-how-well-the-autopilot-plays)), the v3 smart pilot built on rules implemented in the code (it predicts the next 90 ticks and dodges with thrust, [Version 3](docs/VERSION_3.md#3-how-well-it-plays)), or the v4 student, a fine-tuned Laya that reads a geometry-only description of the frame and chooses a strategy (`aim`, `escape`, `brake`, `hyperspace`) which the code then flies ([Version 4](docs/VERSION_4.md)). The generic Laya pilot of v3 is in the frozen `versions/v3/`.
 
 ## Versions
 
@@ -13,24 +13,26 @@ The page shows the game on a 4:3 monitor on the left. On the right, the top pane
 | v1 | [`versions/v1/`](versions/v1/) | Frozen, read-only baseline of the initial port produced with Bob. Reference for the article series on code modernization. |
 | v2 | [`versions/v2/`](versions/v2/) | Frozen, read-only. Restores behavior lost in the first port, adds the State and Decision panels, and adds a very simple autopilot (rotates and fires from the centre; no thrust, no movement, no hyperspace). |
 | v3 | [`versions/v3/`](versions/v3/) | Frozen, read-only. Adds two autopilots, `smartPilot` (rules in the code) and `layaPilot` (decision model), and the Manual / Simple / Smart / Laya selector. |
-| Working copy | [`asteroids.html`](asteroids.html) | Currently identical to v3. All further work happens here. |
+| v4 | [`versions/v4/`](versions/v4/), [`docs/VERSION_4.md`](docs/VERSION_4.md) | Frozen, read-only. v3 with the generic Laya model replaced by a fine-tuned student (`student3`) and `student_server.py` instead of `laya_server.py`. The Laya button is gone; the selector is Manual / Simple / Smart / Student. Training set and retraining recipe in [`training/student3/`](training/student3/); the 804 MB checkpoint is not in the repository. |
+| Working copy | [`asteroids.html`](asteroids.html) | Currently identical to v4. All further work happens here. |
 
-## Run the Laya server (optional)
+## Run the student server (optional)
 
-The **Laya** button needs a local decision server. Without it the button is disabled and the game flies `smartPilot` instead. Apple Silicon is required (Python 3.12 was used for the measurements; the install also works on 3.14). From the repository root:
+The **Student** button needs a local server and a trained checkpoint. Without the server the button is disabled and the game flies `smartPilot` instead. Apple Silicon is required (Python 3.12). The checkpoint (804 MB) is not in the repository: GitHub rejects files above 100 MB. Retrain it from the committed training set (about 3 hours, [Version 4, section 4](docs/VERSION_4.md#4-retrain-student3)), which writes `.work/ckpt/student3`. Then, from the repository root:
 
 ```bash
-python3 -m venv .venv                                   # once
-.venv/bin/pip install -r scripts/dev/requirements-laya.txt   # once
-.venv/bin/python scripts/dev/laya_server.py --port 8700      # keep running
-curl -s http://127.0.0.1:8700/health                    # from another terminal
+python3 -m venv .venv                                        # once
+.venv/bin/pip install -r scripts/dev/requirements-laya.txt   # once (laya-mlx, no PyTorch needed to serve)
+.venv/bin/python scripts/dev/student_server.py               # keep running, port 8701
+curl -s http://127.0.0.1:8701/health                         # from another terminal
 ```
 
-The first start downloads the model weights from Hugging Face. Details, model options and troubleshooting: [Laya-MLX local autopilot plan](docs/LAYA.md#32-setup-and-serving-commands).
+The Part 3 Laya server (`scripts/dev/laya_server.py`, port 8700) still exists for the frozen v3 and its measurement scripts, see [Version 3](docs/VERSION_3.md).
 
 ## Documentation
 
 - [Article series](docs/articles/README.md): write-up plan, outlines and LinkedIn texts for the three-part series on code modernization with Bob.
+- [Version 4: a fine-tuned student chooses a strategy, the code flies it](docs/VERSION_4.md): what changed from v3, how to run the student server, the offline fallback, and how to rebuild the training set and retrain `student3` from [`training/student3/`](training/student3/).
 - [Version 3: two new autopilots, rules in the code and a decision model](docs/VERSION_3.md): how `smartPilot` (rule-based lookahead) and `layaPilot` (decision model) fly, proof that they move the ship only through the keys, and measurements of both against the v2 pilot.
 - [Decision models and autopilot design](docs/DECISION_MODELS.md): overview of decision models (System One models like Laya, Kev, Jev, CLM), local feasibility analysis for Apple Silicon M1, selection of `laya-mlx` and `Kev` as local candidates, the `/v1/systemone` protocol, and autopilot architecture.
 - [Laya-MLX local autopilot plan](docs/LAYA.md): serving specifications, measured latency on Apple Silicon M1, ModernBERT architecture, the phased plan for `laya-mlx` and the prompt ablation (verdict, facts, raw).
@@ -40,7 +42,7 @@ The first start downloads the model weights from Hugging Face. Details, model op
 - [Version 1 baseline](docs/VERSION_1.md): what was done, feature list, known deviations from the original, validation results, article metrics.
 - [Architecture](docs/ARCHITECTURE.md): structure of the script, state machine, mapping from 6502 routines to JavaScript functions, and the v2 state and decision loop, with diagrams.
 - [Port notes](docs/PORT_NOTES.md): controls, sound synthesis, fidelity to the original, known approximations, validation scripts.
-- [Frozen v1 README](versions/v1/README.md), [frozen v2 README](versions/v2/README.md) and [frozen v3 README](versions/v3/README.md): checksum, integrity and comparison commands.
+- [Frozen v1 README](versions/v1/README.md), [frozen v2 README](versions/v2/README.md), [frozen v3 README](versions/v3/README.md) and [frozen v4 README](versions/v4/README.md): checksum, integrity and comparison commands.
 
 Diagram sources (`.drawio`) and exports (`.png`) are in [`docs/diagrams/`](docs/diagrams/).
 
@@ -51,27 +53,29 @@ scripts/run_all.sh                              # working copy
 scripts/run_all.sh versions/v1/asteroids.html   # frozen v1
 scripts/run_all.sh versions/v2/asteroids.html   # frozen v2
 scripts/run_all.sh versions/v3/asteroids.html   # frozen v3
+scripts/run_all.sh versions/v4/asteroids.html   # frozen v4
 
 node scripts/dev/measure_autopilot.js asteroids.html 3000000   # autopilot against baselines
 node scripts/dev/measure_pilots.js asteroids.html 1200000 simplePilot,smartPilot 8   # Simple against Smart
 node scripts/dev/check_thrust_physics.js asteroids.html 300000 smartPilot            # pilot moves the ship only through the keys
+node scripts/dev/measure_student.js 8000 0 11 --lag=22       # v4: student against Simple and Smart (needs the student server)
 node scripts/dev/compare_versions.js                           # v1 against v2
 node scripts/dev/compare_versions.js versions/v2/asteroids.html asteroids.html   # v2 against the working copy (also v3 once the working copy diverges)
 ```
 
 ### Pilot measurements for the articles
 
-These scripts produce and analyse the numbers in [`docs/articles/data/`](docs/articles/data/README.md). The Laya ones need the server from [Run the Laya server](#run-the-laya-server-optional).
+These scripts produce and analyse the numbers in [`docs/articles/data/`](docs/articles/data/README.md). The Laya ones belong to Part 3, default to the frozen `versions/v3/asteroids.html` and need `scripts/dev/laya_server.py` (port 8700, see [Version 3](docs/VERSION_3.md)).
 
 ```bash
-node scripts/dev/measure_pilots.js asteroids.html 8000 simplePilot,smartPilot,layaPilot 12 --lag=6 --json=out.json   # all three pilots
+node scripts/dev/measure_pilots.js versions/v3/asteroids.html 8000 simplePilot,smartPilot,layaPilot 12 --lag=6 --json=out.json   # all three pilots
 python3 scripts/dev/analyze_pilots.py docs/articles/data          # 95% intervals and paired comparisons from the JSON files
-node scripts/dev/browser_check.js 60 smart,laya --json=out.json   # real Chrome: ticks per second, Laya latency in ticks
+node scripts/dev/browser_check.js 60 smart,laya --json=out.json   # real Chrome (v3 file): ticks per second, Laya latency in ticks
 .venv/bin/python scripts/dev/bench_laya_latency.py                # laya-mlx latency by device, precision and text length
 node scripts/dev/death_causes.js asteroids.html 1000000 smartPilot   # classify every ship loss
 node scripts/dev/export_pilot_log.js asteroids.html 600000 smartPilot 0 /tmp/smart_0.jsonl   # pilot log for offline model tests
 node scripts/dev/eval_laya_offline.js /tmp/smart_0.jsonl 300 facts   # Laya against a recorded pilot log; args: log limit level(verdict|facts|raw) endpoint game situations|all options(verdict|neutral)
-node scripts/dev/measure_pilots.js asteroids.html 8000 layaPilot 12 --lag=6 --level=facts --json=out.json   # prompt ablation (levels: verdict, facts, raw)
+node scripts/dev/measure_pilots.js versions/v3/asteroids.html 8000 layaPilot 12 --lag=6 --level=facts --json=out.json   # prompt ablation (levels: verdict, facts, raw)
 python3 scripts/dev/analyze_ablation.py docs/articles/data        # compare the three prompt levels
 ```
 
@@ -87,16 +91,18 @@ node scripts/dev/make_article_tables.js docs/articles/linkedin/tables.json docs/
 ## Repository layout
 
 ```
-asteroids.html        working copy of the game (identical to version 3 as re-frozen on 2026-11-17)
+asteroids.html        working copy of the game (currently identical to version 4)
 versions/v1/          frozen version 1 + SHA256SUMS
 versions/v2/          frozen version 2 + SHA256SUMS
 versions/v3/          frozen version 3 + SHA256SUMS
+versions/v4/          frozen version 4 + SHA256SUMS
+training/student3/    version 4 training set, question file, pinned requirements and checksums (retrain recipe in docs/VERSION_4.md)
 docs/                 documentation (VERSION_*.md, ARCHITECTURE.md, LAYA*.md, ...)
 docs/diagrams/        .drawio sources and .png exports (diagrams, article tables), snippet-*.png (article code snippets)
 docs/articles/        article series material: plan, outlines, findings, test log, linkedin/ texts with tables.json and snippets.json
 docs/articles/data/   raw measurement files (JSON) behind every quoted number
 scripts/              validation scripts (run_all.sh, check_syntax.js)
-scripts/dev/          measurement, analysis and tuning scripts (JavaScript and Python), laya_server.py
+scripts/dev/          measurement, analysis and tuning scripts (JavaScript and Python), laya_server.py (v3), student_server.py (v4)
 ```
 
 ## Original source

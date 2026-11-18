@@ -1,0 +1,661 @@
+{
+  "meta": {
+    "date": "2026-11-18T20:07:12.159Z",
+    "lag": 22,
+    "budget": 8000,
+    "firstSeed": 0,
+    "lastSeed": 11,
+    "model": ".work/ckpt/student3"
+  },
+  "results": [
+    {
+      "pilot": "simplePilot",
+      "seeds": 12,
+      "flyingMinutes": 25,
+      "losses": 14,
+      "lossesPerHour": 33.6,
+      "pointsPerMin": 7991,
+      "thrustPct": 0,
+      "turnPct": 30.2,
+      "firePct": 32.9,
+      "hyperPerHour": 0,
+      "causes": {
+        "saucer-torpedo": 2,
+        "rock": 12
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "games": 0,
+          "causes": {
+            "saucer-torpedo": 1
+          },
+          "losses": 1,
+          "thrust": 0,
+          "turnTicks": 2386,
+          "fireTicks": 2450,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 15660,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 1,
+          "games": 0,
+          "causes": {
+            "rock": 1,
+            "saucer-torpedo": 1
+          },
+          "losses": 2,
+          "thrust": 0,
+          "turnTicks": 2365,
+          "fireTicks": 2366,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 17440,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 2,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 0,
+          "turnTicks": 2368,
+          "fireTicks": 2554,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 18510,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 3,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 0,
+          "turnTicks": 2234,
+          "fireTicks": 2623,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 17080,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 4,
+          "games": 0,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 0,
+          "turnTicks": 2194,
+          "fireTicks": 2403,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 15250,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 5,
+          "games": 0,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 0,
+          "turnTicks": 2021,
+          "fireTicks": 2269,
+          "play": 7619,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 14170,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 6,
+          "games": 0,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 0,
+          "turnTicks": 2231,
+          "fireTicks": 2470,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 17130,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 7,
+          "games": 0,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 0,
+          "turnTicks": 2242,
+          "fireTicks": 2527,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 18560,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 8,
+          "games": 0,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 0,
+          "turnTicks": 2115,
+          "fireTicks": 2460,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 15300,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 9,
+          "games": 0,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 0,
+          "turnTicks": 2234,
+          "fireTicks": 2466,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 15100,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 10,
+          "games": 0,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 0,
+          "turnTicks": 2431,
+          "fireTicks": 2452,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 18180,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 11,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 0,
+          "turnTicks": 2404,
+          "fireTicks": 2560,
+          "play": 7518,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 17510,
+          "choiceTicks": {}
+        }
+      ]
+    },
+    {
+      "pilot": "smartPilot",
+      "seeds": 12,
+      "flyingMinutes": 24.7,
+      "losses": 2,
+      "lossesPerHour": 4.9,
+      "pointsPerMin": 10493,
+      "thrustPct": 1.4,
+      "turnPct": 45.3,
+      "firePct": 26.3,
+      "hyperPerHour": 14.6,
+      "causes": {
+        "hyperspace": 2
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 132,
+          "turnTicks": 3281,
+          "fireTicks": 1982,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 1,
+          "points": 21860,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 1,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 160,
+          "turnTicks": 3599,
+          "fireTicks": 1924,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 1,
+          "points": 21810,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 2,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 88,
+          "turnTicks": 3467,
+          "fireTicks": 1928,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 21370,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 3,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 29,
+          "turnTicks": 3226,
+          "fireTicks": 1926,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 22250,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 4,
+          "games": 0,
+          "causes": {
+            "hyperspace": 2
+          },
+          "losses": 2,
+          "thrust": 73,
+          "turnTicks": 3379,
+          "fireTicks": 1774,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 2,
+          "points": 20610,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 5,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 103,
+          "turnTicks": 3283,
+          "fireTicks": 1978,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 20500,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 6,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 109,
+          "turnTicks": 3236,
+          "fireTicks": 1973,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 1,
+          "points": 21400,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 7,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 113,
+          "turnTicks": 3337,
+          "fireTicks": 1946,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 20550,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 8,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 65,
+          "turnTicks": 3088,
+          "fireTicks": 2138,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 22840,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 9,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 80,
+          "turnTicks": 3340,
+          "fireTicks": 1974,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 20680,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 10,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 229,
+          "turnTicks": 3516,
+          "fireTicks": 1854,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 1,
+          "points": 22010,
+          "choiceTicks": {}
+        },
+        {
+          "seed": 11,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 44,
+          "turnTicks": 3465,
+          "fireTicks": 1928,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 22830,
+          "choiceTicks": {}
+        }
+      ]
+    },
+    {
+      "pilot": "strategyPilot",
+      "seeds": 12,
+      "flyingMinutes": 24.8,
+      "losses": 10,
+      "lossesPerHour": 24.2,
+      "pointsPerMin": 10346,
+      "thrustPct": 0.7,
+      "turnPct": 40.9,
+      "firePct": 27.1,
+      "hyperPerHour": 0,
+      "causes": {
+        "rock": 7,
+        "saucer-torpedo": 2,
+        "saucer-body": 1
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 50,
+          "turnTicks": 3285,
+          "fireTicks": 2036,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 20290,
+          "choiceTicks": {
+            "aim": 6536,
+            "escape": 631,
+            "brake": 198
+          }
+        },
+        {
+          "seed": 1,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 87,
+          "turnTicks": 3491,
+          "fireTicks": 2013,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 22780,
+          "choiceTicks": {
+            "aim": 6414,
+            "escape": 770,
+            "brake": 308
+          }
+        },
+        {
+          "seed": 2,
+          "games": 0,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 42,
+          "turnTicks": 2994,
+          "fireTicks": 2111,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 21580,
+          "choiceTicks": {
+            "aim": 6423,
+            "escape": 827,
+            "brake": 242
+          }
+        },
+        {
+          "seed": 3,
+          "games": 0,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 52,
+          "turnTicks": 2647,
+          "fireTicks": 2087,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 20280,
+          "choiceTicks": {
+            "aim": 6396,
+            "escape": 942,
+            "brake": 154
+          }
+        },
+        {
+          "seed": 4,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 16,
+          "turnTicks": 3216,
+          "fireTicks": 2061,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 22030,
+          "choiceTicks": {
+            "aim": 6551,
+            "escape": 726,
+            "brake": 88
+          }
+        },
+        {
+          "seed": 5,
+          "games": 0,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 54,
+          "turnTicks": 2975,
+          "fireTicks": 2004,
+          "play": 7413,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 21160,
+          "choiceTicks": {
+            "aim": 6338,
+            "escape": 871,
+            "brake": 204
+          }
+        },
+        {
+          "seed": 6,
+          "games": 0,
+          "causes": {
+            "saucer-torpedo": 1
+          },
+          "losses": 1,
+          "thrust": 28,
+          "turnTicks": 2986,
+          "fireTicks": 2017,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 22960,
+          "choiceTicks": {
+            "aim": 6727,
+            "escape": 484,
+            "brake": 154
+          }
+        },
+        {
+          "seed": 7,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 56,
+          "turnTicks": 3683,
+          "fireTicks": 1799,
+          "play": 7365,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 25330,
+          "choiceTicks": {
+            "aim": 6155,
+            "escape": 924,
+            "brake": 286
+          }
+        },
+        {
+          "seed": 8,
+          "games": 0,
+          "causes": {
+            "rock": 1,
+            "saucer-body": 1
+          },
+          "losses": 2,
+          "thrust": 52,
+          "turnTicks": 2842,
+          "fireTicks": 1999,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 17780,
+          "choiceTicks": {
+            "aim": 5828,
+            "escape": 1466,
+            "brake": 198
+          }
+        },
+        {
+          "seed": 9,
+          "games": 0,
+          "causes": {
+            "saucer-torpedo": 1
+          },
+          "losses": 1,
+          "thrust": 72,
+          "turnTicks": 3095,
+          "fireTicks": 1963,
+          "play": 7448,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 22580,
+          "choiceTicks": {
+            "aim": 5878,
+            "escape": 1166,
+            "brake": 404
+          }
+        },
+        {
+          "seed": 10,
+          "games": 0,
+          "causes": {
+            "rock": 1
+          },
+          "losses": 1,
+          "thrust": 47,
+          "turnTicks": 2592,
+          "fireTicks": 2048,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 19650,
+          "choiceTicks": {
+            "aim": 6201,
+            "escape": 1159,
+            "brake": 132
+          }
+        },
+        {
+          "seed": 11,
+          "games": 0,
+          "causes": {
+            "rock": 2
+          },
+          "losses": 2,
+          "thrust": 50,
+          "turnTicks": 2716,
+          "fireTicks": 2031,
+          "play": 7492,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 20140,
+          "choiceTicks": {
+            "aim": 5626,
+            "escape": 1646,
+            "brake": 220
+          }
+        }
+      ],
+      "choiceShare": {
+        "aim": 84.1,
+        "escape": 13,
+        "brake": 2.9
+      }
+    }
+  ]
+}

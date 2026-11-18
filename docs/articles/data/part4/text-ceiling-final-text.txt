@@ -1,0 +1,31 @@
+train 26105 rows, val 6330 rows, features 86
+train turn mix (none/left/right): [0.31817659 0.34365064 0.33817276]
+val   turn mix (none/left/right): [0.33238547 0.32417062 0.34344392]
+
+TURN (none/left/right) on held-out seeds
+  majority class                 acc 0.324
+  rule: face the nearest object  acc 0.305
+  rule: face nearest closing     acc 0.321
+  rule: aim at quickest shot     acc 0.500   (teacher also dodges, so not 1.0)
+  rule: follow dodge heading, else aim at quickest shot   acc 0.844
+      stay   rows  3267  acc 0.751
+      dodge  rows  2369  acc 0.941
+      brake  rows   658  acc 1.000
+      hyper  rows    36  acc 0.000
+  small MLP on parsed numbers    acc 0.868   loss 0.482
+  confusion (rows = teacher none/left/right, cols = predicted):
+[[1724  176  204]
+ [ 115 1819  118]
+ [ 137   86 1951]]
+  when the teacher turns (4226 rows): right side 0.892, wrong side 0.048, no turn 0.060
+
+KEY COMBINATION (13 classes), natural mix
+  majority class                 acc 0.269
+  small MLP on parsed numbers    acc 0.839   loss 0.480
+  (Laya student1 on its held-out mix: acc 0.253, loss 1.99)
+
+PER KEY (is the key held / pressed on this frame?)
+  left    base rate 0.324  acc 0.920 (majority 0.676)  precision 0.915  recall 0.829
+  right   base rate 0.343  acc 0.904 (majority 0.657)  precision 0.858  recall 0.863
+  thrust  base rate 0.124  acc 0.987 (majority 0.876)  precision 0.965  recall 0.928
+  fire    base rate 0.317  acc 0.903 (majority 0.683)  precision 0.849  recall 0.844

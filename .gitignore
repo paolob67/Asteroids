@@ -8,6 +8,8 @@
 __pycache__/
 # Generated pilot logs and model outputs; large and reproducible
 *.jsonl
+# ...except the version 4 training set (small, and needed to retrain student3)
+!training/student3/*.jsonl
 node_modules/
 
 # Original Atari source: no licence upstream, so never redistributed from here
@@ -15,3 +17,6 @@ asteroids-main/
 
 # Full-size screen recordings; the web-sized .mp4 versions are tracked
 *.mov
+
+# Third-party clones and training venv for the Part 4 experiments
+.work/

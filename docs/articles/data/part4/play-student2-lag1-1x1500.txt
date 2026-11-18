@@ -1,0 +1,6 @@
+seeds 0..0 x 1500 ticks, answer delay 1 ticks, model .work/ckpt/student2
+smartPilot    flying 0.4 min  losses 0  losses/hour 0  points/min 6382  turning 33.4%  thrust 0.9%  fire 32.7%  hyperspace/hour 0  causes {}
+  student seed 0: 0 losses in 0.4 min, 2030 points, {}; 665s
+studentPilot  flying 0.4 min  losses 0  losses/hour 0  points/min 5323  turning 54.2%  thrust 0.3%  fire 22.3%  hyperspace/hour 0  causes {}
+              time per choice {"none":1.7,"left":50.4,"fire":44.1,"left_fire":0.4,"left_thrust":0.3,"right":3.1}
+server: 1373 requests, 126 from cache, latency median 490 ms, p95 591 ms

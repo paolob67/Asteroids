@@ -1,0 +1,7 @@
+seeds 0..0 x 3000 ticks, answer delay 6 ticks, model .work/ckpt/student2
+smartPilot    flying 0.8 min  losses 0  losses/hour 0  points/min 9531  turning 39.6%  thrust 0.9%  fire 30.1%  hyperspace/hour 0  causes {}
+  student seed 0: 2 losses in 0.8 min, 710 points, {"saucer-body":1,"rock":1}; 176s
+studentPilot  flying 0.8 min  losses 2  losses/hour 144  points/min 852  turning 68.8%  thrust 2.8%  fire 7%  hyperspace/hour 216  causes {"saucer-body":1,"rock":1}
+              time per choice {"none":0.2,"left":66.9,"right":8.2,"fire":11.4,"left_thrust":0.8,"right_thrust":1.8,"right_fire":2.2,"hyperspace":7.9,"left_fire":0.4,"thrust":0.2}
+server: 406 requests, 0 from cache, latency median 425 ms, p95 509 ms
+wrote docs/articles/data/part4/play-student2-lag6-1x3000.json

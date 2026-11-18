@@ -1,0 +1,7 @@
+strategy oracle + executor, seeds 0..3 x 8000 ticks (lag 0 = strategy chosen and applied on the same frame)
+lag  ticks_s  flying_min  losses  losses/hour  points/min  turning%  fire%  thrust%  causes
+  0     0.00         8.2       0            0       10621      45.9   26.2      1.4  {}  [aim 93.9%, escape 3.4%, brake 2.3%, hyperspace 0.3%]
+  1     0.02         8.2       0            0       10324      42.6   28.1      0.9  {}  [aim 95.0%, escape 2.9%, brake 1.9%, hyperspace 0.2%]
+  6     0.10         8.2       0            0       10286      45.2   26.5      1.1  {}  [aim 93.1%, escape 4.1%, brake 2.8%]
+ 12     0.20         8.3       1            7       10410      41.4   27.5      0.9  {"rock":1}  [aim 91.5%, escape 4.8%, brake 2.0%, hyperspace 1.8%]
+ 22     0.37         8.3       2           14       10365      40.1   28.5      0.6  {"rock":2}  [aim 90.4%, escape 7.2%, brake 2.4%]

@@ -1,0 +1,21 @@
+{
+  "action": {
+    "type": "choice",
+    "instructions": "Which keys should the ship press on this frame to stay alive and destroy rocks and saucers?",
+    "criteria": {
+      "none": "Hold no key.",
+      "left": "Hold the rotate-left key only.",
+      "right": "Hold the rotate-right key only.",
+      "thrust": "Hold the thrust key only.",
+      "fire": "Press the fire key only.",
+      "left_thrust": "Hold rotate-left and thrust.",
+      "right_thrust": "Hold rotate-right and thrust.",
+      "left_fire": "Hold rotate-left and press fire.",
+      "right_fire": "Hold rotate-right and press fire.",
+      "thrust_fire": "Hold thrust and press fire.",
+      "left_thrust_fire": "Hold rotate-left and thrust, and press fire.",
+      "right_thrust_fire": "Hold rotate-right and thrust, and press fire.",
+      "hyperspace": "Press the hyperspace key, which jumps to a random place on the screen. The jump can destroy the ship."
+    }
+  }
+}

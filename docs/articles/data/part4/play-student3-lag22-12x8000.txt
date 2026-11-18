@@ -1,0 +1,19 @@
+seeds 0..11 x 8000 ticks, answer delay 22 ticks, model .work/ckpt/student3
+simplePilot   flying 25 min  losses 14  losses/hour 33.6  points/min 7991  turning 30.2%  thrust 0%  fire 32.9%  hyperspace/hour 0  causes {"saucer-torpedo":2,"rock":12}
+smartPilot    flying 24.7 min  losses 2  losses/hour 4.9  points/min 10493  turning 45.3%  thrust 1.4%  fire 26.3%  hyperspace/hour 14.6  causes {"hyperspace":2}
+  student seed 0: 0 losses in 2.0 min, 20290 points, {}; 106s
+  student seed 1: 0 losses in 2.1 min, 22780 points, {}; 220s
+  student seed 2: 1 losses in 2.1 min, 21580 points, {"rock":1}; 346s
+  student seed 3: 1 losses in 2.1 min, 20280 points, {"rock":1}; 466s
+  student seed 4: 0 losses in 2.0 min, 22030 points, {}; 593s
+  student seed 5: 1 losses in 2.1 min, 21160 points, {"rock":1}; 715s
+  student seed 6: 1 losses in 2.0 min, 22960 points, {"saucer-torpedo":1}; 836s
+  student seed 7: 0 losses in 2.0 min, 25330 points, {}; 963s
+  student seed 8: 2 losses in 2.1 min, 17780 points, {"rock":1,"saucer-body":1}; 1083s
+  student seed 9: 1 losses in 2.1 min, 22580 points, {"saucer-torpedo":1}; 1220s
+  student seed 10: 1 losses in 2.1 min, 19650 points, {"rock":1}; 1385s
+  student seed 11: 2 losses in 2.1 min, 20140 points, {"rock":2}; 1553s
+strategyPilot flying 24.8 min  losses 10  losses/hour 24.2  points/min 10346  turning 40.9%  thrust 0.7%  fire 27.1%  hyperspace/hour 0  causes {"rock":7,"saucer-torpedo":2,"saucer-body":1}
+              time per choice {"aim":84.1,"escape":13,"brake":2.9}
+server: 3879 requests, 350 from cache, latency median 396 ms, p95 590 ms
+wrote docs/articles/data/part4/play-student3-lag22-12x8000.json

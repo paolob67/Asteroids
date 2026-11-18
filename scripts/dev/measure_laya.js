@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const file = process.argv[2] || path.join(__dirname, '../../asteroids.html');
+const file = process.argv[2] || path.join(__dirname, '../../versions/v3/asteroids.html');   // layaPilot lives in v3
 const budget = Number(process.argv[3] || 10000);
 const seeds = Number(process.argv[4] || 2);
 

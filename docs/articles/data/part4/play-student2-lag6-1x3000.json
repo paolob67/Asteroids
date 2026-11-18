@@ -1,0 +1,99 @@
+{
+  "meta": {
+    "date": "2026-11-18T15:49:58.561Z",
+    "lag": 6,
+    "budget": 3000,
+    "firstSeed": 0,
+    "lastSeed": 0,
+    "model": ".work/ckpt/student2"
+  },
+  "results": [
+    {
+      "pilot": "smartPilot",
+      "seeds": 1,
+      "flyingMinutes": 0.8,
+      "losses": 0,
+      "lossesPerHour": 0,
+      "pointsPerMin": 9531,
+      "thrustPct": 0.9,
+      "turnPct": 39.6,
+      "firePct": 30.1,
+      "hyperPerHour": 0,
+      "causes": {},
+      "rows": [
+        {
+          "seed": 0,
+          "games": 0,
+          "causes": {},
+          "losses": 0,
+          "thrust": 24,
+          "turnTicks": 1088,
+          "fireTicks": 826,
+          "play": 2746,
+          "fallback": 0,
+          "hypers": 0,
+          "points": 7270,
+          "choiceTicks": {}
+        }
+      ]
+    },
+    {
+      "pilot": "studentPilot",
+      "seeds": 1,
+      "flyingMinutes": 0.8,
+      "losses": 2,
+      "lossesPerHour": 144,
+      "pointsPerMin": 852,
+      "thrustPct": 2.8,
+      "turnPct": 68.8,
+      "firePct": 7,
+      "hyperPerHour": 216,
+      "causes": {
+        "saucer-body": 1,
+        "rock": 1
+      },
+      "rows": [
+        {
+          "seed": 0,
+          "games": 0,
+          "causes": {
+            "saucer-body": 1,
+            "rock": 1
+          },
+          "losses": 2,
+          "thrust": 84,
+          "turnTicks": 2064,
+          "fireTicks": 209,
+          "play": 3000,
+          "fallback": 0,
+          "hypers": 3,
+          "points": 710,
+          "choiceTicks": {
+            "none": 7,
+            "left": 2006,
+            "right": 246,
+            "fire": 341,
+            "left_thrust": 24,
+            "right_thrust": 54,
+            "right_fire": 66,
+            "hyperspace": 238,
+            "left_fire": 12,
+            "thrust": 6
+          }
+        }
+      ],
+      "choiceShare": {
+        "none": 0.2,
+        "left": 66.9,
+        "right": 8.2,
+        "fire": 11.4,
+        "left_thrust": 0.8,
+        "right_thrust": 1.8,
+        "right_fire": 2.2,
+        "hyperspace": 7.9,
+        "left_fire": 0.4,
+        "thrust": 0.2
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+look-ahead sentence NOT read; train 26105 rows, val 6330 rows, features 77
+val mix: {'aim': 0.516, 'escape': 0.374, 'brake': 0.104, 'hyperspace': 0.006}
+majority class accuracy 0.516
+seed 0: small MLP accuracy 0.802  loss 0.659
+seed 1: small MLP accuracy 0.795  loss 0.681
+confusion (rows = teacher, cols = predicted): ['aim', 'escape', 'brake', 'hyperspace']
+[[2826  255  185    1]
+ [ 288 1855  221    5]
+ [ 166  145  343    4]
+ [   0   25    4    7]]
+  aim         recall 0.865  precision 0.862
+  escape      recall 0.783  precision 0.814
+  brake       recall 0.521  precision 0.456
+  hyperspace  recall 0.194  precision 0.412
+
+look-ahead sentence READ; train 26105 rows, val 6330 rows, features 86
+val mix: {'aim': 0.516, 'escape': 0.374, 'brake': 0.104, 'hyperspace': 0.006}
+majority class accuracy 0.516
+seed 0: small MLP accuracy 0.997  loss 0.008
+seed 1: small MLP accuracy 0.997  loss 0.008
+confusion (rows = teacher, cols = predicted): ['aim', 'escape', 'brake', 'hyperspace']
+[[3267    0    0    0]
+ [   0 2361    1    7]
+ [   0    0  658    0]
+ [   0    9    0   27]]
+  aim         recall 1.000  precision 1.000
+  escape      recall 0.997  precision 0.996
+  brake       recall 1.000  precision 0.998
+  hyperspace  recall 0.750  precision 0.794
+

@@ -1,0 +1,12 @@
+{
+  "action": {
+    "type": "choice",
+    "instructions": "Which strategy should the ship follow for the next second to stay alive and destroy rocks and saucers?",
+    "criteria": {
+      "aim": "Hold the ship in place. Turn to the target a torpedo can reach soonest and fire when lined up. No thrust.",
+      "escape": "Fly the thrust manoeuvre that takes the ship out of the path of the objects, and fire at whatever is lined up on the way.",
+      "brake": "Thrust against the ship's drift until it is nearly still, and fire at whatever is lined up on the way.",
+      "hyperspace": "Press the hyperspace key, which jumps to a random place on the screen. The jump can destroy the ship."
+    }
+  }
+}

@@ -40,6 +40,26 @@ Raw output of [`scripts/dev/measure_pilots.js`](../../../scripts/dev/measure_pil
 | `eval-offline-2026-11-17-<level>-300-even.txt`, `eval-offline-2026-11-17-<level>-dodge-hyper.txt` | Offline evaluation (TEST_LOG T11) of the model on the state of a recorded `smartPilot` game, 300 evenly spaced records and 150 dodge or hyperspace records |
 | `eval-offline-2026-11-17-facts-with-verdict-options-dodge-hyper.txt`, `eval-offline-2026-11-17-verdict-with-neutral-options-dodge-hyper.txt` | The two crossed cells: state text of one level with the option wording of the other |
 
+## Part 4 files (`part4/`)
+
+Fine-tuning a student model on `smartPilot` (see [TEST_LOG_PART4.md](../TEST_LOG_PART4.md)). Game file: the working `asteroids.html`, not the frozen `versions/v3/`.
+
+| File | What it is |
+|------|-----------|
+| `part4/student1-run_report.json`, `student1-train_report.json` | First student (6 objects, no look-ahead): training and held-out reports (T12) |
+| `part4/text-ceiling-final-text.txt` | `scripts/dev/text_ceiling.py` on the final text (T13). The earlier rows of the T13 table were not saved to a file |
+| `part4/student2-run_report.json`, `student2-train_report.json`, `student2-questions.json` | Second student (4 objects, aim facts, look-ahead, brake sentence): reports and the 13 options (T14) |
+| `part4/eval-offline-student2-600.txt` | Offline evaluation of the second student on 600 held-out frames (T14) |
+| `part4/delayed-teacher-4x8000.txt` | `smartPilot` with its decisions delayed and held, seeds 0 to 3, 8,000 ticks (T16) |
+| `part4/strategy-oracle-4x8000.txt` | Strategy oracle plus executor, seeds 0 to 3, 8,000 ticks, five delays (T17) |
+| `part4/strategy-ceiling-4-classes.txt`, `part4/strategy-rule-check.txt` | The four strategy labels against the frame text: small classifier without and with the look-ahead sentence, and a string rule (T18) |
+| `part4/student3-train_report.json`, `student3-run_report.json`, `student3-questions.json` | Strategy student on the geometry-only text: training and held-out reports and the 4 options (T19) |
+| `part4/eval-offline-student3-600.txt` | Offline evaluation of the strategy student on 600 held-out frames (T19) |
+| `part4/play-student3-lag22-12x8000.txt`, `.json` | `simplePilot`, `smartPilot` and the strategy student, seeds 0 to 11, 8,000 ticks, 22 tick answer delay, working game (T19) |
+| `part4/strategy-oracle-12x8000.txt` | Strategy named by `smartPilot` plus executor, seeds 0 to 11, delay 0 and 22 (T19 control) |
+| `part4/control-always-aim-12x8000.txt` | Executor with the strategy fixed to `aim`, no model, seeds 0 to 11 (T19 control) |
+| `part4/play-student2-lag1-1x1500.txt`, `play-student2-lag6-1x3000.*`, `play-student2-lag22-1x3000.*` | The second student playing, seed 0, one game each, three answer delays (T15). Anecdotes, not a ranking |
+
 ## Why Laya runs are short
 
 At the latency measured on this machine (about 90 to 105 ms per request, see below) one Laya tick costs far more wall-clock time than a rule-based tick, so a 1,200,000 tick run would take days. The rule-based pilots are cheap, so for them the long run exists as well. For the three-way comparison all pilots use the same short run, so every row has the same budget and the same starting points.

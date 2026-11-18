@@ -61,16 +61,16 @@
   #note { font-size: 12px; line-height: 1.5; color: #c9d1d9; min-height: 3em; }
   #decision-json { font-size: 11px; color: #9ecbff; white-space: pre-wrap; word-break: break-all; }
 
-  /* Laya server status banner */
-  #laya-banner { font-size: 11px; line-height: 1.4; padding: 7px 10px; border-radius: 6px;
+  /* Student server status banner */
+  #student-banner { font-size: 11px; line-height: 1.4; padding: 7px 10px; border-radius: 6px;
                  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  #laya-banner .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-  #laya-banner.banner-offline { background: #211c1d; border: 1px solid #4a282b; color: #f85149; }
-  #laya-banner.banner-offline .dot { background: #f85149; }
-  #laya-banner.banner-offline code { background: #120d0e; color: #ff7b72; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
-  #laya-banner.banner-online { background: #13231b; border: 1px solid #234e33; color: #3fb950; }
-  #laya-banner.banner-online .dot { background: #3fb950; }
-  #laya-banner.banner-online code { background: #0d1912; color: #7ee787; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
+  #student-banner .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  #student-banner.banner-offline { background: #211c1d; border: 1px solid #4a282b; color: #f85149; }
+  #student-banner.banner-offline .dot { background: #f85149; }
+  #student-banner.banner-offline code { background: #120d0e; color: #ff7b72; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
+  #student-banner.banner-online { background: #13231b; border: 1px solid #234e33; color: #3fb950; }
+  #student-banner.banner-online .dot { background: #3fb950; }
+  #student-banner.banner-online code { background: #0d1912; color: #7ee787; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
 
   #info { font-size: 11px; color: #6e7681; }
 </style>
@@ -90,13 +90,13 @@
             <button type="button" id="ctl-manual" aria-pressed="true" title="You fly with the keyboard">Manual</button>
             <button type="button" id="ctl-simple" aria-pressed="false" title="Version 2 autopilot: turns and fires from the centre">Simple</button>
             <button type="button" id="ctl-smart" aria-pressed="false" title="Version 3 autopilot: looks ahead, dodges with thrust, hyperspace as a last resort">Smart</button>
-            <button type="button" id="ctl-laya" aria-pressed="false" title="Version 3 decision model: Laya-MLX on Apple Silicon">Laya</button>
+            <button type="button" id="ctl-student" aria-pressed="false" title="Version 4 student: a fine-tuned Laya chooses a strategy (aim, escape, brake, hyperspace) and the code flies it. Needs scripts/dev/student_server.py on port 8701">Student</button>
           </div>
         </h2>
         <div id="decision-body">
-          <div id="laya-banner" class="banner-offline">
+          <div id="student-banner" class="banner-offline">
             <span class="dot"></span>
-            <span>Laya Server Offline &nbsp;&bull;&nbsp; Run: <code>.venv/bin/python scripts/dev/laya_server.py --port 8700</code></span>
+            <span>Student Server Offline &nbsp;&bull;&nbsp; Run: <code>.venv/bin/python scripts/dev/student_server.py</code></span>
           </div>
           <div id="mode"></div>
           <div id="keys">
@@ -2315,49 +2315,68 @@ function spDescribe(t) {
   return 'saucer torpedo';
 }
 
+// Search the short manoeuvres when something is predicted to hit: the cheapest safe one, else the one
+// that hits latest. Returns { bestSafe, bestLate } (either may be null).
+function spDodgeSearch(s, T) {
+  const sh = s.ship;
+  const speed = Math.hypot(sh.vx, sh.vy);
+  let bestSafe = null, bestLate = null;
+  const headings = [];
+  for (let i = 0; i < SP_HEADINGS; i++) headings.push(Math.round(i * 256 / SP_HEADINGS));
+  if (speed >= 1) headings.push((spAngle(sh.vx, sh.vy) + 128) & 0xFF);
+  for (const heading of headings) for (const impulses of SP_IMPULSES) {
+    const p = { heading, impulses };
+    const r = spSimulate(s, T, p, SP_HORIZON);
+    const cost = r.used * 2 + Math.hypot(r.end.vx, r.end.vy) * 1.5 + Math.abs(spSigned(heading - sh.angle)) / 16;
+    if (r.ttc === Infinity) { if (!bestSafe || cost < bestSafe.cost) bestSafe = { p, cost, r }; }
+    else if (!bestLate || r.ttc > bestLate.r.ttc || (r.ttc === bestLate.r.ttc && cost < bestLate.cost)) bestLate = { p, cost, r };
+  }
+  return { bestSafe, bestLate };
+}
+
+// The plan that cancels the ship's drift (heading opposite to the velocity).
+function spBrakePlan(sh, speed) {
+  return { heading: (spAngle(sh.vx, sh.vy) + 128) & 0xFF, impulses: Math.min(20, Math.ceil(speed)) };
+}
+
 function smartPilot(s) {
   const sh = s.ship;
   if (!sh || !sh.alive || !sh.visible || sh.exploding) return { why: 'Ship is not active: no action.' };
   const T = spThreats(s);
   const stay = spSimulate(s, T, null, SP_HORIZON);
   const speed = Math.hypot(sh.vx, sh.vy);
-  let plan = null, why = '';
+  let plan = null, why = '', strategy = 'aim';
 
   if (stay.ttc === Infinity) {
     // Nothing is predicted to hit us. If we are drifting, brake when braking is also safe.
     if (speed >= 1.5) {
-      const brake = { heading: (spAngle(sh.vx, sh.vy) + 128) & 0xFF, impulses: Math.min(20, Math.ceil(speed)) };
-      if (spSimulate(s, T, brake, SP_HORIZON).ttc === Infinity) { plan = brake; why = `Safe, but drifting at ${speed.toFixed(1)} units/tick: brake. `; }
+      const brake = spBrakePlan(sh, speed);
+      if (spSimulate(s, T, brake, SP_HORIZON).ttc === Infinity) { plan = brake; strategy = 'brake'; why = `Safe, but drifting at ${speed.toFixed(1)} units/tick: brake. `; }
     }
     if (!plan) why = `Safe for the next ${SP_HORIZON} ticks: stay and shoot. `;
   } else {
-    // Something hits us. Search the short manoeuvres: the cheapest safe one, else the one that hits latest.
-    let bestSafe = null, bestLate = null;
-    const headings = [];
-    for (let i = 0; i < SP_HEADINGS; i++) headings.push(Math.round(i * 256 / SP_HEADINGS));
-    if (speed >= 1) headings.push((spAngle(sh.vx, sh.vy) + 128) & 0xFF);
-    for (const heading of headings) for (const impulses of SP_IMPULSES) {
-      const p = { heading, impulses };
-      const r = spSimulate(s, T, p, SP_HORIZON);
-      const cost = r.used * 2 + Math.hypot(r.end.vx, r.end.vy) * 1.5 + Math.abs(spSigned(heading - sh.angle)) / 16;
-      if (r.ttc === Infinity) { if (!bestSafe || cost < bestSafe.cost) bestSafe = { p, cost, r }; }
-      else if (!bestLate || r.ttc > bestLate.r.ttc || (r.ttc === bestLate.r.ttc && cost < bestLate.cost)) bestLate = { p, cost, r };
-    }
+    const { bestSafe, bestLate } = spDodgeSearch(s, T);
     const what = spDescribe(stay.by);
+    strategy = 'escape';
     if (bestSafe) {
       plan = bestSafe.p;
       why = `${what} would hit in ${stay.ttc} ticks. Dodge: turn to ${plan.heading}, thrust ${plan.impulses}x. `;
     } else {
       const risk = bestLate.r.ttc <= SP_HYPER_TTC ? spHyperRisk(s, T) : 1;
       if (bestLate.r.ttc <= SP_HYPER_TTC && risk < 0.7) {
-        return { hyper: s.frame % 2 === 0, why: `${what} hits in ${bestLate.r.ttc} ticks and no dodge works. Hyperspace (about ${(100 * risk).toFixed(0)}% risk).` };
+        return { hyper: s.frame % 2 === 0, strategy: 'hyperspace', why: `${what} hits in ${bestLate.r.ttc} ticks and no dodge works. Hyperspace (about ${(100 * risk).toFixed(0)}% risk).` };
       }
       plan = bestLate.p;
       why = `${what} hits in ${stay.ttc} ticks, no safe dodge. Best effort: delay the hit to ${bestLate.r.ttc} ticks. `;
     }
   }
+  return spSteer(s, plan, spPickTarget(s, stay.by), why, strategy);
+}
 
-  const target = spPickTarget(s, stay.by);
+// Turn the ship toward the plan heading (if any) or the aim point, thrust when the nose is on the plan
+// heading, and fire when the nose is on the aim point. Shared by smartPilot and the strategy executor.
+function spSteer(s, plan, target, why, strategy) {
+  const sh = s.ship;
   let left = false, right = false, fire = false;
   const aimAt = target ? spAngle(target.ax, -target.ay) : null;
   if (plan) {
@@ -2381,270 +2400,251 @@ function smartPilot(s) {
     fire = aimed && s.frame % 2 === 0;
     why += `Target: ${target.kind === 'rock' ? ['small', 'medium', 'large'][target.size] + ' rock' : (target.small ? 'small' : 'large') + ' saucer'} in ${Math.round(target.time)} ticks, ${aimed ? 'aligned: fire.' : 'aiming.'}`;
   } else why += 'No target in range.';
-  return { left, right, thrust, fire, why };
+  return { left, right, thrust, fire, strategy, why };
+}
+
+// ---------------------------------------------------------------------------
+//  Strategy executor (version 4): the code flies, a model only picks the strategy
+// ---------------------------------------------------------------------------
+// STRATEGIES are what a decision model may choose. The executor carries each one out every tick, so the
+// timing (turning to a heading, lining up a shot, pulsing fire and hyperspace) never waits for a model.
+//   escape     : search the manoeuvre that keeps every object clear, fly it, shoot whatever is lined up
+//   brake      : thrust against the drift until it is below 1.5 units/tick, shoot whatever is lined up
+//   hyperspace : jump
+//   aim        : turn to the quickest torpedo shot and fire; no thrust
+const STRATEGIES = ['escape', 'brake', 'hyperspace', 'aim'];
+
+function spExecute(s, strategy) {
+  const sh = s.ship;
+  if (!sh || !sh.alive || !sh.visible || sh.exploding) return { why: 'Ship is not active: no action.' };
+  if (strategy === 'hyperspace') return { hyper: s.frame % 2 === 0, strategy, why: 'Strategy hyperspace: jump.' };
+  const T = spThreats(s);
+  let plan = null, why = `Strategy ${strategy}. `, hitBy = null;
+  if (strategy === 'escape') {
+    const stay = spSimulate(s, T, null, SP_HORIZON);
+    if (stay.ttc !== Infinity) {
+      const { bestSafe, bestLate } = spDodgeSearch(s, T);
+      plan = bestSafe ? bestSafe.p : bestLate.p;
+      hitBy = stay.by;
+    }
+  } else if (strategy === 'brake') {
+    const speed = Math.hypot(sh.vx, sh.vy);
+    if (speed >= 1.5) plan = spBrakePlan(sh, speed);
+  }
+  return spSteer(s, plan, spPickTarget(s, hitBy), why, strategy);
 }
 
 
 // ---------------------------------------------------------------------------
-//  layaPilot (version 3): local decision model on Apple Silicon via /v1/systemone
+//  Part 4: describe the frame, ask which keys to press
 // ---------------------------------------------------------------------------
-// Uses the local laya-mlx HTTP server (default http://127.0.0.1:8700/v1/systemone).
-// Runs asynchronously: dispatches state snapshots over fetch() without blocking the 60 Hz loop.
-const LAYA_ENDPOINT = 'http://127.0.0.1:8700/v1/systemone';
-let layaPending = false;
-let layaLastAction = { why: 'Laya initialized: waiting for first decision.' };
-let layaLastTick = 0;
-let layaLatencies = [];
-// What the state text tells the model (set by the measurement harness, default for play is 'verdict'):
-//   'verdict' : the code decides (Safe, Danger, Fatal), names the side and the manoeuvre; the model confirms it.
-//   'facts'   : the code reports the 3 nearest objects with bearing, distance, closing speed and ticks to impact;
-//               no verdict, no advice. The model must find the threat and choose the manoeuvre.
-//   'raw'     : the code reports only wrapped offsets and velocities in world axes; the model does all the geometry.
-let layaPromptLevel = 'verdict';
+// layaFrameState writes what is on screen in the ship's own frame: for the nearest objects their
+// distance, bearing from the nose, closing speed and the straight-line closest approach (how far
+// apart, in which direction from the nose, in how many ticks). It states measurements only, never
+// what to do. Conventions: bearing > 0 is to the
+// right of the nose, ship.vy is y-up and every other vy is y-down.
+const LAYA_FRAME_OBJECTS = 4;
 
-function layaFormatState(s) {
+// lookahead=false gives the geometry-only text (object list and ship motion, no simulation sentence).
+function layaFrameState(s, maxObjects = LAYA_FRAME_OBJECTS, lookahead = true) {
   const sh = s.ship;
   if (!sh || !sh.alive || !sh.visible || sh.exploding) return null;
-  const shipAngleDeg = ((sh.angle || 0) * 360) / 256;
-  const speed = Math.hypot(sh.vx || 0, sh.vy || 0);
+  const a = (sh.angle || 0) * 2 * Math.PI / 256;           // nose angle, counter-clockwise, y up
+  const cosA = Math.cos(a), sinA = Math.sin(a);
+  const deg = r => r * 180 / Math.PI;
+  const side = d => d === 0 ? 'dead ahead' : d > 0 ? `${d} deg right of the nose` : `${-d} deg left of the nose`;
 
-  const objs = [];
-  let nearestDist = Infinity;
-  let nearestRelAngle = 0;
-  let nearestClosingSpeed = 0;
-  let nearestType = 'none';
+  // ship motion, relative to the nose
+  const svx = sh.vx || 0, svy = sh.vy || 0;                // y-up
+  const speed = Math.hypot(svx, svy);
+  let motion = 'The ship is not moving.';
+  if (speed >= 0.5) {
+    let drift = Math.round(deg(a - Math.atan2(svy, svx)));
+    while (drift > 180) drift -= 360;
+    while (drift <= -180) drift += 360;
+    motion = `The ship moves at ${speed.toFixed(1)} units/tick, ${side(drift)}.`;
+  }
 
-  let imminentThreat = null;
-  let minThreatTtc = Infinity;
+  const items = (s.asteroids || []).filter(o => !o.exploding).map(o => ({ o, type: ['small rock', 'medium rock', 'large rock'][o.size] || 'rock', shootable: true }));
+  if (s.saucer && !s.saucer.exploding) items.push({ o: s.saucer, type: s.saucer.small ? 'small saucer' : 'large saucer', shootable: true });
+  for (const t of (s.saucTorps || [])) items.push({ o: t, type: 'saucer torpedo', shootable: false });
 
-  const items = (s.asteroids || []).filter(a => !a.exploding);
-  if (s.saucer && !s.saucer.exploding) items.push({ ...s.saucer, isSaucer: true });
-
-  for (const item of items) {
-    let dx = item.x - sh.x;
-    let dy = item.y - sh.y;
-    if (dx > 4096) dx -= 8192; else if (dx < -4096) dx += 8192;
-    if (dy > 3072) dy -= 6144; else if (dy < -3072) dy += 6144;
-    const dist = Math.hypot(dx, dy);
-    const itemBearingDeg = (Math.atan2(dy, dx) * 180) / Math.PI;
-    let rel = itemBearingDeg - shipAngleDeg;
-    while (rel > 180) rel -= 360;
-    while (rel < -180) rel += 360;
-
-    const relVx = (item.vx || 0) - (sh.vx || 0);
-    const relVy = (item.vy || 0) - (sh.vy || 0);
-    const closing = -Math.round((dx * relVx + dy * relVy) / (dist || 1));
-    objs.push({
-      dist, rel: Math.round(rel), closing, dx: Math.round(dx), dy: Math.round(dy), rvx: relVx, rvy: relVy,
-      type: item.isSaucer ? 'saucer' : (item.size === 2 ? 'large rock' : item.size === 1 ? 'medium rock' : 'small rock')
-    });
-
-    if (dist < nearestDist) {
-      nearestDist = dist;
-      nearestType = item.isSaucer ? 'saucer' : (item.size === 2 ? 'large rock' : item.size === 1 ? 'medium rock' : 'small rock');
-      nearestRelAngle = Math.round(rel);
-      nearestClosingSpeed = closing;
+  const objs = items.map(({ o, type, shootable }) => {
+    let dx = o.x - sh.x, dy = o.y - sh.y;                   // screen offsets, y down, shortest way round the wrap
+    if (dx > SX / 2) dx -= SX; else if (dx < -SX / 2) dx += SX;
+    if (dy > SY / 2) dy -= SY; else if (dy < -SY / 2) dy += SY;
+    const rvx = (o.vx || 0) - svx, rvy = (o.vy || 0) + svy;  // velocity of the object relative to the ship, y down
+    const dist = Math.hypot(dx, dy) || 1;
+    // the same vectors in the ship's frame: A along the nose, R to the right of it
+    const A = dx * cosA - dy * sinA, R = dx * sinA + dy * cosA;
+    const vA = rvx * cosA - rvy * sinA, vR = rvx * sinA + rvy * cosA;
+    const closing = -(A * vA + R * vR) / dist;
+    const v2 = vA * vA + vR * vR;
+    // straight-line closest approach of the object relative to the ship: when it happens, how far apart
+    // they are then, and where the object is then, as a bearing from the current nose
+    const tMin = v2 > 0 ? -(A * vA + R * vR) / v2 : 0;
+    const pa = A + vA * tMin, pr = R + vR * tMin;
+    const miss = Math.hypot(pa, pr);
+    // torpedo interception, as spIntercept does it: a torpedo leaves the nose at SP_TORP_SPEED relative
+    // to the ship; when would it meet the object, and at which bearing from the nose must it be aimed
+    let shot = null;
+    if (shootable) {
+      const qa = v2 - SP_TORP_SPEED * SP_TORP_SPEED, qb = A * vA + R * vR, qc = dist * dist;
+      let time = dist / SP_TORP_SPEED;
+      const disc = qb * qb - qa * qc;
+      if (qa < 0 && disc >= 0) time = (-qb - Math.sqrt(disc)) / qa;
+      if (time > 0 && time <= SP_TORP_RANGE) shot = { time, bearing: Math.round(deg(Math.atan2(R + vR * time, A + vA * time))) };
     }
+    return { type, dist, bearing: Math.round(deg(Math.atan2(R, A))), closing, tMin, miss, missBearing: Math.round(deg(Math.atan2(pr, pa))), shootable, shot };
+  }).sort((p, q) => p.dist - q.dist).slice(0, maxObjects);
 
-    if (closing > 0 && dist < 1200) {
-      const ttc = dist / closing;
-      if (ttc < minThreatTtc) {
-        minThreatTtc = ttc;
-        imminentThreat = {
-          dist, rel: Math.round(rel), closing, ttc,
-          type: item.isSaucer ? 'saucer' : (item.size === 2 ? 'large rock' : item.size === 1 ? 'medium rock' : 'small rock')
-        };
-      }
+  const parts = objs.map((o, i) => {
+    let t = `${i + 1}) ${o.type}, ${Math.round(o.dist)} units away, ${side(o.bearing)}`;
+    if (o.closing > 0.5) {
+      t += `, closing at ${o.closing.toFixed(1)} units/tick, closest approach ${Math.round(o.miss)} units`
+        + `${o.miss >= 1 ? ', ' + side(o.missBearing) : ''} in ${Math.round(o.tMin)} ticks`;
+    } else if (o.closing < -0.5) t += `, moving away at ${(-o.closing).toFixed(1)} units/tick`;
+    else t += ', not closing';
+    if (o.shootable) t += o.shot ? `; a torpedo fired now meets it in ${Math.round(o.shot.time)} ticks if aimed ${side(o.shot.bearing)}` : '; out of torpedo range';
+    return t;
+  });
+
+  if (!lookahead) return `${motion} Nearest objects: ${parts.join('; ') || 'none'}.`;
+
+  // What the same look-ahead simulation that smartPilot runs (90 ticks, every object a straight-line
+  // mover) predicts, stated as facts: what hits the ship if no key is pressed, and, if something does,
+  // which thrust heading and length keep everything clear. The search and its cost are copied from
+  // smartPilot so the text names the heading the teacher would pick; scripts/dev/check_dodge_facts.js
+  // verifies that against smartPilot's own play. Headings are given from the nose, > 0 to the right.
+  const T = spThreats(s);
+  const stay = spSimulate(s, T, null, SP_HORIZON);
+  let ahead;
+  if (stay.ttc === Infinity) {
+    ahead = `With no key pressed nothing is predicted to hit the ship in the next ${SP_HORIZON} ticks.`;
+    // A drifting ship (speed 1.5 or more): the thrust that would cancel its motion, as smartPilot's brake plan.
+    if (speed >= 1.5) {
+      const brake = { heading: (spAngle(svx, svy) + 128) & 0xFF, impulses: Math.min(20, Math.ceil(speed)) };
+      const rel = -Math.round(spSigned(brake.heading - sh.angle) * 360 / 256);
+      const clear = spSimulate(s, T, brake, SP_HORIZON).ttc === Infinity;
+      ahead += ` Thrusting ${brake.impulses} times toward ${side(rel)} slows the ship and ${clear ? 'keeps' : 'does not keep'} every object clear for the next ${SP_HORIZON} ticks.`;
+    }
+  } else {
+    const b = stay.by;
+    let bx = b.x - sh.x, by = b.y - sh.y;
+    if (bx > SX / 2) bx -= SX; else if (bx < -SX / 2) bx += SX;
+    if (by > SY / 2) by -= SY; else if (by < -SY / 2) by += SY;
+    const bA = bx * cosA - by * sinA, bR = bx * sinA + by * cosA;
+    ahead = `With no key pressed a ${spDescribe(b)} hits the ship in ${stay.ttc} ticks; it is now ${Math.round(Math.hypot(bx, by))} units away, ${side(Math.round(deg(Math.atan2(bR, bA))))}.`;
+    const headings = [];
+    for (let i = 0; i < SP_HEADINGS; i++) headings.push(Math.round(i * 256 / SP_HEADINGS));
+    if (speed >= 1) headings.push((spAngle(svx, svy) + 128) & 0xFF);
+    let bestSafe = null, bestLate = null;
+    for (const heading of headings) for (const impulses of SP_IMPULSES) {
+      const r = spSimulate(s, T, { heading, impulses }, SP_HORIZON);
+      const cost = r.used * 2 + Math.hypot(r.end.vx, r.end.vy) * 1.5 + Math.abs(spSigned(heading - sh.angle)) / 16;
+      if (r.ttc === Infinity) { if (!bestSafe || cost < bestSafe.cost) bestSafe = { heading, impulses, cost }; }
+      else if (!bestLate || r.ttc > bestLate.ttc || (r.ttc === bestLate.ttc && cost < bestLate.cost)) bestLate = { ttc: r.ttc, cost };
+    }
+    if (bestSafe) {
+      const rel = -Math.round(spSigned(bestSafe.heading - sh.angle) * 360 / 256);
+      ahead += ` Thrusting ${bestSafe.impulses} times toward ${side(rel)} keeps every object clear for the next ${SP_HORIZON} ticks.`;
+    } else {
+      ahead += ` No heading and thrust length tried keeps every object clear; the best one delays the hit to ${bestLate.ttc} ticks.`;
     }
   }
-
-  if (layaPromptLevel === 'facts' || layaPromptLevel === 'raw') {
-    objs.sort((a, b) => a.dist - b.dist);
-    const near = objs.slice(0, 3);
-    if (layaPromptLevel === 'raw') {
-      const parts = near.map((o, i) => `${i + 1}) ${o.type}: dx=${o.dx} dy=${o.dy} rel_vx=${o.rvx.toFixed(1)} rel_vy=${o.rvy.toFixed(1)}`);
-      return `Ship heading ${Math.round(shipAngleDeg)} deg, vx=${(sh.vx || 0).toFixed(1)} vy=${(sh.vy || 0).toFixed(1)}. Objects: ${parts.join('; ') || 'none'}.`;
-    }
-    const parts = near.map((o, i) => {
-      const side = o.rel > 0 ? `${o.rel} deg right of the nose` : o.rel < 0 ? `${-o.rel} deg left of the nose` : 'dead ahead';
-      const motion = o.closing > 0 ? `closing at ${o.closing} px/tick, impact in ${Math.round(o.dist / o.closing)} ticks` : `moving away at ${-o.closing} px/tick`;
-      return `${i + 1}) ${o.type}, ${Math.round(o.dist)} units away, ${side}, ${motion}`;
-    });
-    return `Ship speed ${speed.toFixed(1)} px/tick. Nearest objects: ${parts.join('; ') || 'none'}.`;
-  }
-  if (imminentThreat && minThreatTtc <= 8) {
-    return `Situation: Fatal collision emergency. Unavoidable impact with ${imminentThreat.type} in ${Math.round(minThreatTtc)} ticks. Emergency hyperspace jump required.`;
-  }
-  if (imminentThreat && minThreatTtc <= 60) {
-    const side = imminentThreat.rel > 0 ? 'right' : 'left';
-    const dodge = side === 'right' ? 'left' : 'right';
-    return `Situation: Danger. ${imminentThreat.type} is incoming from the ${side} on a collision path in ${Math.round(minThreatTtc)} ticks. Pilot needs to turn ${dodge} and thrust to dodge.`;
-  }
-  return `Situation: Safe. No collision danger. Ship speed is ${speed.toFixed(1)} px/tick. Target ${nearestType} is ${Math.round(nearestDist)} units away. Ready to aim and shoot.`;
+  return `${motion} Nearest objects: ${parts.join('; ') || 'none'}. ${ahead}`;
 }
 
-const LAYA_QUESTIONS = {
-  action: {
-    type: 'choice',
-    instructions: 'Determine the required flight action for the spaceship.',
-    criteria: {
-      stay_and_fire: 'Safe situation. Aim weapons towards target rock and fire.',
-      turn_left_and_thrust: 'Asteroid on right side. Turn left and thrust away to dodge.',
-      turn_right_and_thrust: 'Asteroid on left side. Turn right and thrust away to dodge.',
-      hyperspace: 'Fatal emergency when collision is unavoidable. Hyperspace escape jump.'
-    }
-  }
-};
+// ---------------------------------------------------------------------------
+//  Version 4: the student pilot. A fine-tuned Laya (student3) reads the geometry-only frame text
+//  (no look-ahead sentence) and answers "which strategy?" (aim, escape, brake, hyperspace). It is asked
+//  again as soon as it has answered, so the strategy changes about every 0.4 s. The executor (spExecute)
+//  flies the held strategy on the CURRENT frame every tick, so turning, aiming and pulsing fire never
+//  wait for the model. The question and options live in the checkpoint (questions.json); the request
+//  sends only the state.
+//  If the student server is unreachable the pilot falls back to smartPilot, retries every 3 s, and
+//  goes back to the model by itself when the server returns (same behaviour as the version 3 Laya pilot).
+// ---------------------------------------------------------------------------
+const STUDENT_URL = 'http://127.0.0.1:8701';
+const STUDENT_ENDPOINT = STUDENT_URL + '/v1/systemone';
+const STUDENT_START = '.venv/bin/python scripts/dev/student_server.py';
+let strategyServerOnline = false;
+let strategyPending = false;
+let strategyLastFailTime = 0;
+let strategyFallbackLogged = false;
+let strategyLatencies = [];
+let strategyLast = { choice: 'aim', why: 'Student initialized: waiting for first decision.' };
 
-// Same four actions, but the option text describes the action only, never the situation that calls for it.
-const LAYA_QUESTIONS_NEUTRAL = {
-  action: {
-    type: 'choice',
-    instructions: 'Choose the action that keeps the ship alive while it destroys rocks and saucers.',
-    criteria: {
-      stay_and_fire: 'Keep the current course and keep aiming and shooting at rocks.',
-      turn_left_and_thrust: 'Rotate left and accelerate.',
-      turn_right_and_thrust: 'Rotate right and accelerate.',
-      hyperspace: 'Jump to a random place on the screen. The jump can destroy the ship.'
-    }
-  }
-};
-
-let layaServerOnline = false;
-let layaLastFailTime = 0;
-let layaFallbackLogged = false;
-
-function layaPilot(s) {
+function strategyPilot(s) {
   const sh = s.ship;
   if (!sh || !sh.alive || !sh.visible || sh.exploding) return { why: 'Ship is not active: no action.' };
 
-  const now = Date.now();
   // If the server recently failed, throttle retries to once every 3 seconds
-  const canFetch = !layaPending && typeof fetch === 'function' && (layaServerOnline || (now - layaLastFailTime > 3000));
-
+  const canFetch = !strategyPending && typeof fetch === 'function' && (strategyServerOnline || Date.now() - strategyLastFailTime > 3000);
   if (canFetch) {
-    const stateText = layaFormatState(s);
-    if (stateText) {
-      layaPending = true;
+    const text = layaFrameState(s, LAYA_FRAME_OBJECTS, false);
+    if (text) {
+      strategyPending = true;
       const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-      fetch(LAYA_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: stateText, questions: layaPromptLevel === 'verdict' ? LAYA_QUESTIONS : LAYA_QUESTIONS_NEUTRAL })
+      fetch(STUDENT_ENDPOINT, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: text }),
       }).then(r => {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
       }).then(data => {
-        layaServerOnline = true;
-        if (layaFallbackLogged) {
-          console.log('[Laya Autopilot] Server reconnected on http://127.0.0.1:8700. Resuming live neural decision control.');
-          layaFallbackLogged = false;
+        strategyServerOnline = true;
+        if (strategyFallbackLogged) {
+          console.log('[Student Autopilot] Server reconnected on ' + STUDENT_URL + '. Resuming live student control.');
+          strategyFallbackLogged = false;
         }
-        const b = $('ctl-laya');
+        const b = $('ctl-student');
         if (b) { b.disabled = false; b.removeAttribute('disabled'); }
 
         const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
         const lat = t1 - t0;
-        layaLatencies.push(lat);
-        if (layaLatencies.length > 30) layaLatencies.shift();
+        strategyLatencies.push(lat);
+        if (strategyLatencies.length > 30) strategyLatencies.shift();
+        const avgLat = (strategyLatencies.reduce((a, c) => a + c, 0) / strategyLatencies.length).toFixed(1);
 
-        const ans = data.answers?.action;
-        const choice = ans?.choice || 'stay_and_fire';
-        const prob = ans?.probabilities?.[choice] ?? ans?.confidence ?? 1;
-        const conf = ans?.confidence ?? prob;
-        const avgLat = (layaLatencies.reduce((a, b) => a + b, 0) / layaLatencies.length).toFixed(1);
-
-        layaLastAction = {
-          choice,
-          prob,
-          conf,
-          lat,
-          avgLat,
-          isFallback: false,
-          why: `Laya decision: ${choice} (p=${prob.toFixed(2)}, conf=${conf.toFixed(2)}). Latency: ${lat.toFixed(1)} ms (avg ${avgLat} ms).`
-        };
-        layaLastTick = s.frame;
-      }).catch(err => {
-        layaServerOnline = false;
-        layaLastFailTime = Date.now();
-        if (!layaFallbackLogged) {
-          console.warn('[Laya Autopilot] Server offline. Falling back to Smart pilot.\nTo start the Laya server, run:\n  .venv/bin/python scripts/dev/laya_server.py --port 8700');
-          layaFallbackLogged = true;
+        const ans = data.answers && data.answers.action;
+        const choice = ans && STRATEGIES.includes(ans.choice) ? ans.choice : 'aim';
+        const p = (ans && ans.probabilities && ans.probabilities[choice]) || 0;
+        strategyLast = { choice, isFallback: false, why: `Student chose ${choice} (p=${p.toFixed(2)}). Latency: ${lat.toFixed(1)} ms (avg ${avgLat} ms).` };
+      }).catch(() => {
+        strategyServerOnline = false;
+        strategyLastFailTime = Date.now();
+        if (!strategyFallbackLogged) {
+          console.warn('[Student Autopilot] Server offline. Falling back to Smart pilot.\nTo start the student server, run:\n  ' + STUDENT_START);
+          strategyFallbackLogged = true;
         }
-        const b = $('ctl-laya');
+        const b = $('ctl-student');
         if (b) b.disabled = true;
-
-        layaLastAction = {
-          isFallback: true,
-          why: `Laya server offline. Running Smart fallback. (To enable Laya: .venv/bin/python scripts/dev/laya_server.py --port 8700)`
-        };
-      }).finally(() => {
-        layaPending = false;
-      });
+        strategyLast = { choice: null, isFallback: true, why: `Student server offline. Running Smart fallback. (To enable the student: ${STUDENT_START})` };
+      }).finally(() => { strategyPending = false; });
     }
   }
 
-  // Graceful fallback to smartPilot when server is offline
-  if (layaLastAction.isFallback) {
-    const smart = smartPilot(s);
-    return {
-      left: smart.left,
-      right: smart.right,
-      thrust: smart.thrust,
-      fire: smart.fire,
-      hyper: smart.hyper,
-      why: `${layaLastAction.why} [Smart: ${smart.why}]`
-    };
+  // Graceful fallback to smartPilot when the server is offline
+  if (strategyLast.choice === null) {
+    const sm = smartPilot(s);
+    return { left: sm.left, right: sm.right, thrust: sm.thrust, fire: sm.fire, hyper: sm.hyper, why: `${strategyLast.why} [Smart: ${sm.why}]` };
   }
-
-  const choice = layaLastAction.choice || 'stay_and_fire';
-  let left = false, right = false, thrust = false, fire = false, hyper = false;
-  let note = '';
-
-  if (choice === 'hyperspace') {
-    hyper = s.frame % 2 === 0;
-    note = 'hyperspace escape jump triggered';
-  } else if (choice === 'turn_left_and_thrust') {
-    left = true;
-    thrust = true;
-    fire = s.frame % 2 === 0;
-    note = 'dodging left with thrust';
-  } else if (choice === 'turn_right_and_thrust') {
-    right = true;
-    thrust = true;
-    fire = s.frame % 2 === 0;
-    note = 'dodging right with thrust';
-  } else {
-    // stay_and_fire: real-time aiming and shooting on current tick
-    const target = spPickTarget(s, null);
-    if (target) {
-      const aimAt = spAngle(target.ax, -target.ay);
-      const d = spSigned(aimAt - sh.angle);
-      left = d > 3;
-      right = d < -3;
-      const aimed = Math.abs(d) <= 3;
-      fire = aimed && s.frame % 2 === 0;
-      note = aimed ? 'aligned: fire' : (d > 0 ? 'turning left to aim' : 'turning right to aim');
-    } else {
-      fire = s.frame % 2 === 0;
-      note = 'airspace clear: fire';
-    }
-  }
-
-  const why = layaLastAction.why ? `${layaLastAction.why} [${note}]` : note;
-  return { left, right, thrust, fire, hyper, why };
+  const a = spExecute(s, strategyLast.choice);
+  return { ...a, why: `${strategyLast.why} ${a.why}` };
 }
 
 // ---------------------------------------------------------------------------
 //  Demo panels (right column) and controller selector
 // ---------------------------------------------------------------------------
 const $ = id => document.getElementById(id);
-// Who controls the ship: 'manual' (keyboard), 'simple' (simplePilot, v2), 'smart' (smartPilot, v3) or 'laya' (layaPilot, v3).
-const CONTROLLERS = { manual: null, simple: simplePilot, smart: smartPilot, laya: layaPilot };
+// Who controls the ship: 'manual' (keyboard), 'simple' (simplePilot, v2), 'smart' (smartPilot, v3) or
+// 'student' (strategyPilot, v4: the fine-tuned Laya student3 chooses a strategy, the code flies it).
+const CONTROLLERS = { manual: null, simple: simplePilot, smart: smartPilot, student: strategyPilot };
 function setController(name) {
   AUTOPILOT = CONTROLLERS[name];
-  if (name === 'laya' && !layaServerOnline) {
-    console.warn('[Laya Autopilot] Laya controller selected while server is offline. Running Smart pilot fallback.\nTo start the Laya server, run:\n  .venv/bin/python scripts/dev/laya_server.py --port 8700');
+  if (name === 'student' && !strategyServerOnline) {
+    console.warn('[Student Autopilot] Student controller selected while the server is offline. Running Smart pilot fallback.\nTo start the student server, run:\n  ' + STUDENT_START);
   }
   for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', ' ', 'Shift']) keys[k] = false;   // release held keys
   for (const n in CONTROLLERS) {
@@ -2660,41 +2660,42 @@ for (const n in CONTROLLERS) {
   if (b && b.addEventListener) b.addEventListener('click', () => setController(n));
 }
 
-// Probes the local Laya-MLX server upon load and enables the Laya controller button if active
-function checkLayaServer() {
-  const b = $('ctl-laya');
-  const banner = $('laya-banner');
+// Probes the local student server on load, on window focus and every 5 s. It enables the Student button
+// and updates the status banner while the server is up, and disables the button while it is not.
+function checkStudentServer() {
+  const b = $('ctl-student');
+  const banner = $('student-banner');
   if (!b || typeof fetch !== 'function') return;
-  fetch('http://127.0.0.1:8700/health', { method: 'GET' })
+  fetch(STUDENT_URL + '/health', { method: 'GET' })
     .then(r => {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     })
     .then(data => {
-      layaServerOnline = true;
+      strategyServerOnline = true;
       if (b.removeAttribute) b.removeAttribute('disabled');
       b.disabled = false;
-      b.title = 'Version 3 decision model: Laya-MLX on Apple Silicon (' + (data.model || 'Connected') + ')';
+      b.title = 'Version 4 student: a fine-tuned Laya chooses a strategy, the code flies it (' + (data.model || 'connected') + ')';
       if (banner) {
         banner.className = 'banner-online';
-        banner.innerHTML = '<span class="dot"></span><span>Laya Server Online &nbsp;&bull;&nbsp; <code>' + (data.model || 'laya-mlx') + '</code></span>';
+        banner.innerHTML = '<span class="dot"></span><span>Student Server Online &nbsp;&bull;&nbsp; <code>' + (data.model || 'student') + '</code></span>';
       }
-      console.log('[Laya Autopilot] Server online: http://127.0.0.1:8700 (model: ' + (data.model || 'laya-mlx') + ')');
+      console.log('[Student Autopilot] Server online: ' + STUDENT_URL + ' (model: ' + (data.model || 'student') + ')');
     })
     .catch(() => {
-      layaServerOnline = false;
+      strategyServerOnline = false;
       b.disabled = true;
-      b.title = 'Laya server offline. Run: .venv/bin/python scripts/dev/laya_server.py --port 8700';
+      b.title = 'Student server offline. Run: ' + STUDENT_START;
       if (banner) {
         banner.className = 'banner-offline';
-        banner.innerHTML = '<span class="dot"></span><span>Laya Server Offline &nbsp;&bull;&nbsp; Run: <code>.venv/bin/python scripts/dev/laya_server.py --port 8700</code></span>';
+        banner.innerHTML = '<span class="dot"></span><span>Student Server Offline &nbsp;&bull;&nbsp; Run: <code>' + STUDENT_START + '</code></span>';
       }
-      console.warn('[Laya Autopilot] Local server is offline (http://127.0.0.1:8700).\nTo enable Laya autopilot, start the server in a terminal:\n  .venv/bin/python scripts/dev/laya_server.py --port 8700');
+      console.warn('[Student Autopilot] Local server is offline (' + STUDENT_URL + ').\nTo enable the student autopilot, start the server in a terminal:\n  ' + STUDENT_START);
     });
 }
-checkLayaServer();
-if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('focus', checkLayaServer);
-if (typeof setInterval === 'function') setInterval(checkLayaServer, 5000);
+checkStudentServer();
+if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('focus', checkStudentServer);
+if (typeof setInterval === 'function') setInterval(checkStudentServer, 5000);
 
 function stateText() {
   const s = snapshot(), n = Math.round;
@@ -2740,7 +2741,7 @@ function updatePanels() {
            : sp < 0.5 ? ' &nbsp;|&nbsp; ship at rest'
            : ` &nbsp;|&nbsp; coasting at ${sp.toFixed(1)} units/tick (inertia), last thrust ${ago < 60 ? ago.toFixed(1) + ' s ago' : 'long ago'}`;
   }
-  const ctlName = AUTOPILOT === smartPilot ? 'smart' : AUTOPILOT === simplePilot ? 'simple' : AUTOPILOT === layaPilot ? 'Laya-MLX' : 'custom';
+  const ctlName = AUTOPILOT === smartPilot ? 'smart' : AUTOPILOT === simplePilot ? 'simple' : AUTOPILOT === strategyPilot ? 'student' : 'custom';
   $('mode').innerHTML = (AUTOPILOT ? `Controller: <b>autopilot (${ctlName})</b>` : 'Controller: <b>human (keyboard)</b>') + motion;
   $('note').textContent = AUTOPILOT ? lastWhy : 'Autopilot is off. The keys shown are the ones you hold.';
   $('decision-json').textContent = JSON.stringify(dec);
