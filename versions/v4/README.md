@@ -8,7 +8,7 @@ This directory holds the frozen fourth version of the JavaScript port of Atari A
 | SHA-256 | `11d74e2bed030fed947a9fc4c51f499c49f1d696a5edae534a6d6e48dfa04e1e` |
 | Size | 115,882 bytes, 2,794 lines |
 | Files are read-only | yes (`chmod a-w`) |
-| Model | `student3`, ModernBERT-large encoder, 421M parameters, not in the repository (804 MB) |
+| Model | `student3`, ModernBERT-large encoder, 421M parameters. Not in the repository (804 MB); [release asset `v4-student3`](https://github.com/paolob67/Asteroids/releases/tag/v4-student3), SHA-256 of the archive `7dcee73e18295bd839020d55d3d6be643f60cc3cc90fe2a6b10eff1fa7756c2e` |
 | Training set | [`training/student3/`](../../training/student3/) |
 
 ## Revision history
@@ -41,6 +41,7 @@ Needs a checkpoint in `.work/ckpt/student3` and Apple Silicon. From the reposito
 ```bash
 python3 -m venv .venv                                        # once
 .venv/bin/pip install -r scripts/dev/requirements-laya.txt   # once
+scripts/dev/fetch_student3.sh                                # once, downloads and checks the checkpoint (about 780 MB)
 .venv/bin/python scripts/dev/student_server.py               # keep running, port 8701
 curl -s http://127.0.0.1:8701/health                         # from another terminal
 ```

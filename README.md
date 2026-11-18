@@ -13,16 +13,17 @@ The page shows the game on a 4:3 monitor on the left. On the right, the top pane
 | v1 | [`versions/v1/`](versions/v1/) | Frozen, read-only baseline of the initial port produced with Bob. Reference for the article series on code modernization. |
 | v2 | [`versions/v2/`](versions/v2/) | Frozen, read-only. Restores behavior lost in the first port, adds the State and Decision panels, and adds a very simple autopilot (rotates and fires from the centre; no thrust, no movement, no hyperspace). |
 | v3 | [`versions/v3/`](versions/v3/) | Frozen, read-only. Adds two autopilots, `smartPilot` (rules in the code) and `layaPilot` (decision model), and the Manual / Simple / Smart / Laya selector. |
-| v4 | [`versions/v4/`](versions/v4/), [`docs/VERSION_4.md`](docs/VERSION_4.md) | Frozen, read-only. v3 with the generic Laya model replaced by a fine-tuned student (`student3`) and `student_server.py` instead of `laya_server.py`. The Laya button is gone; the selector is Manual / Simple / Smart / Student. Training set and retraining recipe in [`training/student3/`](training/student3/); the 804 MB checkpoint is not in the repository. |
+| v4 | [`versions/v4/`](versions/v4/), [`docs/VERSION_4.md`](docs/VERSION_4.md) | Frozen, read-only. v3 with the generic Laya model replaced by a fine-tuned student (`student3`) and `student_server.py` instead of `laya_server.py`. The Laya button is gone; the selector is Manual / Simple / Smart / Student. Training set and retraining recipe in [`training/student3/`](training/student3/); the 804 MB checkpoint is a [release asset](https://github.com/paolob67/Asteroids/releases/tag/v4-student3). |
 | Working copy | [`asteroids.html`](asteroids.html) | Currently identical to v4. All further work happens here. |
 
 ## Run the student server (optional)
 
-The **Student** button needs a local server and a trained checkpoint. Without the server the button is disabled and the game flies `smartPilot` instead. Apple Silicon is required (Python 3.12). The checkpoint (804 MB) is not in the repository: GitHub rejects files above 100 MB. Retrain it from the committed training set (about 3 hours, [Version 4, section 4](docs/VERSION_4.md#4-retrain-student3)), which writes `.work/ckpt/student3`. Then, from the repository root:
+The **Student** button needs a local server and a trained checkpoint. Without the server the button is disabled and the game flies `smartPilot` instead. Apple Silicon is required (Python 3.12). The checkpoint (804 MB) is not in the repository: GitHub rejects files above 100 MB. It is a [release asset](https://github.com/paolob67/Asteroids/releases/tag/v4-student3), downloaded by `scripts/dev/fetch_student3.sh`. To rebuild it instead, retrain from the committed training set (about 3 hours, [Version 4, section 4](docs/VERSION_4.md#4-retrain-student3)). From the repository root:
 
 ```bash
 python3 -m venv .venv                                        # once
 .venv/bin/pip install -r scripts/dev/requirements-laya.txt   # once (laya-mlx, no PyTorch needed to serve)
+scripts/dev/fetch_student3.sh                                # once, downloads and checks the checkpoint (about 780 MB)
 .venv/bin/python scripts/dev/student_server.py               # keep running, port 8701
 curl -s http://127.0.0.1:8701/health                         # from another terminal
 ```

@@ -293,6 +293,8 @@ Why the student's escapes did not turn into fewer losses was not examined. The o
 
 - Version 4 frozen as `versions/v4/asteroids.html` (SHA-256 `11d74e2bed030fed947a9fc4c51f499c49f1d696a5edae534a6d6e48dfa04e1e`, `ALL CHECKS PASSED` on the frozen file, read-only with `SHA256SUMS`).
 
+- The serving files of `student3` are published as release `v4-student3` (`student3.tar.gz`, 778,431,713 bytes). `scripts/dev/fetch_student3.sh` downloaded it, the SHA-256 matched, `model.safetensors` was byte for byte the trained one, and the unpacked copy answered `/health` as `student3`. `laya_mlx` loads it without `checkpoint_latest/` and with the Hugging Face hub set offline.
+
 **Not measured.** A full retrain from the committed files. It takes about 3 hours and is not bit-exact on MPS.
 
 ## How to reproduce

@@ -23,11 +23,12 @@ The Part 3 scripts (`measure_pilots.js`, `eval_laya_offline.js`, `measure_laya.j
 
 ## 2. Run the student
 
-You need a checkpoint in `.work/ckpt/student3`. The checkpoint is 804 MB and is not in the repository, because GitHub rejects files above 100 MB. Everything needed to rebuild it is in [`training/student3/`](../training/student3/) (see section 4). Serving needs only `laya-mlx`, not PyTorch. Apple Silicon is required.
+You need a checkpoint in `.work/ckpt/student3`. The checkpoint is 804 MB and is not in the repository, because GitHub rejects files above 100 MB. It is a [GitHub release asset](https://github.com/paolob67/Asteroids/releases/tag/v4-student3) (`student3.tar.gz`, 778 MB, SHA-256 `7dcee73e18295bd839020d55d3d6be643f60cc3cc90fe2a6b10eff1fa7756c2e`) and `scripts/dev/fetch_student3.sh` downloads it, checks the checksum and unpacks it. The archive holds only what serving needs (it loads with `laya_mlx` with the Hugging Face hub set offline); the training state is left out. To rebuild the checkpoint instead, everything is in [`training/student3/`](../training/student3/) (see section 4). Serving needs only `laya-mlx`, not PyTorch. Apple Silicon is required.
 
 ```bash
 python3 -m venv .venv                                        # once
 .venv/bin/pip install -r scripts/dev/requirements-laya.txt   # once, laya-mlx 0.6.0
+scripts/dev/fetch_student3.sh                                # once, about 780 MB
 .venv/bin/python scripts/dev/student_server.py               # keep running, port 8701
 curl -s http://127.0.0.1:8701/health                         # from another terminal
 ```
