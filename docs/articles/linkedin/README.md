@@ -7,6 +7,7 @@ Final texts for the series live here, one file per part:
 | `part-1-legacy-to-modern.md` | 1: Porting a 1979 arcade game with an LLM | Drafted |
 | `part-2-building-on-a-modern-base.md` | 2: Making the game playable by a program | Drafted |
 | `part-3-rules-to-decision-model.md` | 3: From rules to a decision model | Drafted |
+| `part-4-fine-tuning-a-student.md` | 4: Teaching the model to fly | Drafted |
 
 Workflow per article: draft, technical review against the repo, humanizer pass (`linkedin-humanizer`), audit, final formatting. See [section 6 of the plan](../WRITEUP_PLAN.md#6-work-breakdown).
 

@@ -84,5 +84,27 @@
     "lang": "javascript",
     "alt": "Mapping from the model's chosen action to the left, right, thrust, fire and hyper keys",
     "code": "if (choice === 'hyperspace') {\n  hyper = s.frame % 2 === 0;\n} else if (choice === 'turn_left_and_thrust') {\n  left = true;   thrust = true;  fire = s.frame % 2 === 0;\n} else if (choice === 'turn_right_and_thrust') {\n  right = true;  thrust = true;  fire = s.frame % 2 === 0;\n} else { /* stay_and_fire: aim with spPickTarget and fire when aligned */ }"
+  },
+  {
+    "id": "strategy-request",
+    "title": "The student3 request: geometry only, four strategies (abridged from the training file)",
+    "lang": "javascript",
+    "label": "HTTP and JSON",
+    "alt": "A typed request whose state text lists the nearest objects with distance, bearing, closing speed and closest approach, and four strategy options, with the response naming one strategy",
+    "code": "POST /v1/systemone\n{ \"state\": \"The ship moves at 3.6 units/tick, 86 deg right of the nose.\n             Nearest objects:\n             1) saucer torpedo, 166 units away, 3 deg left of the nose,\n                closing at 13.6 units/tick, closest approach 111 units,\n                51 deg left of the nose in 7 ticks;\n             2) small saucer, 711 units away, 49 deg left of the nose,\n                moving away at 15.1 units/tick; a torpedo fired now meets\n                it in 16 ticks if aimed 69 deg left of the nose;\n             3) ... 4) ...\",\n  \"questions\": { \"action\": {\n    \"type\": \"choice\",\n    \"instructions\": \"Which strategy should the ship follow for the next\n                     second to stay alive and destroy rocks and saucers?\",\n    \"criteria\": {\n      \"aim\":        \"Hold the ship in place. Turn to the target a torpedo can\n                     reach soonest and fire when lined up. No thrust.\",\n      \"escape\":     \"Fly the thrust manoeuvre that takes the ship out of the\n                     path of the objects, and fire at whatever is lined up\n                     on the way.\",\n      \"brake\":      \"Thrust against the ship's drift until it is nearly still,\n                     and fire at whatever is lined up on the way.\",\n      \"hyperspace\": \"Press the hyperspace key, which jumps to a random place\n                     on the screen. The jump can destroy the ship.\" } } } }\n\n->  { \"answers\": { \"action\": { \"choice\": \"aim | escape | brake | hyperspace\",\n                               \"probabilities\": { ... } } } }"
+  },
+  {
+    "id": "strategy-executor",
+    "title": "The executor: the code flies the chosen strategy every tick (abridged from spExecute)",
+    "lang": "javascript",
+    "alt": "The four strategies and the spExecute function: hyperspace pulses the key, escape runs the dodge search, brake plans a thrust against the drift, and every strategy ends in the same steering call",
+    "code": "const STRATEGIES = ['escape', 'brake', 'hyperspace', 'aim'];\n\nfunction spExecute(s, strategy) {\n  const sh = s.ship;\n  if (strategy === 'hyperspace') return { hyper: s.frame % 2 === 0 };\n  const T = spThreats(s);\n  let plan = null, hitBy = null;\n  if (strategy === 'escape') {\n    const stay = spSimulate(s, T, null, SP_HORIZON);      // what hits if no key is pressed\n    if (stay.ttc !== Infinity) {\n      const { bestSafe, bestLate } = spDodgeSearch(s, T); // 16 headings x 5 thrust lengths\n      plan = bestSafe ? bestSafe.p : bestLate.p;\n      hitBy = stay.by;\n    }\n  } else if (strategy === 'brake') {\n    const speed = Math.hypot(sh.vx, sh.vy);\n    if (speed >= 1.5) plan = spBrakePlan(sh, speed);      // thrust against the drift\n  }\n  // turn to the plan heading or the aim point, thrust when on the plan,\n  // fire when the nose is within 3 units of the aim point\n  return spSteer(s, plan, spPickTarget(s, hitBy), why, strategy);\n}"
+  },
+  {
+    "id": "strategy-pilot-loop",
+    "title": "The student pilot: ask when idle, fly every tick, fall back when offline (abridged from strategyPilot)",
+    "lang": "javascript",
+    "alt": "The strategyPilot function: a non-blocking request when none is pending, the answer stored as the held strategy, a fallback to smartPilot when the server is offline, and spExecute called on every tick",
+    "code": "function strategyPilot(s) {\n  const retry = Date.now() - strategyLastFailTime > 3000;\n  if (!strategyPending && (strategyServerOnline || retry)) {\n    strategyPending = true;\n    fetch(STUDENT_ENDPOINT, { method: 'POST',\n        body: JSON.stringify({ state: layaFrameState(s, 4, false) }) })\n      .then(r => r.json())\n      .then(data => {\n        const c = data.answers.action.choice;\n        strategyLast = { choice: STRATEGIES.includes(c) ? c : 'aim' };\n      })\n      .catch(() => { strategyLast = { choice: null }; })   // server offline\n      .finally(() => { strategyPending = false; });\n  }\n  if (strategyLast.choice === null) return smartPilot(s);  // fallback\n  return spExecute(s, strategyLast.choice);                 // every tick\n}"
   }
 ]

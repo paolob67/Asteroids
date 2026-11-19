@@ -1,4 +1,6 @@
-# Write-up plan: three-part LinkedIn series
+# Write-up plan: four-part LinkedIn series
+
+> 2026-11-18: the series grew from three parts to four. Part 4 (fine-tuning a student, version 4) is planned in [OUTLINES.md](OUTLINES.md) and its evidence is in [TEST_LOG_PART4.md](TEST_LOG_PART4.md). The rest of this plan describes Parts 1 to 3 as written.
 
 Working plan for the series "A journey in code modernization with Bob". The outlines are in [OUTLINES.md](OUTLINES.md). The finished LinkedIn texts go in [`linkedin/`](linkedin/).
 

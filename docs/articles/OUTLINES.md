@@ -1,4 +1,4 @@
-# Outlines: three-part LinkedIn series
+# Outlines: four-part LinkedIn series
 
 Series: **A journey in code modernization with Bob**. The plan, decisions and work breakdown are in [WRITEUP_PLAN.md](WRITEUP_PLAN.md). Diagram, chart, clip and snippet IDs (G, C, V) refer to the tables in section 5 of that plan.
 
@@ -117,7 +117,38 @@ Target length: 1,500 to 2,500 words each, plus diagrams, short clips and short c
 
 **Clips:** V5 (side by side with a trail), V6 (a good dodge), V7 (a dodge into another rock), V8 (decision panel), V9 (fallback when the server stops).
 
-**Not in scope:** optimization results, a shielded Laya pilot, Kev, Jev, CLM, d1. If the investigation in section 6b of the plan produces results, they become a Part 4.
+**Not in scope:** optimization results, a shielded Laya pilot, Kev, Jev, CLM, d1. The fine-tuning investigation became Part 4 (below).
+
+---
+
+## Part 4: Teaching the model to fly: what fine-tuning changed and what it did not
+
+**Decision (2026-11-18):** the series is four parts. Part 4 exists because the pilot of Part 3 did not satisfy the author. Fine-tuning was tried with the aim of leaving the model as much autonomy as the hardware and the producible training data allowed. Three students were trained; the third (`student3`) is the one in version 4. The evidence is in [TEST_LOG_PART4.md](TEST_LOG_PART4.md) (T12 to T20) and `data/part4/`.
+
+**Working hook:** Part 3 ended on an untested question: would fine-tuning change anything? It also predicted a ceiling of "`smartPilot` itself delayed by the model's latency". This part tests both. A fine-tuned 421M model reads the situation (84.3% on held-out frames), and with the code flying the ship it scores 10,346 points per minute at its real answer delay. A control with no model scores 10,502. So the executor carries the result, and the model's effect on survival is not shown.
+
+**Claim (only this):** a model that presses keys cannot fly at an answer time of 0.37 s (the teacher itself fails at that delay). A model that only chooses a strategy, with the code flying it every tick, plays at that delay and scores about what `smartPilot` scores. The model reads the situation from geometry alone to 84.3% held out. Not claimed: that the model's choices reduce losses (always `aim` lost 9 ships, the student 10), or that the student matches `smartPilot` on survival (10 losses against 2; the interval of the difference excludes 0).
+
+| # | Section | Content | Assets |
+|---|---------|---------|--------|
+| 1 | Why a fourth part | Part 3 in two lines; the goal (as much autonomy as hardware and data allow); setup (M1 Air 16 GB, teacher `smartPilot`, student Laya 421M, full fine-tune on MPS) | |
+| 2 | Five ways to split the work | Part 3 verdict, Part 3 facts, `student1`, `student2`, `student3`: what the text gives, what the model chooses, what the code does, the result | `p4-attempts` table |
+| 3 | First attempt: keys from facts (`student1`) | 13 key combinations; accuracy 29.0% to 25.3%; never pressed left or right; cause not isolated | `p4-students` table |
+| 4 | Second attempt: the teacher's computations in the text (`student2`) | How much of the teacher the text carries (T13); 77.7% held out; the catch (T18): the look-ahead sentence states the teacher's own answer | snippet-free; `p4-readability` table |
+| 5 | Why it still did not fly | T15 anecdote, T16 delayed teacher: the ship turns 3 units per tick and `smartPilot` fires within 3 units | `p4-keys-vs-strategy` diagram, `p4-delay` table |
+| 6 | The redesign | The model plans, the code flies: four strategies, `spExecute`, the oracle test (T17), geometry-only decision (T18) | `p4-split-architecture` diagram, snippets `strategy-request`, `strategy-executor` |
+| 7 | The `student3` result | Offline confusion; in play against `simplePilot` and `smartPilot`; paired differences | `p4-offline`, `p4-play`, `p4-paired` tables |
+| 8 | What the controls say | Always `aim`, the oracle, 13.0% against 6.4% `escape`, never hyperspace; the author's browser observation, labelled as observation | `p4-controls` table, clip V10 |
+| 9 | Running it | MLX serving (184 ms median), fallback, release asset, retrain recipe, snippet of the pilot loop | snippet `strategy-pilot-loop` |
+| 10 | What it adds up to | A fine-tuned model reads the situation; the code still carries the result; what is open | |
+
+**Caveats to state upfront:**
+- The earlier rows of the T13 text table were not saved to a file; only the final row is.
+- T15 (the key-pressing student in play) is a set of single games and cannot be re-run: `student2` and the key pilot were removed.
+- The cause of `student1`'s failure was not isolated. One training run per student. A full retrain from the committed data was not run.
+- The 12 seeds of the Part 3 protocol give small loss counts; intervals are reported, and the student's 10 losses against 14 for `simplePilot` is not called a win.
+
+**Clip:** V10 (the Student pilot with the Decision panel visible, a rock approaching and `escape` chosen).
 
 ---
 
@@ -135,6 +166,9 @@ Target length: 1,500 to 2,500 words each, plus diagrams, short clips and short c
 | S8 | 3 | Wrap offset and time to collision | `layaFormatState` |
 | S9 | 3 | Choice to keys mapping | `layaPilot` |
 | S10 | 3 | Same request at prompt level `facts` (no verdict, neutral options), id `facts-request` | `layaFormatState`, `LAYA_QUESTIONS_NEUTRAL` |
+| S11 | 4 | The `student3` request: geometry-only state and four strategy options, id `strategy-request` | `training/student3/val5_strategy.jsonl`, `questions.json` |
+| S12 | 4 | The executor core: four strategies, `spExecute`, id `strategy-executor` | `spExecute` |
+| S13 | 4 | The pilot loop with the fallback, id `strategy-pilot-loop` | `strategyPilot` |
 
 ## Clip list
 
@@ -150,5 +184,6 @@ Target length: 1,500 to 2,500 words each, plus diagrams, short clips and short c
 | V7 | 3 | Laya dodges one rock into the path of another | 8 s | Must |
 | V8 | 3 | Laya with the State and Decision panels visible | 8 s | Should |
 | V9 | 3 | Server stops, fallback to `smartPilot`, recovery | 8 s | Could |
+| V10 | 4 | `smartPilot` first, then the Student pilot, Decision panel visible, a rock approaching and `escape` chosen | 40 s | Must (the author records it) |
 
 Details, sources and constraints for each clip: [WRITEUP_PLAN.md](WRITEUP_PLAN.md) section 5.4.

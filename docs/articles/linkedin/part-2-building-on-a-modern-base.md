@@ -189,7 +189,7 @@ With this in place, Part 3 needs no changes to the game. The next pilot uses the
 
 The explicit state and the five-boolean interface turned a ported game into an environment for about 170 lines. A 40 line aiming rule made a strong player that cannot dodge; a 90 tick lookahead lost a ship about 12 times less often over 42 flying hours, and a replay of the game's own physics showed it never moved the ship by any route but the keys.
 
-In **Part 3**, the rules are replaced by a small decision model that runs locally on a laptop and is asked to pick one of four actions from a one-sentence description of the situation. The claim there is narrower than here: a model can be put in the loop and it plays, and then a test of who actually decides, because in my first version the code wrote the decision into the sentence.
+In **Part 3**, the rules are replaced by a small decision model that runs locally on a laptop and is asked to pick one of four actions from a one-sentence description of the situation. The claim there is narrower than here: a model can be put in the loop and it plays, and then a test of who actually decides, because in my first version the code wrote the decision into the sentence. **Part 4** asks whether fine-tuning that model on the rule-based pilot's play changes the answer.
 
 ---
 
@@ -208,6 +208,6 @@ node scripts/dev/check_thrust_physics.js asteroids.html 300000 smartPilot
 
 Raw output and definitions: [`docs/articles/data/`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/data/README.md). Long run of section 9: 2026-11-10, Apple MacBook Air M1, Node v26.3.1.
 
-The game, the frozen versions 1 to 3, the measurement scripts and the raw data are all in the repository: [github.com/paolob67/Asteroids](https://github.com/paolob67/Asteroids).
+The game, the frozen versions 1 to 4, the measurement scripts and the raw data are all in the repository: [github.com/paolob67/Asteroids](https://github.com/paolob67/Asteroids).
 
 *Next: [Part 3: From rules to a decision model](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-3-rules-to-decision-model.md)*

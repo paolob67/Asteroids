@@ -32,7 +32,7 @@ The Part 3 Laya server (`scripts/dev/laya_server.py`, port 8700) still exists fo
 
 ## Documentation
 
-- [Article series](docs/articles/README.md): write-up plan, outlines and LinkedIn texts for the three-part series on code modernization with Bob.
+- [Article series](docs/articles/README.md): write-up plan, outlines and LinkedIn texts for the four-part series on code modernization with Bob.
 - [Version 4: a fine-tuned student chooses a strategy, the code flies it](docs/VERSION_4.md): what changed from v3, how to run the student server, the offline fallback, and how to rebuild the training set and retrain `student3` from [`training/student3/`](training/student3/).
 - [Version 3: two new autopilots, rules in the code and a decision model](docs/VERSION_3.md): how `smartPilot` (rule-based lookahead) and `layaPilot` (decision model) fly, proof that they move the ship only through the keys, and measurements of both against the v2 pilot.
 - [Decision models and autopilot design](docs/DECISION_MODELS.md): overview of decision models (System One models like Laya, Kev, Jev, CLM), local feasibility analysis for Apple Silicon M1, selection of `laya-mlx` and `Kev` as local candidates, the `/v1/systemone` protocol, and autopilot architecture.

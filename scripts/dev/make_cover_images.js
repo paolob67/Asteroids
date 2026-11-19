@@ -1,9 +1,9 @@
-// Builds the three LinkedIn cover images as SVG (and PNG through headless Chrome).
+// Builds the four LinkedIn cover images as SVG (and PNG through headless Chrome).
 // The ship and rock outlines are read from the game itself (ROCKS and SHIPS in asteroids.html), so the
 // covers use the same vector shapes as the 1979 data tables.
 //
 // Usage: node scripts/dev/make_cover_images.js [outDir] [--no-title] [--no-png]
-// Default outDir: docs/articles/linkedin/covers. Output: cover-part1.svg|png, cover-part2.svg|png, cover-part3.svg|png (1920x1080).
+// Default outDir: docs/articles/linkedin/covers. Output: cover-part1.svg|png to cover-part4.svg|png (1920x1080).
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -189,10 +189,49 @@ ${text(1085, 825, 'laya-mlx 421M', 22, GREEN, { anchor: 'middle' })}${text(1085,
   return frame(3, ['From rules to a', 'decision model'], 'Who actually decides?', scene);
 }
 
+// ---------- Part 4: the model chooses the strategy, the code flies it ----------
+function part4() {
+  const S = { x: 1330, y: 640 }, shipDeg = -35;
+  const rk = { x: 1640, y: 520, ...rock(0, 3.4) };
+  const q = (p0, c, p1) => `M${p0[0]} ${p0[1]}Q${c[0]} ${c[1]} ${p1[0]} ${p1[1]}`;
+  // the model's side: four strategy boxes, escape chosen
+  const strategies = ['aim', 'escape', 'brake', 'hyperspace'], chosen = 1, bx0 = 960, bw = 205, bgap = 20, by = 130;
+  const boxes = strategies.map((k, i) => {
+    const x = bx0 + i * (bw + bgap), on = i === chosen;
+    return `<rect x="${x}" y="${by}" width="${bw}" height="70" rx="10" fill="${on ? BLUE : 'none'}" fill-opacity="${on ? 0.22 : 0}" stroke="${BLUE}" stroke-width="${on ? 3 : 2}" opacity="${on ? 1 : 0.5}"/>` +
+      text(x + bw / 2, by + 44, k, 26, BLUE, { anchor: 'middle', opacity: on ? 1 : 0.55, weight: on ? 600 : 0 });
+  }).join('\n');
+  const modelTag = text(bx0, by - 24, 'THE MODEL CHOOSES, ABOUT EVERY 0.4 s', 20, BLUE, { opacity: 0.85, spacing: 2 });
+  const cx = bx0 + chosen * (bw + bgap) + bw / 2;
+  const link = `<path d="${q([cx, by + 70], [cx, S.y - 120], [S.x + 10, S.y - 70])}" stroke="${BLUE}" stroke-width="2.5" stroke-dasharray="3 9" stroke-linecap="round" fill="none" opacity="0.8"/>`;
+  // the code's side: the ship dodges the rock, every tick
+  const paths = [
+    `<path d="M${S.x + 60} ${S.y - 40}L${rk.x - 95} ${rk.y + 20}" stroke="${GREEN}" stroke-width="2.5" stroke-dasharray="2 12" stroke-linecap="round" fill="none" opacity="0.35"/>`,
+    `<path d="${q([S.x - 10, S.y + 30], [S.x - 40, S.y + 150], [S.x - 190, S.y + 215])}" stroke="${GREEN}" stroke-width="5" stroke-linecap="round" fill="none"/>` +
+      `<circle cx="${S.x - 190}" cy="${S.y + 215}" r="10" fill="${GREEN}"/>`,
+  ].join('\n');
+  // ship trail: one dot per tick along the chosen path
+  const ticks = Array.from({ length: 9 }, (_, i) => {
+    const t = (i + 1) / 10, a = [S.x - 10, S.y + 30], c = [S.x - 40, S.y + 150], b = [S.x - 190, S.y + 215];
+    const x = (1 - t) ** 2 * a[0] + 2 * (1 - t) * t * c[0] + t * t * b[0], y = (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * c[1] + t * t * b[1];
+    return `<circle cx="${f(x)}" cy="${f(y)}" r="3" fill="${GREEN}" opacity="0.9"/>`;
+  }).join('');
+  // the key row
+  const keys = ['LEFT', 'RIGHT', 'THRUST', 'FIRE', 'HYPER'], lit = [0, 2, 3], kx0 = 960, kw = 150, kgap = 22, ky = 900;
+  const keyBoxes = keys.map((k, i) => {
+    const x = kx0 + i * (kw + kgap), on = lit.includes(i);
+    return `<rect x="${x}" y="${ky}" width="${kw}" height="64" rx="10" fill="${on ? GREEN : 'none'}" fill-opacity="${on ? 0.22 : 0}" stroke="${GREEN}" stroke-width="${on ? 3 : 2}" opacity="${on ? 1 : 0.45}"/>` +
+      text(x + kw / 2, ky + 40, k, 22, GREEN, { anchor: 'middle', opacity: on ? 1 : 0.5 });
+  }).join('\n');
+  const codeTag = text(kx0, ky - 18, 'THE CODE FLIES, EVERY TICK', 20, GREEN, { opacity: 0.85, spacing: 2 });
+  const scene = [boxes, modelTag, link, codeTag, paths, ticks, place(rock(0, 3.4), rk.x, rk.y), place(ship(1.5), S.x, S.y, shipDeg), keyBoxes].join('\n');
+  return frame(4, ['Teaching the model', 'to fly'], 'What fine-tuning changed, and what it did not', scene);
+}
+
 // ---------- write ----------
 fs.mkdirSync(outDir, { recursive: true });
 const tmp = PNG ? fs.mkdtempSync(path.join(os.tmpdir(), 'cover-')) : null;
-[[1, part1], [2, part2], [3, part3]].forEach(([n, build]) => {
+[[1, part1], [2, part2], [3, part3], [4, part4]].forEach(([n, build]) => {
   const svg = path.join(outDir, `cover-part${n}.svg`);
   fs.writeFileSync(svg, build());
   console.log(path.relative(process.cwd(), svg));

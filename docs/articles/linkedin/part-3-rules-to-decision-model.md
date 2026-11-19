@@ -215,7 +215,7 @@ What the table says:
 - **Raw numbers: the model cannot fly.** 122 losses (284.9 per hour), 520 points per minute, 35 games ended, and 35.3% of flying time on hyperspace.
 - **The score advantage of the first version came from shared code.** Aiming uses `spPickTarget`, and the dodge rule was in the sentence.
 
-What this does not show. It is one model of 421M parameters, one wording of the facts, three objects in the sentence, one run per level and no tuning. It does not show that a decision model cannot choose a tactic. It shows that this checkpoint, prompted this way, did not, and that my first result was measuring the code. Whether fine-tuning would change that I have not tested. The upstream README of the `laya-mlx` port says training stays upstream, and I did not check whether the upstream project can fine-tune this checkpoint for this task. A realistic ceiling for training on logged `smartPilot` decisions is `smartPilot` itself delayed by the model's latency.
+What this does not show. It is one model of 421M parameters, one wording of the facts, three objects in the sentence, one run per level and no tuning. It does not show that a decision model cannot choose a tactic. It shows that this checkpoint, prompted this way, did not, and that my first result was measuring the code. Whether fine-tuning would change that I have not tested here; Part 4 does. The upstream README of the `laya-mlx` port says training stays upstream, and I did not check whether the upstream project can fine-tune this checkpoint for this task. A realistic ceiling for training on logged `smartPilot` decisions is `smartPilot` itself delayed by the model's latency.
 
 ---
 
@@ -241,7 +241,7 @@ What I can say from this comparison:
 - **A model in the loop is not a model deciding.** If the prompt contains the decision, the pilot measures the code that wrote it. The check is cheap: remove the verdict and run again.
 - **Whether a model can choose the tactic from facts is still open.** Not this checkpoint, with this wording and no training. A larger model, a trained one or a hybrid that gives the model neutral outcomes to choose from are the next experiments.
 
-For now the result is the one in the title: the model did not decide, until I made it, and then it did not do well.
+For now the result is the one in the title: the model did not decide, until I made it, and then it did not do well. Part 4 picks up from here: it fine-tunes the model on the rule-based pilot's play and measures what changes.
 
 ---
 
@@ -250,6 +250,7 @@ For now the result is the one in the title: the model did not decide, until I ma
 1. **Porting** (Part 1): an LLM translates structure well and fails on conventions the source never states. Running the code against the source found what reading did not.
 2. **Building on a modern base** (Part 2): explicit state, a narrow action interface and determinism made autoplay cost lines instead of rewrites.
 3. **Rules and models** (Part 3): the same interface took a decision model as easily as a rule set, and a review plus an ablation showed that the first result measured the code that wrote the prompt, not the model.
+4. **Fine-tuning** (Part 4): see the next article.
 
 ---
 
@@ -280,6 +281,8 @@ node scripts/dev/browser_check.js 60 simple,smart,laya --json=out.json
 
 Raw output and definitions: [`docs/articles/data/`](https://github.com/paolob67/Asteroids/blob/main/docs/articles/data/README.md). Run: 2026-11-10 and 2026-11-11, Apple MacBook Air M1 (16 GB), Node v26.3.1, `laya-mlx` 0.6.0 with `aac6fef/laya-mlx`. The Laya run is short (22 losses) and the rates are imprecise.
 
-The game, the frozen versions 1 to 3, the measurement scripts and the raw data are all in the repository: [github.com/paolob67/Asteroids](https://github.com/paolob67/Asteroids).
+The game, the frozen versions 1 to 4, the measurement scripts and the raw data are all in the repository: [github.com/paolob67/Asteroids](https://github.com/paolob67/Asteroids).
 
 *Previous: [Part 2: Once the code is modern, a game becomes something a program can play](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-2-building-on-a-modern-base.md)*
+
+*Next: [Part 4: Teaching the model to fly](https://github.com/paolob67/Asteroids/blob/main/docs/articles/linkedin/part-4-fine-tuning-a-student.md)*

@@ -1,0 +1,52 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="p4-keys-vs-strategy" name="p4 keys chosen late against strategy chosen late">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1240" pageHeight="470" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="h1" value="The answer is the keys (student1, student2, and the delayed teacher of T16)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="1200" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="a1" value="Tick 0&#xa;frame read, turn key chosen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="80" width="230" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="a2" value="Ticks 6 to 12&#xa;key held; the ship turns 3 units per tick, 18 units in all" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="330" y="80" width="300" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="a3" value="The nose passes the aim point.&#xa;smartPilot fires only within 3 units of it" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="80" width="280" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="a4" value="Result at 0.10 s:&#xa;turning 84.9%, firing 4.0%,&#xa;680 points per minute" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c9d1d9;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="80" width="170" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ea1" value="answer delay" style="endArrow=classic;html=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="a1" target="a2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ea2" value="" style="endArrow=classic;html=1;" edge="1" parent="1" source="a2" target="a3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="ea3" value="" style="endArrow=classic;html=1;" edge="1" parent="1" source="a3" target="a4"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="h2" value="The answer is a strategy; the executor flies it (student3, and the oracle of T17)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="200" width="1200" height="34" as="geometry"/>
+        </mxCell>
+        <mxCell id="b1" value="Tick 0&#xa;frame read, strategy chosen (for example aim)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="260" width="230" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="b2" value="Ticks 6 to 12&#xa;strategy held; every tick the executor reads the current frame and re-computes the turn" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="330" y="260" width="300" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="b3" value="The turn stops when the nose is on the aim point.&#xa;Fire happens when it is aligned" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="710" y="260" width="280" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="b4" value="Result at 0.10 s:&#xa;turning 45.2%, firing 26.5%,&#xa;10,286 points per minute" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#c9d1d9;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="260" width="170" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="eb1" value="answer delay" style="endArrow=classic;html=1;labelBackgroundColor=#ffffff;" edge="1" parent="1" source="b1" target="b2"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="eb2" value="" style="endArrow=classic;html=1;" edge="1" parent="1" source="b2" target="b3"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="eb3" value="" style="endArrow=classic;html=1;" edge="1" parent="1" source="b3" target="b4"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="note" value="Same teacher, same four seeds of 8,000 ticks, same 6 tick delay (T16 and T17). Only what is delayed differs." style="text;html=1;whiteSpace=wrap;align=left;verticalAlign=middle;fontStyle=2;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="20" y="370" width="1000" height="30" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
